@@ -2,14 +2,20 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Star, CheckCircle, Leaf } from "lucide-react";
 import heroImage from "@assets/generated_images/Hero_cleaning_team_in_action_2c2b9c2e.png";
+import { useQuery } from "@tanstack/react-query";
+import type { BusinessSettings } from "@shared/schema";
 
 export function Hero() {
+  const { data: settings } = useQuery<BusinessSettings>({
+    queryKey: ["/api/settings"],
+  });
+
   return (
     <section className="relative min-h-[600px] md:min-h-[700px] flex items-center">
       <div className="absolute inset-0 z-0">
         <img
           src={heroImage}
-          alt="Clean and Green professional cleaning team"
+          alt={`${settings?.businessName || "Clean and Green"} professional cleaning team`}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30" />
@@ -17,8 +23,8 @@ export function Hero() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-20 md:py-32">
         <div className="max-w-4xl">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6">
-            Eco-Friendly Cleaning for a Healthier Oklahoma
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6" data-testid="text-hero-title">
+            {settings?.tagline || "Eco-Friendly Cleaning for a Healthier Oklahoma"}
           </h1>
           <p className="text-xl md:text-2xl text-white/90 mb-8">
             Professional cleaning services using only green, sustainable products. We care for your home and our planet.

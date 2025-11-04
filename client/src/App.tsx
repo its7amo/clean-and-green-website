@@ -9,6 +9,8 @@ import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Book from "@/pages/Book";
 import Quote from "@/pages/Quote";
+import Faq from "@/pages/Faq";
+import Gallery from "@/pages/Gallery";
 import Admin from "@/pages/Admin";
 import AdminBookings from "@/pages/AdminBookings";
 import AdminQuotes from "@/pages/AdminQuotes";
@@ -29,6 +31,8 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/book" component={Book} />
       <Route path="/quote" component={Quote} />
+      <Route path="/faq" component={Faq} />
+      <Route path="/gallery" component={Gallery} />
       <Route path="/admin" component={Admin} />
       <Route path="/admin/bookings" component={AdminBookings} />
       <Route path="/admin/quotes" component={AdminQuotes} />

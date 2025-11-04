@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AdminSidebar } from "@/components/AdminSidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -30,20 +28,12 @@ const faqFormSchema = z.object({
 type FaqFormValues = z.infer<typeof faqFormSchema>;
 
 export default function AdminFaq() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FaqItem | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
-    }
-  }, [isAuthenticated, authLoading]);
-
   const { data: faqItems = [], isLoading } = useQuery<FaqItem[]>({
-    queryKey: ["/api/faq"],
-    enabled: isAuthenticated,
+    queryKey: ["/api/admin/faq"],
   });
 
   const form = useForm<FaqFormValues>({
@@ -80,7 +70,7 @@ export default function AdminFaq() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/faq"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/faq"] });
       setIsDialogOpen(false);
       setEditingFaq(null);
       form.reset();
@@ -104,7 +94,7 @@ export default function AdminFaq() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/faq"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/faq"] });
       setIsDialogOpen(false);
       setEditingFaq(null);
       form.reset();
@@ -128,7 +118,7 @@ export default function AdminFaq() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/faq"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/faq"] });
       toast({
         title: "FAQ deleted",
         description: "FAQ item has been deleted successfully.",
@@ -170,26 +160,13 @@ export default function AdminFaq() {
     }
   };
 
-  if (authLoading || !isAuthenticated) {
-    return null;
-  }
-
   return (
-    <div className="flex h-screen">
-      <AdminSidebar />
-
-      <div className="flex-1 overflow-auto">
-        <header className="sticky top-0 z-10 bg-background border-b">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">
-              FAQ Management
-            </h1>
-            <ThemeToggle />
-          </div>
-        </header>
-
-        <main className="p-8">
-          <Card>
+    <AdminLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold" data-testid="text-page-title">
+          FAQ Management
+        </h1>
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4">
               <CardTitle>Manage FAQ Items</CardTitle>
               <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
@@ -386,8 +363,7 @@ export default function AdminFaq() {
               )}
             </CardContent>
           </Card>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

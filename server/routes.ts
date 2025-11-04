@@ -150,13 +150,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Service routes
+  // Service routes (public - returns active services only)
   app.get("/api/services", async (_req, res) => {
+    try {
+      const services = await storage.getActiveServices();
+      res.json(services);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      res.status(500).json({ error: "Failed to fetch services" });
+    }
+  });
+
+  // Admin endpoint to get all services (including inactive)
+  app.get("/api/admin/services", isAuthenticated, async (_req, res) => {
     try {
       const services = await storage.getServices();
       res.json(services);
     } catch (error) {
-      console.error("Error fetching services:", error);
+      console.error("Error fetching all services:", error);
       res.status(500).json({ error: "Failed to fetch services" });
     }
   });
@@ -240,13 +251,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // FAQ routes
+  // FAQ routes (public - returns active FAQ items only)
   app.get("/api/faq", async (_req, res) => {
+    try {
+      const faqItems = await storage.getActiveFaqItems();
+      res.json(faqItems);
+    } catch (error) {
+      console.error("Error fetching FAQ items:", error);
+      res.status(500).json({ error: "Failed to fetch FAQ items" });
+    }
+  });
+
+  // Admin endpoint to get all FAQ items (including inactive)
+  app.get("/api/admin/faq", isAuthenticated, async (_req, res) => {
     try {
       const faqItems = await storage.getFaqItems();
       res.json(faqItems);
     } catch (error) {
-      console.error("Error fetching FAQ items:", error);
+      console.error("Error fetching all FAQ items:", error);
       res.status(500).json({ error: "Failed to fetch FAQ items" });
     }
   });
@@ -305,13 +327,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Gallery routes
+  // Gallery routes (public - returns active gallery images only)
   app.get("/api/gallery", async (_req, res) => {
+    try {
+      const galleryImages = await storage.getActiveGalleryImages();
+      res.json(galleryImages);
+    } catch (error) {
+      console.error("Error fetching gallery images:", error);
+      res.status(500).json({ error: "Failed to fetch gallery images" });
+    }
+  });
+
+  // Admin endpoint to get all gallery images (including inactive)
+  app.get("/api/admin/gallery", isAuthenticated, async (_req, res) => {
     try {
       const galleryImages = await storage.getGalleryImages();
       res.json(galleryImages);
     } catch (error) {
-      console.error("Error fetching gallery images:", error);
+      console.error("Error fetching all gallery images:", error);
       res.status(500).json({ error: "Failed to fetch gallery images" });
     }
   });

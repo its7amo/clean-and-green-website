@@ -1,11 +1,17 @@
 import { Link } from "wouter";
-import { Leaf, Mail, Phone, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+import { Leaf, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { BusinessSettings } from "@shared/schema";
 
 export function Footer() {
   const [email, setEmail] = useState("");
+
+  const { data: settings } = useQuery<BusinessSettings>({
+    queryKey: ["/api/settings"],
+  });
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,10 +26,10 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Leaf className="h-6 w-6 text-primary" />
-              <span className="font-bold text-xl">Clean & Green</span>
+              <span className="font-bold text-xl" data-testid="text-footer-business-name">{settings?.businessName || "Clean & Green"}</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Professional eco-friendly cleaning services across Oklahoma. Making homes and businesses sparkle while protecting our planet.
+              {settings?.aboutText || "Professional eco-friendly cleaning services across Oklahoma. Making homes and businesses sparkle while protecting our planet."}
             </p>
             <div className="flex gap-2">
               <Button size="icon" variant="ghost" data-testid="button-social-facebook">
@@ -77,16 +83,26 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">
                 <Phone className="h-4 w-4 text-primary mt-0.5" />
-                <span className="text-muted-foreground">(405) 555-0123</span>
+                <span className="text-muted-foreground" data-testid="text-footer-phone">{settings?.phone || "(405) 555-0123"}</span>
               </li>
               <li className="flex items-start gap-2">
                 <Mail className="h-4 w-4 text-primary mt-0.5" />
-                <span className="text-muted-foreground">info@cleanandgreen.com</span>
+                <span className="text-muted-foreground" data-testid="text-footer-email">{settings?.email || "info@cleanandgreen.com"}</span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-primary mt-0.5" />
-                <span className="text-muted-foreground">Serving all of Oklahoma</span>
+                <span className="text-muted-foreground" data-testid="text-footer-address">{settings?.address || "Serving all of Oklahoma"}</span>
               </li>
+              {(settings?.hoursMonFri || settings?.hoursSat || settings?.hoursSun) && (
+                <li className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-primary mt-0.5" />
+                  <div className="text-muted-foreground">
+                    {settings?.hoursMonFri && <div data-testid="text-footer-hours-weekday">Mon-Fri: {settings.hoursMonFri}</div>}
+                    {settings?.hoursSat && <div data-testid="text-footer-hours-saturday">Sat: {settings.hoursSat}</div>}
+                    {settings?.hoursSun && <div data-testid="text-footer-hours-sunday">Sun: {settings.hoursSun}</div>}
+                  </div>
+                </li>
+              )}
             </ul>
           </div>
 

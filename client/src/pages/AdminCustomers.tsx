@@ -1,8 +1,6 @@
-import { useEffect, useMemo } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AdminSidebar } from "@/components/AdminSidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -21,22 +19,12 @@ type Customer = {
 };
 
 export default function AdminCustomers() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
-    }
-  }, [isAuthenticated, authLoading]);
-
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
-    enabled: isAuthenticated,
   });
 
   const { data: quotes = [], isLoading: quotesLoading } = useQuery<Quote[]>({
     queryKey: ["/api/quotes"],
-    enabled: isAuthenticated,
   });
 
   const customers = useMemo<Customer[]>(() => {
@@ -68,26 +56,13 @@ export default function AdminCustomers() {
 
   const isLoading = bookingsLoading || quotesLoading;
 
-  if (authLoading || !isAuthenticated) {
-    return null;
-  }
-
   return (
-    <div className="flex h-screen">
-      <AdminSidebar />
-
-      <div className="flex-1 overflow-auto">
-        <header className="sticky top-0 z-10 bg-background border-b">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">
-              Customers
-            </h1>
-            <ThemeToggle />
-          </div>
-        </header>
-
-        <main className="p-8">
-          <Card>
+    <AdminLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold" data-testid="text-page-title">
+          Customers
+        </h1>
+        <Card>
             <CardHeader>
               <CardTitle>All Customers</CardTitle>
             </CardHeader>
@@ -145,8 +120,7 @@ export default function AdminCustomers() {
               )}
             </CardContent>
           </Card>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

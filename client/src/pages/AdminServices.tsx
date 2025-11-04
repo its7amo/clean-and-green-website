@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AdminSidebar } from "@/components/AdminSidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,20 +29,12 @@ const serviceFormSchema = z.object({
 type ServiceFormValues = z.infer<typeof serviceFormSchema>;
 
 export default function AdminServices() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
-    }
-  }, [isAuthenticated, authLoading]);
-
   const { data: services = [], isLoading } = useQuery<Service[]>({
-    queryKey: ["/api/services"],
-    enabled: isAuthenticated,
+    queryKey: ["/api/admin/services"],
   });
 
   const form = useForm<ServiceFormValues>({
@@ -84,7 +74,7 @@ export default function AdminServices() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
       setIsDialogOpen(false);
       setEditingService(null);
       form.reset();
@@ -108,7 +98,7 @@ export default function AdminServices() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
       setIsDialogOpen(false);
       setEditingService(null);
       form.reset();
@@ -132,7 +122,7 @@ export default function AdminServices() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
       toast({
         title: "Service deleted",
         description: "Service has been deleted successfully.",
@@ -174,26 +164,13 @@ export default function AdminServices() {
     }
   };
 
-  if (authLoading || !isAuthenticated) {
-    return null;
-  }
-
   return (
-    <div className="flex h-screen">
-      <AdminSidebar />
-
-      <div className="flex-1 overflow-auto">
-        <header className="sticky top-0 z-10 bg-background border-b">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">
-              Services
-            </h1>
-            <ThemeToggle />
-          </div>
-        </header>
-
-        <main className="p-8">
-          <Card>
+    <AdminLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold" data-testid="text-page-title">
+          Services
+        </h1>
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4">
               <CardTitle>Manage Services</CardTitle>
               <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
@@ -416,8 +393,7 @@ export default function AdminServices() {
               )}
             </CardContent>
           </Card>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

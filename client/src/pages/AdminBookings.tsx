@@ -1,24 +1,13 @@
-import { AdminSidebar } from "@/components/AdminSidebar";
+import { AdminLayout } from "@/components/AdminLayout";
 import { BookingsTable } from "@/components/BookingsTable";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function AdminBookings() {
   return (
-    <div className="flex h-screen">
-      <AdminSidebar />
-      
-      <div className="flex-1 overflow-auto">
-        <header className="sticky top-0 z-10 bg-background border-b">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold">Bookings</h1>
-            <ThemeToggle />
-          </div>
-        </header>
-
-        <main className="p-8">
-          <BookingsTable />
-        </main>
+    <AdminLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Bookings</h1>
+        <BookingsTable />
       </div>
-    </div>
+    </AdminLayout>
   );
 }

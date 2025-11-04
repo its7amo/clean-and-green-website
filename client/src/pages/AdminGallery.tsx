@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AdminSidebar } from "@/components/AdminSidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -29,20 +27,12 @@ const galleryFormSchema = z.object({
 type GalleryFormValues = z.infer<typeof galleryFormSchema>;
 
 export default function AdminGallery() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
-    }
-  }, [isAuthenticated, authLoading]);
-
   const { data: images = [], isLoading } = useQuery<GalleryImage[]>({
-    queryKey: ["/api/gallery"],
-    enabled: isAuthenticated,
+    queryKey: ["/api/admin/gallery"],
   });
 
   const form = useForm<GalleryFormValues>({
@@ -79,7 +69,7 @@ export default function AdminGallery() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
       setIsDialogOpen(false);
       setEditingImage(null);
       form.reset();
@@ -103,7 +93,7 @@ export default function AdminGallery() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
       setIsDialogOpen(false);
       setEditingImage(null);
       form.reset();
@@ -127,7 +117,7 @@ export default function AdminGallery() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gallery"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
       toast({
         title: "Image deleted",
         description: "Gallery image has been deleted successfully.",
@@ -169,26 +159,13 @@ export default function AdminGallery() {
     }
   };
 
-  if (authLoading || !isAuthenticated) {
-    return null;
-  }
-
   return (
-    <div className="flex h-screen">
-      <AdminSidebar />
-
-      <div className="flex-1 overflow-auto">
-        <header className="sticky top-0 z-10 bg-background border-b">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">
-              Gallery
-            </h1>
-            <ThemeToggle />
-          </div>
-        </header>
-
-        <main className="p-8">
-          <Card>
+    <AdminLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold" data-testid="text-page-title">
+          Gallery
+        </h1>
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4">
               <CardTitle>Manage Gallery Images</CardTitle>
               <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
@@ -385,8 +362,7 @@ export default function AdminGallery() {
               )}
             </CardContent>
           </Card>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { BusinessSettings } from "@shared/schema";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -14,6 +16,10 @@ export default function Contact() {
     email: "",
     phone: "",
     message: "",
+  });
+
+  const { data: settings } = useQuery<BusinessSettings>({
+    queryKey: ["/api/settings"],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,19 +43,29 @@ export default function Contact() {
             <Card className="p-6 text-center">
               <Phone className="h-8 w-8 text-primary mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Phone</h3>
-              <p className="text-muted-foreground">(405) 555-0123</p>
+              <p className="text-muted-foreground" data-testid="text-contact-phone">{settings?.phone || "(405) 555-0123"}</p>
             </Card>
 
             <Card className="p-6 text-center">
               <Mail className="h-8 w-8 text-primary mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Email</h3>
-              <p className="text-muted-foreground">info@cleanandgreen.com</p>
+              <p className="text-muted-foreground" data-testid="text-contact-email">{settings?.email || "info@cleanandgreen.com"}</p>
             </Card>
 
             <Card className="p-6 text-center">
               <Clock className="h-8 w-8 text-primary mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Hours</h3>
-              <p className="text-muted-foreground">Mon-Sat: 8AM - 6PM</p>
+              <div className="text-muted-foreground" data-testid="text-contact-hours">
+                {settings?.hoursMonFri ? (
+                  <>
+                    <p>Mon-Fri: {settings.hoursMonFri}</p>
+                    {settings.hoursSat && <p>Sat: {settings.hoursSat}</p>}
+                    {settings.hoursSun && <p>Sun: {settings.hoursSun}</p>}
+                  </>
+                ) : (
+                  <p>Mon-Sat: 8AM - 6PM</p>
+                )}
+              </div>
             </Card>
           </div>
 

@@ -3,16 +3,24 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 import { Menu, X, Leaf } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { BusinessSettings } from "@shared/schema";
 
 export function Header() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const { data: settings } = useQuery<BusinessSettings>({
+    queryKey: ["/api/settings"],
+  });
+
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
     { href: "/about", label: "About" },
+    { href: "/gallery", label: "Gallery" },
     { href: "/contact", label: "Contact" },
+    { href: "/faq", label: "FAQ" },
   ];
 
   const isActive = (href: string) => location === href;
@@ -24,7 +32,7 @@ export function Header() {
           <Link href="/" data-testid="link-home">
             <div className="flex items-center gap-2 cursor-pointer hover-elevate px-3 py-2 rounded-md -ml-3">
               <Leaf className="h-6 w-6 text-primary" />
-              <span className="font-bold text-xl">Clean & Green</span>
+              <span className="font-bold text-xl" data-testid="text-business-name">{settings?.businessName || "Clean & Green"}</span>
             </div>
           </Link>
 

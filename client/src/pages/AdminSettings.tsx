@@ -1,12 +1,9 @@
 import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AdminSidebar } from "@/components/AdminSidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -33,19 +30,10 @@ const settingsFormSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
 
 export default function AdminSettings() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
-    }
-  }, [isAuthenticated, authLoading]);
 
   const { data: settings, isLoading } = useQuery<BusinessSettings>({
     queryKey: ["/api/settings"],
-    enabled: isAuthenticated,
   });
 
   const form = useForm<SettingsFormValues>({
@@ -106,26 +94,13 @@ export default function AdminSettings() {
     updateMutation.mutate(data);
   };
 
-  if (authLoading || !isAuthenticated) {
-    return null;
-  }
-
   return (
-    <div className="flex h-screen">
-      <AdminSidebar />
-
-      <div className="flex-1 overflow-auto">
-        <header className="sticky top-0 z-10 bg-background border-b">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">
-              Business Settings
-            </h1>
-            <ThemeToggle />
-          </div>
-        </header>
-
-        <main className="p-8">
-          <Card>
+    <AdminLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold" data-testid="text-page-title">
+          Business Settings
+        </h1>
+        <Card>
             <CardHeader>
               <CardTitle>Update Business Information</CardTitle>
               <CardDescription>
@@ -347,8 +322,7 @@ export default function AdminSettings() {
               )}
             </CardContent>
           </Card>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

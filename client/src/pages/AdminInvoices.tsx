@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AdminSidebar } from "@/components/AdminSidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -56,30 +54,21 @@ function formatCurrency(cents: number): string {
 }
 
 export default function AdminInvoices() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
-    }
-  }, [isAuthenticated, authLoading]);
-
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
-    enabled: isAuthenticated,
   });
 
   const { data: bookings = [] } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
-    enabled: isAuthenticated && isDialogOpen,
+    enabled: isDialogOpen,
   });
 
   const { data: settings } = useQuery<BusinessSettings>({
     queryKey: ["/api/settings"],
-    enabled: isAuthenticated,
   });
 
   const form = useForm<InvoiceFormValues>({
@@ -427,26 +416,13 @@ export default function AdminInvoices() {
     }
   };
 
-  if (authLoading || !isAuthenticated) {
-    return null;
-  }
-
   return (
-    <div className="flex h-screen">
-      <AdminSidebar />
-
-      <div className="flex-1 overflow-auto">
-        <header className="sticky top-0 z-10 bg-background border-b">
-          <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">
-              Invoices
-            </h1>
-            <ThemeToggle />
-          </div>
-        </header>
-
-        <main className="p-8">
-          <Card>
+    <AdminLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold" data-testid="text-page-title">
+          Invoices
+        </h1>
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4">
               <CardTitle>Manage Invoices</CardTitle>
               <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
@@ -884,8 +860,7 @@ export default function AdminInvoices() {
               )}
             </CardContent>
           </Card>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
