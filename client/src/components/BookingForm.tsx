@@ -6,18 +6,14 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Home, Building2, Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { format } from "date-fns";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-
-const services = [
-  { id: "residential", icon: Home, title: "Residential", price: "$89" },
-  { id: "commercial", icon: Building2, title: "Commercial", price: "$149" },
-  { id: "deep", icon: Sparkles, title: "Deep Cleaning", price: "$199" },
-];
+import type { Service } from "@shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const timeSlots = ["8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 const propertySizes = ["Small (< 1000 sq ft)", "Medium (1000-2000 sq ft)", "Large (2000-3000 sq ft)", "Extra Large (> 3000 sq ft)"];
@@ -35,6 +31,10 @@ export function BookingForm() {
     email: "",
     phone: "",
     address: "",
+  });
+
+  const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
+    queryKey: ["/api/services"],
   });
 
   const updateFormData = (field: string, value: any) => {
@@ -112,24 +112,40 @@ export function BookingForm() {
         {step === 1 && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Select Service</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {services.map((service) => (
-                <button
-                  key={service.id}
-                  onClick={() => updateFormData("service", service.id)}
-                  className={`p-6 rounded-lg border-2 transition-all hover-elevate ${
-                    formData.service === service.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border"
-                  }`}
-                  data-testid={`button-service-${service.id}`}
-                >
-                  <service.icon className="h-10 w-10 text-primary mx-auto mb-3" />
-                  <h3 className="font-semibold mb-1">{service.title}</h3>
-                  <p className="text-sm text-muted-foreground">From {service.price}</p>
-                </button>
-              ))}
-            </div>
+            {servicesLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-6 rounded-lg border-2">
+                    <Skeleton className="h-10 w-10 mx-auto mb-3 rounded-full" />
+                    <Skeleton className="h-6 w-24 mx-auto mb-1" />
+                    <Skeleton className="h-4 w-16 mx-auto" />
+                  </div>
+                ))}
+              </div>
+            ) : services.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No services available. Please check back later.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {services.map((service) => (
+                  <button
+                    key={service.id}
+                    onClick={() => updateFormData("service", service.name)}
+                    className={`p-6 rounded-lg border-2 transition-all hover-elevate ${
+                      formData.service === service.name
+                        ? "border-primary bg-primary/5"
+                        : "border-border"
+                    }`}
+                    data-testid={`button-service-${service.name}`}
+                  >
+                    <Sparkles className="h-10 w-10 text-primary mx-auto mb-3" />
+                    <h3 className="font-semibold mb-1">{service.name}</h3>
+                    <p className="text-sm text-muted-foreground">From ${(service.basePrice / 100).toFixed(2)}</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
