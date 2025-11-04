@@ -31,14 +31,14 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
-                <a
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                <span
+                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
                     isActive(item.href) ? "text-primary" : "text-foreground"
                   }`}
                   data-testid={`link-nav-${item.label.toLowerCase()}`}
                 >
                   {item.label}
-                </a>
+                </span>
               </Link>
             ))}
           </nav>
@@ -74,15 +74,15 @@ export function Header() {
             <nav className="flex flex-col gap-4">
               {navItems.map((item) => (
                 <Link key={item.href} href={item.href}>
-                  <a
-                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                  <span
+                    className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
                       isActive(item.href) ? "text-primary" : "text-foreground"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
                     data-testid={`link-mobile-${item.label.toLowerCase()}`}
                   >
                     {item.label}
-                  </a>
+                  </span>
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-2">

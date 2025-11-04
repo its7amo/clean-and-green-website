@@ -43,30 +43,30 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/services">
-                  <a className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-services">
+                  <span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-footer-services">
                     Services
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/book">
-                  <a className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-book">
+                  <span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-footer-book">
                     Book Now
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/quote">
-                  <a className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-quote">
+                  <span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-footer-quote">
                     Get Quote
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/contact">
-                  <a className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-contact">
+                  <span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-footer-contact">
                     Contact
-                  </a>
+                  </span>
                 </Link>
               </li>
             </ul>
@@ -115,14 +115,14 @@ export function Footer() {
           <p>&copy; 2024 Clean & Green. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy">
-              <a className="hover:text-primary transition-colors" data-testid="link-privacy">
+              <span className="hover:text-primary transition-colors cursor-pointer" data-testid="link-privacy">
                 Privacy Policy
-              </a>
+              </span>
             </Link>
             <Link href="/terms">
-              <a className="hover:text-primary transition-colors" data-testid="link-terms">
+              <span className="hover:text-primary transition-colors cursor-pointer" data-testid="link-terms">
                 Terms of Service
-              </a>
+              </span>
             </Link>
           </div>
         </div>
