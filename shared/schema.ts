@@ -178,6 +178,8 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  dueDate: z.coerce.date().nullable().optional(),
 });
 
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;

@@ -159,7 +159,7 @@ export default function AdminInvoices() {
         tax: Math.round(data.tax * 100),
         total: Math.round(data.total * 100),
         status: data.status,
-        dueDate: data.dueDate || null,
+        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
         notes: data.notes || null,
       };
       const res = await apiRequest("POST", "/api/invoices", payload);
@@ -198,7 +198,7 @@ export default function AdminInvoices() {
         tax: Math.round(data.tax * 100),
         total: Math.round(data.total * 100),
         status: data.status,
-        dueDate: data.dueDate || null,
+        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
         notes: data.notes || null,
       };
       const res = await apiRequest("PATCH", `/api/invoices/${id}`, payload);
