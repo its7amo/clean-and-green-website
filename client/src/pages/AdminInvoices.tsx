@@ -254,7 +254,7 @@ export default function AdminInvoices() {
   };
 
   const handleBookingSelect = (bookingId: string) => {
-    if (!bookingId) {
+    if (!bookingId || bookingId === "none") {
       form.setValue("bookingId", null);
       return;
     }
@@ -472,10 +472,10 @@ export default function AdminInvoices() {
                             <FormLabel>Booking (Optional)</FormLabel>
                             <Select
                               onValueChange={(value) => {
-                                field.onChange(value);
+                                field.onChange(value === "none" ? null : value);
                                 handleBookingSelect(value);
                               }}
-                              value={field.value || ""}
+                              value={field.value || "none"}
                             >
                               <FormControl>
                                 <SelectTrigger data-testid="select-booking">
@@ -483,7 +483,7 @@ export default function AdminInvoices() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">None (Custom Invoice)</SelectItem>
+                                <SelectItem value="none">None (Custom Invoice)</SelectItem>
                                 {bookings.map((booking) => (
                                   <SelectItem key={booking.id} value={booking.id}>
                                     {booking.name} - {booking.service} ({format(new Date(booking.date), "MMM dd, yyyy")})
