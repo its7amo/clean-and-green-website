@@ -468,6 +468,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Chat Assistant endpoint (public)
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { getChatResponse } = await import("./openai");
+      
+      const messagesSchema = z.array(
+        z.object({
+          role: z.enum(["user", "assistant", "system"]),
+          content: z.string(),
+        })
+      );
+      
+      const validatedData = messagesSchema.parse(req.body.messages);
+      
+      // Get business context for better responses
+      const settings = await storage.getBusinessSettings();
+      const services = await storage.getActiveServices();
+      
+      const businessContext = settings ? {
+        businessName: settings.businessName,
+        services: services.map(s => ({
+          name: s.name,
+          description: s.description,
+          basePrice: s.basePrice,
+        })),
+        phone: settings.phone,
+        email: settings.email,
+        hours: `Mon-Fri: ${settings.hoursMonFri}${settings.hoursSat ? `, Sat: ${settings.hoursSat}` : ''}${settings.hoursSun ? `, Sun: ${settings.hoursSun}` : ''}`,
+      } : undefined;
+      
+      const response = await getChatResponse(validatedData, businessContext);
+      res.json({ message: response });
+    } catch (error) {
+      console.error("Error in chat endpoint:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid message format", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to get chat response" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
