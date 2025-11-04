@@ -29,6 +29,7 @@ const invoiceFormSchema = z.object({
   customerAddress: z.string().min(1, "Address is required"),
   serviceDescription: z.string().min(1, "Service description is required"),
   amount: z.number().min(0, "Amount must be positive"),
+  taxPercentage: z.number().min(0).max(100, "Tax percentage must be between 0-100"),
   tax: z.number().min(0, "Tax must be positive"),
   total: z.number().min(0, "Total must be positive"),
   status: z.enum(["draft", "sent", "paid", "overdue"]),
@@ -82,6 +83,7 @@ export default function AdminInvoices() {
       customerAddress: "",
       serviceDescription: "",
       amount: 0,
+      taxPercentage: 8.5,
       tax: 0,
       total: 0,
       status: "draft",
@@ -91,16 +93,22 @@ export default function AdminInvoices() {
   });
 
   const watchAmount = form.watch("amount");
-  const watchTax = form.watch("tax");
+  const watchTaxPercentage = form.watch("taxPercentage");
 
-  // Auto-calculate total
+  // Auto-calculate tax and total
   useEffect(() => {
-    const total = watchAmount + watchTax;
-    form.setValue("total", total);
-  }, [watchAmount, watchTax, form]);
+    const taxAmount = (watchAmount * watchTaxPercentage) / 100;
+    const roundedTax = Math.round(taxAmount * 100) / 100;
+    form.setValue("tax", roundedTax);
+    form.setValue("total", watchAmount + roundedTax);
+  }, [watchAmount, watchTaxPercentage, form]);
 
   useEffect(() => {
     if (editingInvoice) {
+      const amountInDollars = editingInvoice.amount / 100;
+      const taxInDollars = editingInvoice.tax / 100;
+      const taxPercentage = amountInDollars > 0 ? (taxInDollars / amountInDollars) * 100 : 8.5;
+      
       form.reset({
         invoiceNumber: editingInvoice.invoiceNumber,
         bookingId: editingInvoice.bookingId || null,
@@ -109,9 +117,10 @@ export default function AdminInvoices() {
         customerPhone: editingInvoice.customerPhone,
         customerAddress: editingInvoice.customerAddress,
         serviceDescription: editingInvoice.serviceDescription,
-        amount: editingInvoice.amount,
-        tax: editingInvoice.tax,
-        total: editingInvoice.total,
+        amount: amountInDollars,
+        taxPercentage: Math.round(taxPercentage * 10) / 10,
+        tax: taxInDollars,
+        total: (editingInvoice.total / 100),
         status: editingInvoice.status as "draft" | "sent" | "paid" | "overdue",
         dueDate: editingInvoice.dueDate ? format(new Date(editingInvoice.dueDate), "yyyy-MM-dd") : null,
         notes: editingInvoice.notes || null,
@@ -126,6 +135,7 @@ export default function AdminInvoices() {
         customerAddress: "",
         serviceDescription: "",
         amount: 0,
+        taxPercentage: 8.5,
         tax: 0,
         total: 0,
         status: "draft",
@@ -138,9 +148,18 @@ export default function AdminInvoices() {
   const createMutation = useMutation({
     mutationFn: async (data: InvoiceFormValues) => {
       const payload = {
-        ...data,
+        invoiceNumber: data.invoiceNumber,
         bookingId: data.bookingId || null,
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        customerPhone: data.customerPhone,
+        customerAddress: data.customerAddress,
+        serviceDescription: data.serviceDescription,
+        amount: Math.round(data.amount * 100),
+        tax: Math.round(data.tax * 100),
+        total: Math.round(data.total * 100),
+        status: data.status,
+        dueDate: data.dueDate || null,
         notes: data.notes || null,
       };
       const res = await apiRequest("POST", "/api/invoices", payload);
@@ -168,9 +187,18 @@ export default function AdminInvoices() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: InvoiceFormValues }) => {
       const payload = {
-        ...data,
+        invoiceNumber: data.invoiceNumber,
         bookingId: data.bookingId || null,
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        customerPhone: data.customerPhone,
+        customerAddress: data.customerAddress,
+        serviceDescription: data.serviceDescription,
+        amount: Math.round(data.amount * 100),
+        tax: Math.round(data.tax * 100),
+        total: Math.round(data.total * 100),
+        status: data.status,
+        dueDate: data.dueDate || null,
         notes: data.notes || null,
       };
       const res = await apiRequest("PATCH", `/api/invoices/${id}`, payload);
@@ -244,12 +272,11 @@ export default function AdminInvoices() {
   };
 
   const handleAutoCalculateTax = () => {
-    const amount = form.getValues("amount");
-    const taxAmount = Math.round(amount * 0.085);
-    form.setValue("tax", taxAmount);
+    const taxPercentage = form.getValues("taxPercentage");
+    form.setValue("taxPercentage", taxPercentage);
     toast({
       title: "Tax calculated",
-      description: `Tax set to ${formatCurrency(taxAmount)} (8.5% of amount)`,
+      description: `Tax set to ${taxPercentage}%`,
     });
   };
 
@@ -595,24 +622,25 @@ export default function AdminInvoices() {
                         )}
                       />
 
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="amount"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Amount (cents)</FormLabel>
+                              <FormLabel>Amount</FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   type="number"
+                                  step="0.01"
                                   data-testid="input-amount"
-                                  placeholder="9900"
-                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                  placeholder="99.00"
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                                 />
                               </FormControl>
                               <FormDescription>
-                                ${(field.value / 100).toFixed(2)}
+                                ${field.value.toFixed(2)}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -621,33 +649,48 @@ export default function AdminInvoices() {
 
                         <FormField
                           control={form.control}
+                          name="taxPercentage"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tax Percentage</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  step="0.1"
+                                  data-testid="input-tax-percentage"
+                                  placeholder="8.5"
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                {field.value}%
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
                           name="tax"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Tax (cents)</FormLabel>
-                              <div className="flex gap-2">
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    type="number"
-                                    data-testid="input-tax"
-                                    placeholder="842"
-                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                  />
-                                </FormControl>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={handleAutoCalculateTax}
-                                  data-testid="button-calculate-tax"
-                                  title="Auto-calculate at 8.5%"
-                                >
-                                  <Calculator className="h-4 w-4" />
-                                </Button>
-                              </div>
+                              <FormLabel>Tax (auto-calculated)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  step="0.01"
+                                  data-testid="input-tax"
+                                  readOnly
+                                  className="bg-muted"
+                                />
+                              </FormControl>
                               <FormDescription>
-                                ${(field.value / 100).toFixed(2)}
+                                ${field.value.toFixed(2)}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -659,17 +702,19 @@ export default function AdminInvoices() {
                           name="total"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Total (auto)</FormLabel>
+                              <FormLabel>Total (auto-calculated)</FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   type="number"
+                                  step="0.01"
                                   data-testid="input-total"
                                   readOnly
+                                  className="bg-muted"
                                 />
                               </FormControl>
                               <FormDescription>
-                                ${(field.value / 100).toFixed(2)}
+                                ${field.value.toFixed(2)}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
