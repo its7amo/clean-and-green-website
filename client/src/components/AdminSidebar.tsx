@@ -1,12 +1,16 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Calendar, FileText, Users, Settings, LogOut, Leaf } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, Users, Settings, LogOut, Leaf, Wrench, Image, HelpCircle, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/bookings", icon: Calendar, label: "Bookings" },
   { href: "/admin/quotes", icon: FileText, label: "Quotes" },
+  { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
+  { href: "/admin/services", icon: Wrench, label: "Services" },
+  { href: "/admin/gallery", icon: Image, label: "Gallery" },
+  { href: "/admin/faq", icon: HelpCircle, label: "FAQ" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 

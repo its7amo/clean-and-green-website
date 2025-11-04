@@ -1,38 +1,107 @@
-import { type User, type InsertUser, type Booking, type InsertBooking, type Quote, type InsertQuote } from "@shared/schema";
+import {
+  type User,
+  type UpsertUser,
+  type Booking,
+  type InsertBooking,
+  type Quote,
+  type InsertQuote,
+  type Service,
+  type InsertService,
+  type BusinessSettings,
+  type InsertBusinessSettings,
+  type FaqItem,
+  type InsertFaqItem,
+  type GalleryImage,
+  type InsertGalleryImage,
+  type Invoice,
+  type InsertInvoice,
+} from "@shared/schema";
 import { db } from "./db";
-import { users, bookings, quotes } from "@shared/schema";
+import {
+  users,
+  bookings,
+  quotes,
+  services,
+  businessSettings,
+  faqItems,
+  galleryImages,
+  invoices,
+} from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
+  // Auth user operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
+  upsertUser(user: UpsertUser): Promise<User>;
+
+  // Booking operations
   createBooking(booking: InsertBooking): Promise<Booking>;
   getBookings(): Promise<Booking[]>;
   getBooking(id: string): Promise<Booking | undefined>;
   updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
-  
+
+  // Quote operations
   createQuote(quote: InsertQuote): Promise<Quote>;
   getQuotes(): Promise<Quote[]>;
   getQuote(id: string): Promise<Quote | undefined>;
   updateQuoteStatus(id: string, status: string): Promise<Quote | undefined>;
+
+  // Service operations
+  createService(service: InsertService): Promise<Service>;
+  getServices(): Promise<Service[]>;
+  getActiveServices(): Promise<Service[]>;
+  getService(id: string): Promise<Service | undefined>;
+  updateService(id: string, service: Partial<InsertService>): Promise<Service | undefined>;
+  deleteService(id: string): Promise<void>;
+
+  // Business settings operations
+  getBusinessSettings(): Promise<BusinessSettings | undefined>;
+  upsertBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings>;
+
+  // FAQ operations
+  createFaqItem(item: InsertFaqItem): Promise<FaqItem>;
+  getFaqItems(): Promise<FaqItem[]>;
+  getActiveFaqItems(): Promise<FaqItem[]>;
+  getFaqItem(id: string): Promise<FaqItem | undefined>;
+  updateFaqItem(id: string, item: Partial<InsertFaqItem>): Promise<FaqItem | undefined>;
+  deleteFaqItem(id: string): Promise<void>;
+
+  // Gallery operations
+  createGalleryImage(image: InsertGalleryImage): Promise<GalleryImage>;
+  getGalleryImages(): Promise<GalleryImage[]>;
+  getActiveGalleryImages(): Promise<GalleryImage[]>;
+  getGalleryImage(id: string): Promise<GalleryImage | undefined>;
+  updateGalleryImage(id: string, image: Partial<InsertGalleryImage>): Promise<GalleryImage | undefined>;
+  deleteGalleryImage(id: string): Promise<void>;
+
+  // Invoice operations
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  getInvoices(): Promise<Invoice[]>;
+  getInvoice(id: string): Promise<Invoice | undefined>;
+  updateInvoice(id: string, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
+  deleteInvoice(id: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
+  // Auth user operations (required for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username));
-    return result[0];
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   async createBooking(booking: InsertBooking): Promise<Booking> {
@@ -71,6 +140,131 @@ export class DbStorage implements IStorage {
   async updateQuoteStatus(id: string, status: string): Promise<Quote | undefined> {
     const result = await db.update(quotes).set({ status }).where(eq(quotes.id, id)).returning();
     return result[0];
+  }
+
+  // Service operations
+  async createService(service: InsertService): Promise<Service> {
+    const result = await db.insert(services).values(service).returning();
+    return result[0];
+  }
+
+  async getServices(): Promise<Service[]> {
+    return await db.select().from(services).orderBy(desc(services.createdAt));
+  }
+
+  async getActiveServices(): Promise<Service[]> {
+    return await db.select().from(services).where(eq(services.active, true)).orderBy(desc(services.featured), desc(services.createdAt));
+  }
+
+  async getService(id: string): Promise<Service | undefined> {
+    const result = await db.select().from(services).where(eq(services.id, id));
+    return result[0];
+  }
+
+  async updateService(id: string, service: Partial<InsertService>): Promise<Service | undefined> {
+    const result = await db.update(services).set({ ...service, updatedAt: new Date() }).where(eq(services.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteService(id: string): Promise<void> {
+    await db.delete(services).where(eq(services.id, id));
+  }
+
+  // Business settings operations
+  async getBusinessSettings(): Promise<BusinessSettings | undefined> {
+    const result = await db.select().from(businessSettings).limit(1);
+    return result[0];
+  }
+
+  async upsertBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings> {
+    const existing = await this.getBusinessSettings();
+    if (existing) {
+      const result = await db.update(businessSettings).set({ ...settings, updatedAt: new Date() }).where(eq(businessSettings.id, existing.id)).returning();
+      return result[0];
+    } else {
+      const result = await db.insert(businessSettings).values(settings).returning();
+      return result[0];
+    }
+  }
+
+  // FAQ operations
+  async createFaqItem(item: InsertFaqItem): Promise<FaqItem> {
+    const result = await db.insert(faqItems).values(item).returning();
+    return result[0];
+  }
+
+  async getFaqItems(): Promise<FaqItem[]> {
+    return await db.select().from(faqItems).orderBy(faqItems.order, desc(faqItems.createdAt));
+  }
+
+  async getActiveFaqItems(): Promise<FaqItem[]> {
+    return await db.select().from(faqItems).where(eq(faqItems.active, true)).orderBy(faqItems.order, desc(faqItems.createdAt));
+  }
+
+  async getFaqItem(id: string): Promise<FaqItem | undefined> {
+    const result = await db.select().from(faqItems).where(eq(faqItems.id, id));
+    return result[0];
+  }
+
+  async updateFaqItem(id: string, item: Partial<InsertFaqItem>): Promise<FaqItem | undefined> {
+    const result = await db.update(faqItems).set(item).where(eq(faqItems.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteFaqItem(id: string): Promise<void> {
+    await db.delete(faqItems).where(eq(faqItems.id, id));
+  }
+
+  // Gallery operations
+  async createGalleryImage(image: InsertGalleryImage): Promise<GalleryImage> {
+    const result = await db.insert(galleryImages).values(image).returning();
+    return result[0];
+  }
+
+  async getGalleryImages(): Promise<GalleryImage[]> {
+    return await db.select().from(galleryImages).orderBy(galleryImages.order, desc(galleryImages.createdAt));
+  }
+
+  async getActiveGalleryImages(): Promise<GalleryImage[]> {
+    return await db.select().from(galleryImages).where(eq(galleryImages.active, true)).orderBy(galleryImages.order, desc(galleryImages.createdAt));
+  }
+
+  async getGalleryImage(id: string): Promise<GalleryImage | undefined> {
+    const result = await db.select().from(galleryImages).where(eq(galleryImages.id, id));
+    return result[0];
+  }
+
+  async updateGalleryImage(id: string, image: Partial<InsertGalleryImage>): Promise<GalleryImage | undefined> {
+    const result = await db.update(galleryImages).set(image).where(eq(galleryImages.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteGalleryImage(id: string): Promise<void> {
+    await db.delete(galleryImages).where(eq(galleryImages.id, id));
+  }
+
+  // Invoice operations
+  async createInvoice(invoice: InsertInvoice): Promise<Invoice> {
+    const result = await db.insert(invoices).values(invoice).returning();
+    return result[0];
+  }
+
+  async getInvoices(): Promise<Invoice[]> {
+    return await db.select().from(invoices).orderBy(desc(invoices.createdAt));
+  }
+
+  async getInvoice(id: string): Promise<Invoice | undefined> {
+    const result = await db.select().from(invoices).where(eq(invoices.id, id));
+    return result[0];
+  }
+
+  async updateInvoice(id: string, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined> {
+    const result = await db.update(invoices).set({ ...invoice, updatedAt: new Date() }).where(eq(invoices.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteInvoice(id: string): Promise<void> {
+    await db.delete(invoices).where(eq(invoices.id, id));
   }
 }
 

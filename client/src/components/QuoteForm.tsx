@@ -6,10 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Upload } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 const propertySizes = ["Small", "Medium", "Large", "Custom"];
 
 export function QuoteForm() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     serviceType: "",
     propertySize: "",
@@ -25,9 +31,43 @@ export function QuoteForm() {
     setFormData({ ...formData, [field]: value });
   };
 
+  const createQuoteMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/quotes", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Quote Request Received!",
+        description: "We'll review your request and send you a custom quote within 24 hours.",
+      });
+      setTimeout(() => {
+        setLocation("/");
+      }, 2000);
+    },
+    onError: () => {
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your quote request. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Quote request submitted:", formData);
+    const quoteData = {
+      serviceType: formData.serviceType,
+      propertySize: formData.propertySize,
+      customSize: formData.customSize || null,
+      details: formData.details,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      status: "pending",
+    };
+    createQuoteMutation.mutate(quoteData);
   };
 
   return (
@@ -143,8 +183,14 @@ export function QuoteForm() {
           </div>
         </div>
 
-        <Button type="submit" size="lg" className="w-full" data-testid="button-submit-quote">
-          Submit Quote Request
+        <Button 
+          type="submit" 
+          size="lg" 
+          className="w-full" 
+          disabled={createQuoteMutation.isPending}
+          data-testid="button-submit-quote"
+        >
+          {createQuoteMutation.isPending ? "Submitting..." : "Submit Quote Request"}
         </Button>
       </form>
     </Card>

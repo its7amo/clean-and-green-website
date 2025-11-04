@@ -1,22 +1,61 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBookingSchema, insertQuoteSchema } from "@shared/schema";
+import { 
+  insertBookingSchema, 
+  insertQuoteSchema,
+  insertServiceSchema,
+  insertBusinessSettingsSchema,
+  insertFaqItemSchema,
+  insertGalleryImageSchema,
+  insertInvoiceSchema
+} from "@shared/schema";
+import { z } from "zod";
+import { setupAuth, isAuthenticated } from "./replitAuth";
+
+const bookingStatusSchema = z.object({
+  status: z.enum(["pending", "confirmed", "completed", "cancelled"]),
+});
+
+const quoteStatusSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected", "completed"]),
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Booking routes
+  // Setup Replit Auth
+  await setupAuth(app);
+
+  // Auth user endpoint (protected)
+  app.get("/api/auth/user", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user.claims) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const dbUser = await storage.getUser(user.claims.sub);
+      res.json(dbUser);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
+  // Booking routes (public submissions, protected admin actions)
   app.post("/api/bookings", async (req, res) => {
     try {
       const validatedData = insertBookingSchema.parse(req.body);
       const booking = await storage.createBooking(validatedData);
-      res.json(booking);
+      res.status(201).json(booking);
     } catch (error) {
       console.error("Error creating booking:", error);
-      res.status(400).json({ error: "Invalid booking data" });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid booking data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create booking" });
     }
   });
 
-  app.get("/api/bookings", async (_req, res) => {
+  app.get("/api/bookings", isAuthenticated, async (_req, res) => {
     try {
       const bookings = await storage.getBookings();
       res.json(bookings);
@@ -26,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/bookings/:id", async (req, res) => {
+  app.get("/api/bookings/:id", isAuthenticated, async (req, res) => {
     try {
       const booking = await storage.getBooking(req.params.id);
       if (!booking) {
@@ -39,33 +78,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/bookings/:id/status", async (req, res) => {
+  app.patch("/api/bookings/:id/status", isAuthenticated, async (req, res) => {
     try {
-      const { status } = req.body;
-      const booking = await storage.updateBookingStatus(req.params.id, status);
+      const validatedData = bookingStatusSchema.parse(req.body);
+      const booking = await storage.updateBookingStatus(req.params.id, validatedData.status);
       if (!booking) {
         return res.status(404).json({ error: "Booking not found" });
       }
       res.json(booking);
     } catch (error) {
       console.error("Error updating booking status:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid status value", details: error.errors });
+      }
       res.status(500).json({ error: "Failed to update booking status" });
     }
   });
 
-  // Quote routes
+  // Quote routes (public submissions, protected admin actions)
   app.post("/api/quotes", async (req, res) => {
     try {
       const validatedData = insertQuoteSchema.parse(req.body);
       const quote = await storage.createQuote(validatedData);
-      res.json(quote);
+      res.status(201).json(quote);
     } catch (error) {
       console.error("Error creating quote:", error);
-      res.status(400).json({ error: "Invalid quote data" });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid quote data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create quote" });
     }
   });
 
-  app.get("/api/quotes", async (_req, res) => {
+  app.get("/api/quotes", isAuthenticated, async (_req, res) => {
     try {
       const quotes = await storage.getQuotes();
       res.json(quotes);
@@ -75,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/quotes/:id", async (req, res) => {
+  app.get("/api/quotes/:id", isAuthenticated, async (req, res) => {
     try {
       const quote = await storage.getQuote(req.params.id);
       if (!quote) {
@@ -88,17 +133,305 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/quotes/:id/status", async (req, res) => {
+  app.patch("/api/quotes/:id/status", isAuthenticated, async (req, res) => {
     try {
-      const { status } = req.body;
-      const quote = await storage.updateQuoteStatus(req.params.id, status);
+      const validatedData = quoteStatusSchema.parse(req.body);
+      const quote = await storage.updateQuoteStatus(req.params.id, validatedData.status);
       if (!quote) {
         return res.status(404).json({ error: "Quote not found" });
       }
       res.json(quote);
     } catch (error) {
       console.error("Error updating quote status:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid status value", details: error.errors });
+      }
       res.status(500).json({ error: "Failed to update quote status" });
+    }
+  });
+
+  // Service routes
+  app.get("/api/services", async (_req, res) => {
+    try {
+      const services = await storage.getServices();
+      res.json(services);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      res.status(500).json({ error: "Failed to fetch services" });
+    }
+  });
+
+  app.post("/api/services", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertServiceSchema.parse(req.body);
+      const service = await storage.createService(validatedData);
+      res.status(201).json(service);
+    } catch (error) {
+      console.error("Error creating service:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid service data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create service" });
+    }
+  });
+
+  app.get("/api/services/:id", async (req, res) => {
+    try {
+      const service = await storage.getService(req.params.id);
+      if (!service) {
+        return res.status(404).json({ error: "Service not found" });
+      }
+      res.json(service);
+    } catch (error) {
+      console.error("Error fetching service:", error);
+      res.status(500).json({ error: "Failed to fetch service" });
+    }
+  });
+
+  app.patch("/api/services/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertServiceSchema.partial().parse(req.body);
+      const service = await storage.updateService(req.params.id, validatedData);
+      if (!service) {
+        return res.status(404).json({ error: "Service not found" });
+      }
+      res.json(service);
+    } catch (error) {
+      console.error("Error updating service:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid service data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update service" });
+    }
+  });
+
+  app.delete("/api/services/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteService(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      res.status(500).json({ error: "Failed to delete service" });
+    }
+  });
+
+  // Business Settings routes
+  app.get("/api/settings", async (_req, res) => {
+    try {
+      const settings = await storage.getBusinessSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  app.post("/api/settings", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertBusinessSettingsSchema.parse(req.body);
+      const settings = await storage.upsertBusinessSettings(validatedData);
+      res.json(settings);
+    } catch (error) {
+      console.error("Error upserting settings:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid settings data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to save settings" });
+    }
+  });
+
+  // FAQ routes
+  app.get("/api/faq", async (_req, res) => {
+    try {
+      const faqItems = await storage.getFaqItems();
+      res.json(faqItems);
+    } catch (error) {
+      console.error("Error fetching FAQ items:", error);
+      res.status(500).json({ error: "Failed to fetch FAQ items" });
+    }
+  });
+
+  app.post("/api/faq", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertFaqItemSchema.parse(req.body);
+      const faqItem = await storage.createFaqItem(validatedData);
+      res.status(201).json(faqItem);
+    } catch (error) {
+      console.error("Error creating FAQ item:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid FAQ data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create FAQ item" });
+    }
+  });
+
+  app.get("/api/faq/:id", async (req, res) => {
+    try {
+      const faqItem = await storage.getFaqItem(req.params.id);
+      if (!faqItem) {
+        return res.status(404).json({ error: "FAQ item not found" });
+      }
+      res.json(faqItem);
+    } catch (error) {
+      console.error("Error fetching FAQ item:", error);
+      res.status(500).json({ error: "Failed to fetch FAQ item" });
+    }
+  });
+
+  app.patch("/api/faq/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertFaqItemSchema.partial().parse(req.body);
+      const faqItem = await storage.updateFaqItem(req.params.id, validatedData);
+      if (!faqItem) {
+        return res.status(404).json({ error: "FAQ item not found" });
+      }
+      res.json(faqItem);
+    } catch (error) {
+      console.error("Error updating FAQ item:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid FAQ data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update FAQ item" });
+    }
+  });
+
+  app.delete("/api/faq/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteFaqItem(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting FAQ item:", error);
+      res.status(500).json({ error: "Failed to delete FAQ item" });
+    }
+  });
+
+  // Gallery routes
+  app.get("/api/gallery", async (_req, res) => {
+    try {
+      const galleryImages = await storage.getGalleryImages();
+      res.json(galleryImages);
+    } catch (error) {
+      console.error("Error fetching gallery images:", error);
+      res.status(500).json({ error: "Failed to fetch gallery images" });
+    }
+  });
+
+  app.post("/api/gallery", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertGalleryImageSchema.parse(req.body);
+      const galleryImage = await storage.createGalleryImage(validatedData);
+      res.status(201).json(galleryImage);
+    } catch (error) {
+      console.error("Error creating gallery image:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid gallery image data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create gallery image" });
+    }
+  });
+
+  app.get("/api/gallery/:id", async (req, res) => {
+    try {
+      const galleryImage = await storage.getGalleryImage(req.params.id);
+      if (!galleryImage) {
+        return res.status(404).json({ error: "Gallery image not found" });
+      }
+      res.json(galleryImage);
+    } catch (error) {
+      console.error("Error fetching gallery image:", error);
+      res.status(500).json({ error: "Failed to fetch gallery image" });
+    }
+  });
+
+  app.patch("/api/gallery/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertGalleryImageSchema.partial().parse(req.body);
+      const galleryImage = await storage.updateGalleryImage(req.params.id, validatedData);
+      if (!galleryImage) {
+        return res.status(404).json({ error: "Gallery image not found" });
+      }
+      res.json(galleryImage);
+    } catch (error) {
+      console.error("Error updating gallery image:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid gallery image data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update gallery image" });
+    }
+  });
+
+  app.delete("/api/gallery/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteGalleryImage(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting gallery image:", error);
+      res.status(500).json({ error: "Failed to delete gallery image" });
+    }
+  });
+
+  // Invoice routes (all protected)
+  app.get("/api/invoices", isAuthenticated, async (_req, res) => {
+    try {
+      const invoices = await storage.getInvoices();
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
+
+  app.post("/api/invoices", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertInvoiceSchema.parse(req.body);
+      const invoice = await storage.createInvoice(validatedData);
+      res.status(201).json(invoice);
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid invoice data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create invoice" });
+    }
+  });
+
+  app.get("/api/invoices/:id", isAuthenticated, async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      res.status(500).json({ error: "Failed to fetch invoice" });
+    }
+  });
+
+  app.patch("/api/invoices/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertInvoiceSchema.partial().parse(req.body);
+      const invoice = await storage.updateInvoice(req.params.id, validatedData);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid invoice data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update invoice" });
+    }
+  });
+
+  app.delete("/api/invoices/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteInvoice(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      res.status(500).json({ error: "Failed to delete invoice" });
     }
   });
 

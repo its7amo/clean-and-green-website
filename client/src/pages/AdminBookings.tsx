@@ -1,23 +1,8 @@
-import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { AdminSidebar } from "@/components/AdminSidebar";
-import { AdminStats } from "@/components/AdminStats";
 import { BookingsTable } from "@/components/BookingsTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export default function Admin() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
-    }
-  }, [isAuthenticated, isLoading]);
-
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
-
+export default function AdminBookings() {
   return (
     <div className="flex h-screen">
       <AdminSidebar />
@@ -25,13 +10,12 @@ export default function Admin() {
       <div className="flex-1 overflow-auto">
         <header className="sticky top-0 z-10 bg-background border-b">
           <div className="flex items-center justify-between p-4">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <h1 className="text-2xl font-bold">Bookings</h1>
             <ThemeToggle />
           </div>
         </header>
 
-        <main className="p-8 space-y-8">
-          <AdminStats />
+        <main className="p-8">
           <BookingsTable />
         </main>
       </div>

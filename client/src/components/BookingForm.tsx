@@ -8,6 +8,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Home, Building2, Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { format } from "date-fns";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 const services = [
   { id: "residential", icon: Home, title: "Residential", price: "$89" },
@@ -20,6 +24,8 @@ const propertySizes = ["Small (< 1000 sq ft)", "Medium (1000-2000 sq ft)", "Larg
 
 export function BookingForm() {
   const [step, setStep] = useState(1);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     service: "",
     propertySize: "",
@@ -35,8 +41,42 @@ export function BookingForm() {
     setFormData({ ...formData, [field]: value });
   };
 
+  const createBookingMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/bookings", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Booking Confirmed!",
+        description: "We've received your booking request. We'll contact you shortly to confirm.",
+      });
+      setTimeout(() => {
+        setLocation("/");
+      }, 2000);
+    },
+    onError: () => {
+      toast({
+        title: "Booking Failed",
+        description: "There was an error submitting your booking. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = () => {
-    console.log("Booking submitted:", formData);
+    const bookingData = {
+      service: formData.service,
+      propertySize: formData.propertySize,
+      date: formData.date ? format(formData.date, "yyyy-MM-dd") : "",
+      timeSlot: formData.timeSlot,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      status: "pending",
+    };
+    createBookingMutation.mutate(bookingData);
   };
 
   return (
@@ -225,8 +265,12 @@ export function BookingForm() {
               <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} data-testid="button-submit-booking">
-              Confirm Booking
+            <Button 
+              onClick={handleSubmit} 
+              disabled={createBookingMutation.isPending}
+              data-testid="button-submit-booking"
+            >
+              {createBookingMutation.isPending ? "Submitting..." : "Confirm Booking"}
             </Button>
           )}
         </div>

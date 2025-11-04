@@ -4,32 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Eye, CheckCircle, XCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Booking } from "@shared/schema";
+import type { Quote } from "@shared/schema";
 
 const statusColors = {
   pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
-  confirmed: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  approved: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
   completed: "bg-green-500/10 text-green-700 dark:text-green-400",
 };
 
-const serviceNames: Record<string, string> = {
-  residential: "Residential",
-  commercial: "Commercial",
-  deep: "Deep Cleaning",
-};
-
-export function BookingsTable() {
-  const { data: bookings, isLoading } = useQuery<Booking[]>({
-    queryKey: ["/api/bookings"],
+export function QuotesTable() {
+  const { data: quotes, isLoading } = useQuery<Quote[]>({
+    queryKey: ["/api/quotes"],
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await apiRequest("PATCH", `/api/bookings/${id}/status`, { status });
+      const res = await apiRequest("PATCH", `/api/quotes/${id}/status`, { status });
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
     },
   });
 
@@ -40,15 +34,15 @@ export function BookingsTable() {
   if (isLoading) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-muted-foreground">Loading bookings...</p>
+        <p className="text-muted-foreground">Loading quotes...</p>
       </Card>
     );
   }
 
-  if (!bookings || bookings.length === 0) {
+  if (!quotes || quotes.length === 0) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-muted-foreground">No bookings yet</p>
+        <p className="text-muted-foreground">No quote requests yet</p>
       </Card>
     );
   }
@@ -56,7 +50,7 @@ export function BookingsTable() {
   return (
     <Card>
       <div className="p-6 border-b">
-        <h3 className="text-lg font-semibold">Recent Bookings</h3>
+        <h3 className="text-lg font-semibold">Quote Requests</h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -66,10 +60,10 @@ export function BookingsTable() {
                 Customer
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Service
+                Service Type
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Date & Time
+                Property Size
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Status
@@ -83,63 +77,54 @@ export function BookingsTable() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {bookings.map((booking) => (
-              <tr key={booking.id} className="hover-elevate" data-testid={`booking-row-${booking.id}`}>
+            {quotes.map((quote) => (
+              <tr key={quote.id} className="hover-elevate" data-testid={`quote-row-${quote.id}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="font-medium">{booking.name}</div>
-                  <div className="text-xs text-muted-foreground">{booking.email}</div>
+                  <div className="font-medium">{quote.name}</div>
+                  <div className="text-xs text-muted-foreground">{quote.email}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm max-w-xs">{quote.serviceType}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm">{serviceNames[booking.service] || booking.service}</div>
-                  <div className="text-xs text-muted-foreground">{booking.propertySize}</div>
+                  <div className="text-sm">{quote.propertySize}</div>
+                  {quote.customSize && (
+                    <div className="text-xs text-muted-foreground">{quote.customSize} sq ft</div>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm">{booking.date}</div>
-                  <div className="text-xs text-muted-foreground">{booking.timeSlot}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Badge className={statusColors[booking.status as keyof typeof statusColors]}>
-                    {booking.status}
+                  <Badge className={statusColors[quote.status as keyof typeof statusColors]}>
+                    {quote.status}
                   </Badge>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm">{booking.phone}</div>
-                  <div className="text-xs text-muted-foreground">{booking.address}</div>
+                  <div className="text-sm">{quote.phone}</div>
+                  <div className="text-xs text-muted-foreground">{quote.address}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex gap-2">
-                    <Button size="icon" variant="ghost" data-testid={`button-view-${booking.id}`}>
+                    <Button size="icon" variant="ghost" data-testid={`button-view-quote-${quote.id}`}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {booking.status === "pending" && (
+                    {quote.status === "pending" && (
                       <>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          onClick={() => handleStatusUpdate(booking.id, "confirmed")}
-                          data-testid={`button-approve-${booking.id}`}
+                          onClick={() => handleStatusUpdate(quote.id, "approved")}
+                          data-testid={`button-approve-quote-${quote.id}`}
                         >
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          onClick={() => handleStatusUpdate(booking.id, "cancelled")}
-                          data-testid={`button-reject-${booking.id}`}
+                          onClick={() => handleStatusUpdate(quote.id, "rejected")}
+                          data-testid={`button-reject-quote-${quote.id}`}
                         >
                           <XCircle className="h-4 w-4 text-red-600" />
                         </Button>
                       </>
-                    )}
-                    {booking.status === "confirmed" && (
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        onClick={() => handleStatusUpdate(booking.id, "completed")}
-                        data-testid={`button-complete-${booking.id}`}
-                      >
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </Button>
                     )}
                   </div>
                 </td>
