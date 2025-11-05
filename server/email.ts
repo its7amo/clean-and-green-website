@@ -117,3 +117,91 @@ export async function sendBookingNotification(
     // Don't throw error - we don't want email failures to break the booking submission
   }
 }
+
+export interface CustomerBookingData extends BookingEmailData {
+  bookingId: string;
+  managementToken: string;
+}
+
+export async function sendCustomerBookingConfirmation(
+  bookingData: CustomerBookingData
+): Promise<void> {
+  const manageUrl = `https://clean-and-green-website.onrender.com/booking/${bookingData.bookingId}?token=${bookingData.managementToken}`;
+  
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <onboarding@resend.dev>',
+      to: bookingData.email,
+      subject: `Booking Confirmation - ${escapeHtml(bookingData.serviceType)}`,
+      html: `
+        <h2>Thank You for Your Booking!</h2>
+        <p>Hi ${escapeHtml(bookingData.name)},</p>
+        <p>We've received your booking request and we're excited to serve you!</p>
+        
+        <h3>Booking Details:</h3>
+        <ul>
+          <li><strong>Service:</strong> ${escapeHtml(bookingData.serviceType)}</li>
+          <li><strong>Property Size:</strong> ${escapeHtml(bookingData.propertySize)}</li>
+          <li><strong>Date:</strong> ${escapeHtml(bookingData.date)}</li>
+          <li><strong>Time:</strong> ${escapeHtml(bookingData.timeSlot)}</li>
+          <li><strong>Address:</strong> ${escapeHtml(bookingData.address)}</li>
+        </ul>
+        
+        <h3>What's Next?</h3>
+        <p>Our team will review your booking and confirm within 24 hours. You'll receive a confirmation email once approved.</p>
+        
+        <h3>Need to Make Changes?</h3>
+        <p style="margin: 20px 0;">
+          <a href="${manageUrl}" style="display: inline-block; padding: 12px 24px; background-color: #22c55e; color: white; text-decoration: none; border-radius: 6px; margin-right: 10px;">Reschedule Booking</a>
+          <a href="${manageUrl}" style="display: inline-block; padding: 12px 24px; background-color: #ef4444; color: white; text-decoration: none; border-radius: 6px;">Cancel Booking</a>
+        </p>
+        
+        <p>If you have any questions, feel free to reply to this email or call us.</p>
+        
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log('Customer booking confirmation email sent successfully');
+  } catch (error) {
+    console.error('Failed to send customer booking confirmation:', error);
+  }
+}
+
+export async function sendCustomerQuoteConfirmation(
+  quoteData: QuoteEmailData
+): Promise<void> {
+  const propertyInfo = quoteData.customSize 
+    ? `${escapeHtml(quoteData.propertySize)} (Custom: ${escapeHtml(quoteData.customSize)})` 
+    : escapeHtml(quoteData.propertySize);
+
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <onboarding@resend.dev>',
+      to: quoteData.email,
+      subject: 'Quote Request Received - Clean & Green',
+      html: `
+        <h2>Thank You for Your Quote Request!</h2>
+        <p>Hi ${escapeHtml(quoteData.name)},</p>
+        <p>We've received your quote request and will get back to you within 24 hours with a custom estimate.</p>
+        
+        <h3>Your Request Details:</h3>
+        <ul>
+          <li><strong>Service Type:</strong> ${escapeHtml(quoteData.serviceType)}</li>
+          <li><strong>Property Size:</strong> ${propertyInfo}</li>
+          <li><strong>Details:</strong> ${escapeHtml(quoteData.details)}</li>
+          <li><strong>Address:</strong> ${escapeHtml(quoteData.address)}</li>
+        </ul>
+        
+        <h3>What's Next?</h3>
+        <p>Our team will review your request and send you a detailed quote tailored to your specific needs. We'll contact you at ${escapeHtml(quoteData.phone)} or via email if we need any additional information.</p>
+        
+        <p>Looking forward to serving you with our eco-friendly cleaning services!</p>
+        
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log('Customer quote confirmation email sent successfully');
+  } catch (error) {
+    console.error('Failed to send customer quote confirmation:', error);
+  }
+}
