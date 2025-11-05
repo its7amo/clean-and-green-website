@@ -71,6 +71,15 @@ Preferred communication style: Simple, everyday language.
 - Database errors logged and return 500 status
 - Client-side error handling via React Query's onError callbacks
 
+**Email Notification System**
+- Service: Resend API for transactional email delivery
+- Triggers: Automatic notifications sent when customers submit quotes or bookings
+- Recipients: Business email from `business_settings` table (cleanandgreenok@gmail.com)
+- Security: All user-controlled data HTML-escaped to prevent injection attacks
+- Reply-To: Configured with customer email for easy responses
+- Error Handling: Email failures logged but don't break quote/booking submissions
+- Implementation: `server/email.ts` module with `sendQuoteNotification()` and `sendBookingNotification()` functions
+
 ### Data Storage & Schema
 
 **Database Solution**: PostgreSQL via Neon (serverless PostgreSQL)
