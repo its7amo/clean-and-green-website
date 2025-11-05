@@ -21,6 +21,7 @@ export function Header() {
     { href: "/gallery", label: "Gallery" },
     { href: "/contact", label: "Contact" },
     { href: "/faq", label: "FAQ" },
+    { href: "/portal", label: "My Bookings" },
   ];
 
   const isActive = (href: string) => location === href;
