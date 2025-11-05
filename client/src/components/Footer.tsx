@@ -66,15 +66,57 @@ export function Footer() {
               {settings?.aboutText || "Professional eco-friendly cleaning services across Oklahoma. Making homes and businesses sparkle while protecting our planet."}
             </p>
             <div className="flex gap-2">
-              <Button size="icon" variant="ghost" data-testid="button-social-facebook">
-                <Facebook className="h-5 w-5" />
-              </Button>
-              <Button size="icon" variant="ghost" data-testid="button-social-instagram">
-                <Instagram className="h-5 w-5" />
-              </Button>
-              <Button size="icon" variant="ghost" data-testid="button-social-twitter">
-                <Twitter className="h-5 w-5" />
-              </Button>
+              {settings?.socialLinks?.facebook && (
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  asChild
+                  data-testid="button-social-facebook"
+                >
+                  <a 
+                    href={settings.socialLinks.facebook} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    aria-label="Facebook"
+                  >
+                    <Facebook className="h-5 w-5" />
+                  </a>
+                </Button>
+              )}
+              {settings?.socialLinks?.instagram && (
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  asChild
+                  data-testid="button-social-instagram"
+                >
+                  <a 
+                    href={settings.socialLinks.instagram} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    aria-label="Instagram"
+                  >
+                    <Instagram className="h-5 w-5" />
+                  </a>
+                </Button>
+              )}
+              {settings?.socialLinks?.twitter && (
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  asChild
+                  data-testid="button-social-twitter"
+                >
+                  <a 
+                    href={settings.socialLinks.twitter} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    aria-label="Twitter"
+                  >
+                    <Twitter className="h-5 w-5" />
+                  </a>
+                </Button>
+              )}
             </div>
           </div>
 

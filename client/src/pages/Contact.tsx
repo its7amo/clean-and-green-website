@@ -9,6 +9,7 @@ import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BusinessSettings } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function Contact() {
     phone: "",
     message: "",
   });
+  const { toast } = useToast();
 
   const { data: settings } = useQuery<BusinessSettings>({
     queryKey: ["/api/settings"],
@@ -24,7 +26,16 @@ export default function Contact() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Contact form submitted:", formData);
+    toast({
+      title: "Message sent!",
+      description: "We'll get back to you as soon as possible.",
+    });
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      message: "",
+    });
   };
 
   return (
