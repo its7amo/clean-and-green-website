@@ -45,7 +45,7 @@ export async function sendQuoteNotification(
 
   try {
     await resend.emails.send({
-      from: 'Clean & Green <onboarding@resend.dev>',
+      from: 'Clean & Green <noreply@voryn.store>',
       to: businessEmail,
       replyTo: quoteData.email,
       subject: `New Quote Request - ${escapeHtml(quoteData.name)}`,
@@ -84,7 +84,7 @@ export async function sendBookingNotification(
 ): Promise<void> {
   try {
     await resend.emails.send({
-      from: 'Clean & Green <onboarding@resend.dev>',
+      from: 'Clean & Green <noreply@voryn.store>',
       to: businessEmail,
       replyTo: bookingData.email,
       subject: `New Booking - ${escapeHtml(bookingData.name)}`,
@@ -130,7 +130,7 @@ export async function sendCustomerBookingConfirmation(
   
   try {
     await resend.emails.send({
-      from: 'Clean & Green <onboarding@resend.dev>',
+      from: 'Clean & Green <noreply@voryn.store>',
       to: bookingData.email,
       subject: `Booking Confirmation - ${escapeHtml(bookingData.serviceType)}`,
       html: `
@@ -176,7 +176,7 @@ export async function sendCustomerQuoteConfirmation(
 
   try {
     await resend.emails.send({
-      from: 'Clean & Green <onboarding@resend.dev>',
+      from: 'Clean & Green <noreply@voryn.store>',
       to: quoteData.email,
       subject: 'Quote Request Received - Clean & Green',
       html: `
@@ -212,7 +212,7 @@ export async function sendBookingChangeNotification(
 ): Promise<void> {
   try {
     await resend.emails.send({
-      from: 'Clean & Green <onboarding@resend.dev>',
+      from: 'Clean & Green <noreply@voryn.store>',
       to: businessEmail,
       replyTo: bookingData.email,
       subject: `Booking ${bookingData.action.charAt(0).toUpperCase() + bookingData.action.slice(1)} - ${escapeHtml(bookingData.name)}`,
@@ -247,7 +247,7 @@ export async function sendEmployeeAssignmentNotification(
 ): Promise<void> {
   try {
     await resend.emails.send({
-      from: 'Clean & Green <onboarding@resend.dev>',
+      from: 'Clean & Green <noreply@voryn.store>',
       to: employeeEmail,
       subject: `New Assignment - ${escapeHtml(bookingData.serviceType)} on ${escapeHtml(bookingData.date)}`,
       html: `
