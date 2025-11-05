@@ -11,23 +11,6 @@ export function Testimonials() {
     queryKey: ["/api/reviews/approved"],
   });
 
-  if (isLoading) {
-    return (
-      <section className="py-16 md:py-24 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="h-8 bg-muted rounded animate-pulse w-64 mx-auto mb-4" />
-            <div className="h-4 bg-muted rounded animate-pulse w-96 mx-auto" />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (reviews.length === 0) {
-    return null;
-  }
-
   return (
     <section className="py-16 md:py-24 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
@@ -45,8 +28,17 @@ export function Testimonials() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {reviews.slice(0, 3).map((review) => (
+        {isLoading ? (
+          <div className="flex justify-center p-8">
+            <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : reviews.length === 0 ? (
+          <div className="text-center p-8 text-muted-foreground">
+            <p>Be the first to leave a review!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {reviews.slice(0, 3).map((review) => (
             <Card key={review.id} className="p-6" data-testid={`card-review-${review.id}`}>
               <div className="flex items-center gap-4 mb-4">
                 <Avatar className="h-16 w-16">
@@ -68,8 +60,9 @@ export function Testimonials() {
 
               <p className="text-sm italic text-muted-foreground">"{review.comment}"</p>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {reviews.length > 3 && (
           <div className="text-center mt-8">
