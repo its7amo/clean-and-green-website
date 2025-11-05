@@ -35,6 +35,28 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Employees table for staff management
+export const employees = pgTable("employees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone").notNull(),
+  role: text("role").notNull().default("employee"),
+  active: boolean("active").notNull().default(true),
+  userId: varchar("user_id").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertEmployeeSchema = createInsertSchema(employees).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type Employee = typeof employees.$inferSelect;
+
 export const bookings = pgTable("bookings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   service: text("service").notNull(),
@@ -46,12 +68,15 @@ export const bookings = pgTable("bookings", {
   phone: text("phone").notNull(),
   address: text("address").notNull(),
   status: text("status").notNull().default("pending"),
+  managementToken: varchar("management_token").notNull().default(sql`gen_random_uuid()`),
+  assignedEmployeeId: varchar("assigned_employee_id"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
 export const insertBookingSchema = createInsertSchema(bookings).omit({
   id: true,
   createdAt: true,
+  managementToken: true,
 });
 
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
