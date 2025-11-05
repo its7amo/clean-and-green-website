@@ -11,6 +11,7 @@ import Book from "@/pages/Book";
 import Quote from "@/pages/Quote";
 import Faq from "@/pages/Faq";
 import Gallery from "@/pages/Gallery";
+import Reviews from "@/pages/Reviews";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
 import Login from "@/pages/Login";
@@ -94,6 +95,7 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/faq" component={Faq} />
       <Route path="/gallery" component={Gallery} />
+      <Route path="/reviews" component={Reviews} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/booking/:id" component={ManageBooking} />

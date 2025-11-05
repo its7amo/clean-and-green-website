@@ -1,11 +1,15 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import type { Review } from "@shared/schema";
 import customer1 from "@assets/generated_images/Happy_customer_testimonial_portrait_eb9ed62d.png";
 import customer2 from "@assets/generated_images/Satisfied_customer_testimonial_portrait_4ff9a5b9.png";
 import customer3 from "@assets/generated_images/Young_professional_customer_portrait_886ec1f9.png";
 
-const testimonials = [
+const fallbackTestimonials = [
   {
     id: 1,
     name: "Sarah Johnson",
@@ -36,6 +40,11 @@ const testimonials = [
 ];
 
 export function Testimonials() {
+  const { data: reviews = [] } = useQuery<Review[]>({
+    queryKey: ["/api/reviews/approved"],
+  });
+
+  const useFallback = reviews.length === 0;
   return (
     <section className="py-16 md:py-24 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
@@ -47,30 +56,66 @@ export function Testimonials() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial) => (
-            <Card key={testimonial.id} className="p-6" data-testid={`card-testimonial-${testimonial.id}`}>
-              <div className="flex items-center gap-4 mb-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={testimonial.image} alt={testimonial.name} />
-                  <AvatarFallback>{testimonial.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h4 className="font-semibold">{testimonial.name}</h4>
-                  <p className="text-sm text-muted-foreground">{testimonial.location}</p>
+          {useFallback ? (
+            fallbackTestimonials.map((testimonial) => (
+              <Card key={testimonial.id} className="p-6" data-testid={`card-testimonial-${testimonial.id}`}>
+                <div className="flex items-center gap-4 mb-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={testimonial.image} alt={testimonial.name} />
+                    <AvatarFallback>{testimonial.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h4 className="font-semibold">{testimonial.name}</h4>
+                    <p className="text-sm text-muted-foreground">{testimonial.location}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex gap-1 mb-3">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
+                <div className="flex gap-1 mb-3">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
 
-              <p className="text-sm italic text-muted-foreground mb-3">"{testimonial.quote}"</p>
-              <p className="text-xs text-muted-foreground">Service: {testimonial.service}</p>
-            </Card>
-          ))}
+                <p className="text-sm italic text-muted-foreground mb-3">"{testimonial.quote}"</p>
+                <p className="text-xs text-muted-foreground">Service: {testimonial.service}</p>
+              </Card>
+            ))
+          ) : (
+            reviews.slice(0, 3).map((review) => (
+              <Card key={review.id} className="p-6" data-testid={`card-review-${review.id}`}>
+                <div className="flex items-center gap-4 mb-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarFallback className="text-lg">
+                      {review.customerName.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h4 className="font-semibold">{review.customerName}</h4>
+                    <p className="text-sm text-muted-foreground">Verified Customer</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-1 mb-3">
+                  {[...Array(review.rating)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+
+                <p className="text-sm italic text-muted-foreground">"{review.comment}"</p>
+              </Card>
+            ))
+          )}
         </div>
+
+        {reviews.length > 3 && (
+          <div className="text-center mt-8">
+            <Link href="/reviews">
+              <Button variant="outline" data-testid="button-view-all-reviews">
+                View All Reviews
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
