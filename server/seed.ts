@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { services, faqItems } from "@shared/schema";
+import { services, faqItems, businessSettings } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 async function seed() {
@@ -113,6 +113,26 @@ async function seed() {
     } else {
       console.log(`FAQ already exists: ${faq.question}`);
     }
+  }
+
+  // Add business settings if they don't exist
+  console.log("Adding business settings...");
+  const existingSettings = await db.select().from(businessSettings);
+  if (existingSettings.length === 0) {
+    await db.insert(businessSettings).values({
+      businessName: "Clean & Green",
+      tagline: "Eco-Friendly Cleaning for a Healthier Oklahoma",
+      phone: "(405) 555-0123",
+      email: "cleanandgreenok@gmail.com",
+      address: "Oklahoma City, OK",
+      hoursMonFri: "8:00 AM - 6:00 PM",
+      hoursSat: "9:00 AM - 4:00 PM",
+      hoursSun: "Closed",
+      aboutText: "We are Oklahoma's premier eco-friendly cleaning service, dedicated to providing professional cleaning solutions using only green, sustainable products.",
+    });
+    console.log("Added business settings");
+  } else {
+    console.log("Business settings already exist");
   }
 
   console.log("Seed completed successfully!");

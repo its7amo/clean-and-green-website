@@ -13,6 +13,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
+import { sendQuoteNotification, sendBookingNotification } from "./email";
 
 const bookingStatusSchema = z.object({
   status: z.enum(["pending", "confirmed", "completed", "cancelled"]),
@@ -76,6 +77,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertBookingSchema.parse(req.body);
       const booking = await storage.createBooking(validatedData);
+      
+      // Send email notification to business owner
+      try {
+        const settings = await storage.getBusinessSettings();
+        if (settings) {
+          await sendBookingNotification({
+            name: booking.name,
+            email: booking.email,
+            phone: booking.phone,
+            address: booking.address,
+            serviceType: booking.service,
+            propertySize: booking.propertySize,
+            date: booking.date,
+            timeSlot: booking.timeSlot,
+          }, settings.email);
+        }
+      } catch (emailError) {
+        console.error("Failed to send booking notification email:", emailError);
+        // Don't fail the request if email fails
+      }
+      
       res.status(201).json(booking);
     } catch (error) {
       console.error("Error creating booking:", error);
@@ -131,6 +153,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertQuoteSchema.parse(req.body);
       const quote = await storage.createQuote(validatedData);
+      
+      // Send email notification to business owner
+      try {
+        const settings = await storage.getBusinessSettings();
+        if (settings) {
+          await sendQuoteNotification({
+            name: quote.name,
+            email: quote.email,
+            phone: quote.phone,
+            address: quote.address,
+            serviceType: quote.serviceType,
+            propertySize: quote.propertySize,
+            customSize: quote.customSize || undefined,
+            details: quote.details,
+          }, settings.email);
+        }
+      } catch (emailError) {
+        console.error("Failed to send quote notification email:", emailError);
+        // Don't fail the request if email fails
+      }
+      
       res.status(201).json(quote);
     } catch (error) {
       console.error("Error creating quote:", error);
