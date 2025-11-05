@@ -81,38 +81,17 @@ Render will now:
 
 ⏱️ **First deployment takes 3-5 minutes**
 
----
+**What happens during deployment:**
+- ✅ Dependencies are installed
+- ✅ Frontend and backend are built
+- ✅ App starts up
+- ✅ **Database tables are created automatically** (migrations run at startup!)
 
-### Step 4: Set Up Database Schema
-
-After deployment completes:
-
-1. In Render Dashboard, click on your **"clean-and-green-db"** database
-2. Click **"Connect"** → Copy the **"External Database URL"**
-3. Go to your **web service** → **"Shell"** tab (left sidebar)
-4. Run these commands in the shell:
-
-```bash
-# Create sessions table (required for authentication)
-psql $DATABASE_URL -c "CREATE TABLE IF NOT EXISTS sessions (
-  sid VARCHAR PRIMARY KEY,
-  sess JSONB NOT NULL,
-  expire TIMESTAMP NOT NULL
-);"
-psql $DATABASE_URL -c "CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions (expire);"
-
-# Add username and password columns to users table (required for new auth system)
-psql $DATABASE_URL -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR UNIQUE;"
-psql $DATABASE_URL -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR;"
-psql $DATABASE_URL -c "ALTER TABLE users ALTER COLUMN email DROP NOT NULL;"
-
-# Seed database with default services and FAQs
-npx tsx server/seed.ts
-```
+**No manual database setup needed!** 🎉
 
 ---
 
-### Step 5: Create Your Admin Account 🔐
+### Step 4: Create Your Admin Account 🔐
 
 **IMPORTANT**: Your app now uses username/password authentication (not Replit Auth).
 
@@ -130,7 +109,7 @@ npx tsx server/seed.ts
 
 ---
 
-### Step 6: Access Your Live Website! 🎉
+### Step 5: Access Your Live Website! 🎉
 
 Your site will be live at: `https://clean-and-green.onrender.com`
 
