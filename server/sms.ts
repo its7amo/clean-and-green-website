@@ -14,6 +14,34 @@ if (accountSid && authToken && twilioPhoneNumber) {
 }
 
 /**
+ * Normalize phone number to E.164 format for Twilio
+ * Converts formats like "405-473-5908", "(405) 473-5908", "4054735908"
+ * to E.164 format: "+14054735908"
+ */
+function normalizePhoneNumber(phone: string): string {
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '');
+  
+  // If it's 10 digits (US number without country code), add +1
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  }
+  
+  // If it's 11 digits starting with 1, add +
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `+${digits}`;
+  }
+  
+  // If it already starts with +, return as-is
+  if (phone.startsWith('+')) {
+    return phone;
+  }
+  
+  // Otherwise assume it needs +1 prefix
+  return `+1${digits}`;
+}
+
+/**
  * Send an SMS notification to a customer with their invoice payment link
  */
 export async function sendInvoicePaymentLinkSMS(
@@ -29,6 +57,9 @@ export async function sendInvoicePaymentLinkSMS(
   }
 
   try {
+    const normalizedPhone = normalizePhoneNumber(customerPhone);
+    console.log(`📱 Normalizing phone: "${customerPhone}" → "${normalizedPhone}"`);
+    
     const paymentUrl = `${process.env.REPL_ID ? `https://${process.env.REPL_ID}.replit.app` : 'http://localhost:5000'}/pay-invoice/${invoiceId}`;
     
     const message = `Hi ${customerName}! Your Clean & Green invoice #${invoiceNumber} for $${(total / 100).toFixed(2)} is ready. Pay online: ${paymentUrl}`;
@@ -36,10 +67,10 @@ export async function sendInvoicePaymentLinkSMS(
     await twilioClient.messages.create({
       body: message,
       from: twilioPhoneNumber,
-      to: customerPhone,
+      to: normalizedPhone,
     });
 
-    console.log(`✓ Invoice payment link SMS sent to ${customerPhone}`);
+    console.log(`✓ Invoice payment link SMS sent to ${normalizedPhone}`);
   } catch (error) {
     console.error('Failed to send invoice payment link SMS:', error);
     // Don't throw - invoice creation should succeed even if SMS fails
@@ -62,6 +93,9 @@ export async function sendBookingConfirmationSMS(
   }
 
   try {
+    const normalizedPhone = normalizePhoneNumber(customerPhone);
+    console.log(`📱 Normalizing phone: "${customerPhone}" → "${normalizedPhone}"`);
+    
     const formattedDate = new Date(date).toLocaleDateString('en-US', { 
       weekday: 'long', 
       month: 'long', 
@@ -73,10 +107,10 @@ export async function sendBookingConfirmationSMS(
     await twilioClient.messages.create({
       body: message,
       from: twilioPhoneNumber,
-      to: customerPhone,
+      to: normalizedPhone,
     });
 
-    console.log(`✓ Booking confirmation SMS sent to ${customerPhone}`);
+    console.log(`✓ Booking confirmation SMS sent to ${normalizedPhone}`);
   } catch (error) {
     console.error('Failed to send booking confirmation SMS:', error);
     // Don't throw - booking should succeed even if SMS fails
@@ -101,6 +135,9 @@ export async function sendEmployeeAssignmentSMS(
   }
 
   try {
+    const normalizedPhone = normalizePhoneNumber(employeePhone);
+    console.log(`📱 Normalizing phone: "${employeePhone}" → "${normalizedPhone}"`);
+    
     const formattedDate = new Date(date).toLocaleDateString('en-US', { 
       weekday: 'short', 
       month: 'short', 
@@ -112,10 +149,10 @@ export async function sendEmployeeAssignmentSMS(
     await twilioClient.messages.create({
       body: message,
       from: twilioPhoneNumber,
-      to: employeePhone,
+      to: normalizedPhone,
     });
 
-    console.log(`✓ Employee assignment SMS sent to ${employeePhone}`);
+    console.log(`✓ Employee assignment SMS sent to ${normalizedPhone}`);
   } catch (error) {
     console.error('Failed to send employee assignment SMS:', error);
     // Don't throw - assignment should succeed even if SMS fails
