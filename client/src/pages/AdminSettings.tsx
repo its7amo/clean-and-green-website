@@ -25,6 +25,13 @@ const settingsFormSchema = z.object({
   hoursSat: z.string().optional(),
   hoursSun: z.string().optional(),
   aboutText: z.string().optional(),
+  serviceAreas: z.string().optional(),
+  facebook: z.string().optional(),
+  instagram: z.string().optional(),
+  twitter: z.string().optional(),
+  linkedin: z.string().optional(),
+  privacyPolicy: z.string().optional(),
+  termsOfService: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -49,6 +56,13 @@ export default function AdminSettings() {
       hoursSat: "",
       hoursSun: "",
       aboutText: "",
+      serviceAreas: "",
+      facebook: "",
+      instagram: "",
+      twitter: "",
+      linkedin: "",
+      privacyPolicy: "",
+      termsOfService: "",
     },
   });
 
@@ -65,13 +79,38 @@ export default function AdminSettings() {
         hoursSat: settings.hoursSat || "",
         hoursSun: settings.hoursSun || "",
         aboutText: settings.aboutText || "",
+        serviceAreas: settings.serviceAreas?.join("\n") || "",
+        facebook: settings.socialLinks?.facebook || "",
+        instagram: settings.socialLinks?.instagram || "",
+        twitter: settings.socialLinks?.twitter || "",
+        linkedin: settings.socialLinks?.linkedin || "",
+        privacyPolicy: settings.privacyPolicy || "",
+        termsOfService: settings.termsOfService || "",
       });
     }
   }, [settings, form]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: SettingsFormValues) => {
-      const res = await apiRequest("POST", "/api/settings", data);
+      const serviceAreasArray = data.serviceAreas
+        ? data.serviceAreas.split("\n").map(s => s.trim()).filter(Boolean)
+        : [];
+      
+      const payload = {
+        ...data,
+        serviceAreas: serviceAreasArray,
+        socialLinks: {
+          facebook: data.facebook || undefined,
+          instagram: data.instagram || undefined,
+          twitter: data.twitter || undefined,
+          linkedin: data.linkedin || undefined,
+        },
+      };
+      
+      // Remove the individual social fields before sending
+      const { facebook, instagram, twitter, linkedin, ...rest } = payload;
+      
+      const res = await apiRequest("POST", "/api/settings", rest);
       return await res.json();
     },
     onSuccess: () => {
@@ -300,6 +339,143 @@ export default function AdminSettings() {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name="serviceAreas"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Service Areas</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              data-testid="input-service-areas"
+                              placeholder="Enter one service area per line, e.g.&#10;Oklahoma City&#10;Norman&#10;Edmond"
+                              rows={5}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Social Media Links</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="facebook"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Facebook URL</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  data-testid="input-facebook"
+                                  placeholder="https://facebook.com/cleanandgreen"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="instagram"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Instagram URL</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  data-testid="input-instagram"
+                                  placeholder="https://instagram.com/cleanandgreen"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="twitter"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Twitter/X URL</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  data-testid="input-twitter"
+                                  placeholder="https://twitter.com/cleanandgreen"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="linkedin"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>LinkedIn URL</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  data-testid="input-linkedin"
+                                  placeholder="https://linkedin.com/company/cleanandgreen"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Legal Pages</h3>
+                      <FormField
+                        control={form.control}
+                        name="privacyPolicy"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Privacy Policy</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                data-testid="input-privacy-policy"
+                                placeholder="Enter your privacy policy content..."
+                                className="min-h-64"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="termsOfService"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Terms of Service</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                data-testid="input-terms-of-service"
+                                placeholder="Enter your terms of service content..."
+                                className="min-h-64"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     <div className="flex justify-end gap-4">
                       <Button
