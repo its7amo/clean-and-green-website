@@ -1075,6 +1075,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paidDate: new Date(),
       });
 
+      if (!updatedInvoice) {
+        return res.status(404).json({ error: "Failed to update invoice" });
+      }
+
+      // Send payment confirmation emails (async, don't block response)
+      (async () => {
+        try {
+          const { sendPaymentReceiptEmail, sendAdminPaymentNotification } = await import("./email");
+          
+          // Send receipt to customer
+          await sendPaymentReceiptEmail(
+            updatedInvoice.customerEmail,
+            updatedInvoice.customerName,
+            updatedInvoice.invoiceNumber,
+            updatedInvoice.serviceDescription,
+            updatedInvoice.amount,
+            updatedInvoice.tax,
+            updatedInvoice.total,
+            updatedInvoice.paidDate!
+          );
+          
+          // Send notification to admin
+          const settings = await storage.getBusinessSettings();
+          if (settings && settings.email) {
+            await sendAdminPaymentNotification(
+              settings.email,
+              updatedInvoice.invoiceNumber,
+              updatedInvoice.customerName,
+              updatedInvoice.customerEmail,
+              updatedInvoice.total,
+              updatedInvoice.paidDate!
+            );
+          }
+        } catch (emailError) {
+          console.error("Failed to send payment confirmation emails:", emailError);
+        }
+      })();
+
       res.json(updatedInvoice);
     } catch (error) {
       console.error("Error marking invoice as paid:", error);

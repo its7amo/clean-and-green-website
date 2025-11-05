@@ -386,3 +386,86 @@ export async function sendBookingStatusUpdateEmail(
     console.error('Failed to send booking status update email:', error);
   }
 }
+
+export async function sendPaymentReceiptEmail(
+  customerEmail: string,
+  customerName: string,
+  invoiceNumber: string,
+  serviceDescription: string,
+  amount: number,
+  tax: number,
+  total: number,
+  paidDate: Date
+) {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: customerEmail,
+      subject: `Payment Receipt - Invoice ${escapeHtml(invoiceNumber)}`,
+      html: `
+        <h2 style="color: #22c55e;">✅ Payment Received!</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>Thank you for your payment! Your invoice has been marked as paid.</p>
+        
+        <h3>Receipt Details:</h3>
+        <ul>
+          <li><strong>Invoice Number:</strong> ${escapeHtml(invoiceNumber)}</li>
+          <li><strong>Service:</strong> ${escapeHtml(serviceDescription)}</li>
+          <li><strong>Payment Date:</strong> ${paidDate.toLocaleDateString()}</li>
+        </ul>
+        
+        <h3>Payment Breakdown:</h3>
+        <ul>
+          <li><strong>Amount:</strong> $${(amount / 100).toFixed(2)}</li>
+          <li><strong>Tax:</strong> $${(tax / 100).toFixed(2)}</li>
+          <li><strong>Total Paid:</strong> $${(total / 100).toFixed(2)}</li>
+        </ul>
+        
+        <p>This email serves as your receipt. Please keep it for your records.</p>
+        
+        <p>Thank you for choosing Clean & Green!</p>
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Payment receipt email sent to ${customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send payment receipt email:', error);
+  }
+}
+
+export async function sendAdminPaymentNotification(
+  adminEmail: string,
+  invoiceNumber: string,
+  customerName: string,
+  customerEmail: string,
+  total: number,
+  paidDate: Date
+) {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: adminEmail,
+      subject: `💰 Payment Received - Invoice ${escapeHtml(invoiceNumber)}`,
+      html: `
+        <h2 style="color: #22c55e;">💰 Payment Received!</h2>
+        <p>A customer has just paid an invoice.</p>
+        
+        <h3>Payment Details:</h3>
+        <ul>
+          <li><strong>Invoice Number:</strong> ${escapeHtml(invoiceNumber)}</li>
+          <li><strong>Customer:</strong> ${escapeHtml(customerName)}</li>
+          <li><strong>Email:</strong> ${escapeHtml(customerEmail)}</li>
+          <li><strong>Amount:</strong> $${(total / 100).toFixed(2)}</li>
+          <li><strong>Payment Date:</strong> ${paidDate.toLocaleDateString()} at ${paidDate.toLocaleTimeString()}</li>
+        </ul>
+        
+        <p>View invoice details: <a href="https://clean-and-green-website.onrender.com/admin/invoices">Admin Dashboard</a></p>
+        
+        <p>Clean & Green Notification System</p>
+      `,
+    });
+    console.log(`Admin payment notification sent to ${adminEmail}`);
+  } catch (error) {
+    console.error('Failed to send admin payment notification:', error);
+  }
+}
