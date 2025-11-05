@@ -15,6 +15,7 @@ import {
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification } from "./email";
+import { sendBookingConfirmationSMS, sendInvoicePaymentLinkSMS, sendEmployeeAssignmentSMS } from "./sms";
 import Stripe from "stripe";
 
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -118,6 +119,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               date: booking.date,
               timeSlot: booking.timeSlot,
             });
+            
+            // Send SMS confirmation to customer
+            await sendBookingConfirmationSMS(
+              booking.phone,
+              booking.name,
+              booking.service,
+              new Date(booking.date),
+              booking.timeSlot
+            );
           }
         } catch (emailError) {
           console.error("Failed to send booking emails:", emailError);
@@ -218,6 +228,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 date: booking.date,
                 timeSlot: booking.timeSlot,
               }, employee.email, employee.name);
+              
+              // Send SMS notification if employee has phone number
+              if (employee.phone) {
+                await sendEmployeeAssignmentSMS(
+                  employee.phone,
+                  employee.name,
+                  booking.name,
+                  booking.service,
+                  new Date(booking.date),
+                  booking.timeSlot,
+                  booking.address
+                );
+              }
             }
           }
         } catch (emailError) {
@@ -670,6 +693,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertInvoiceSchema.parse(req.body);
       const invoice = await storage.createInvoice(validatedData);
+      
+      // Send SMS payment link if status is "sent" (async, don't block response)
+      if (invoice.status === "sent") {
+        (async () => {
+          try {
+            await sendInvoicePaymentLinkSMS(
+              invoice.customerPhone,
+              invoice.customerName,
+              invoice.invoiceNumber,
+              invoice.id,
+              invoice.total
+            );
+          } catch (smsError) {
+            console.error("Failed to send invoice payment link SMS:", smsError);
+          }
+        })();
+      }
+      
       res.status(201).json(invoice);
     } catch (error) {
       console.error("Error creating invoice:", error);
