@@ -2,7 +2,7 @@
 
 ## Overview
 
-Clean and Green is a professional cleaning service booking platform focused on eco-friendly cleaning solutions in Oklahoma. The application enables customers to book cleaning services online (residential, commercial, deep cleaning) or request custom quotes. An admin dashboard allows staff to manage bookings, quotes, and track business metrics.
+Clean and Green is a professional cleaning service booking platform focused on eco-friendly cleaning solutions in Oklahoma. The application enables customers to book cleaning services online (residential, commercial, deep cleaning) or request custom quotes. An admin dashboard allows staff to manage bookings, quotes, track business metrics, manage customer reviews, send newsletters, and manage the team directory.
 
 **Core Purpose**: Streamline the booking process for eco-friendly cleaning services while providing trust-building features and efficient business management tools.
 
@@ -175,22 +175,28 @@ Preferred communication style: Simple, everyday language.
 ### Page Structure & Routing
 
 **Public Pages**:
-- `/` - Home page with hero, services overview, how it works, testimonials, CTA
+- `/` - Home page with hero, services overview, how it works, real customer reviews/testimonials, CTA
 - `/services` - Detailed services page with FAQ accordion
-- `/about` - Company information, values, team photo
+- `/about` - Company information, values, active team members directory with photos and bios
 - `/contact` - Contact form and business information
 - `/book` - Multi-step booking form for scheduling cleaning services
 - `/quote` - Custom quote request form
 - `/portal` - Customer self-service portal to view bookings by email
 - `/pay-invoice/:id` - Customer payment page with Stripe Elements for secure invoice payments
+- `/reviews` - Customer reviews page (view all approved reviews and submit new reviews)
+- `/privacy-policy` - Privacy policy content from business_settings
+- `/terms-of-service` - Terms of service content from business_settings
 
 **Admin Pages** (authentication required):
 - `/admin` - Dashboard with statistics and recent bookings table
-- `/admin/bookings` - Full bookings management table with status updates
-- `/admin/quotes` - Quote requests management table with status updates
+- `/admin/bookings` - Full bookings management table with status updates and delete functionality
+- `/admin/quotes` - Quote requests management table with status updates and delete functionality
 - `/admin/invoices` - Invoice creation and management with PDF generation and payment tracking
 - `/admin/employees` - Employee management with work assignments
-- `/admin/settings` - Business settings and configuration
+- `/admin/reviews` - Review moderation (approve/deny customer reviews)
+- `/admin/newsletter` - Newsletter management (view subscribers, send email broadcasts)
+- `/admin/team` - Team member management (add/edit/delete team profiles)
+- `/admin/settings` - Business settings including contact info, privacy policy, terms, service areas, social links
 
 **Employee Pages**:
 - `/employee/login` - Employee authentication

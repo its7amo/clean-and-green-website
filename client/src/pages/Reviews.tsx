@@ -3,59 +3,56 @@ import { Footer } from "@/components/Footer";
 import { CallToAction } from "@/components/CallToAction";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Review } from "@shared/schema";
+import { insertReviewSchema } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+type ReviewFormValues = z.infer<typeof insertReviewSchema>;
 
 export default function Reviews() {
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    customerName: "",
-    customerEmail: "",
-    rating: 5,
-    reviewText: "",
-  });
-
   const { toast } = useToast();
+
+  const form = useForm<ReviewFormValues>({
+    resolver: zodResolver(insertReviewSchema),
+    defaultValues: {
+      customerName: "",
+      customerEmail: "",
+      rating: 5,
+      comment: "",
+    },
+  });
 
   const { data: reviews = [], isLoading } = useQuery<Review[]>({
     queryKey: ["/api/reviews/approved"],
   });
 
   const submitReviewMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const response = await fetch("/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to submit review");
-      }
-      return response.json();
+    mutationFn: async (data: ReviewFormValues) => {
+      const res = await apiRequest("POST", "/api/reviews", data);
+      return await res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reviews/approved"] });
       toast({
         title: "Review submitted!",
         description: "Thank you for your feedback. Your review will be published after approval.",
       });
-      setFormData({
-        customerName: "",
-        customerEmail: "",
-        rating: 5,
-        reviewText: "",
-      });
+      form.reset();
       setShowForm(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Failed to submit review",
         description: error.message || "Please try again later",
@@ -64,9 +61,8 @@ export default function Reviews() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    submitReviewMutation.mutate(formData);
+  const handleSubmit = (data: ReviewFormValues) => {
+    submitReviewMutation.mutate(data);
   };
 
   const renderStars = (rating: number) => {
@@ -109,90 +105,107 @@ export default function Reviews() {
             {showForm && (
               <Card className="max-w-2xl mx-auto p-6 mb-12" data-testid="card-review-form">
                 <h2 className="text-2xl font-bold mb-6">Share Your Experience</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium mb-2">
-                      Your Name
-                    </label>
-                    <Input
-                      id="name"
-                      value={formData.customerName}
-                      onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                      required
-                      data-testid="input-review-name"
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="customerName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} data-testid="input-review-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
 
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium mb-2">
-                      Email Address
-                    </label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.customerEmail}
-                      onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
-                      required
-                      data-testid="input-review-email"
+                    <FormField
+                      control={form.control}
+                      name="customerEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" data-testid="input-review-email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Rating</label>
-                    <div className="flex gap-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, rating: star })}
-                          data-testid={`button-rating-${star}`}
-                          className="hover-elevate rounded-md p-1"
-                        >
-                          <Star
-                            className={`h-8 w-8 ${
-                              star <= formData.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-muted"
-                            }`}
-                          />
-                        </button>
-                      ))}
+                    <FormField
+                      control={form.control}
+                      name="rating"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rating</FormLabel>
+                          <FormControl>
+                            <div className="flex gap-2">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onClick={() => field.onChange(star)}
+                                  data-testid={`button-rating-${star}`}
+                                  className="hover-elevate rounded-md p-1"
+                                >
+                                  <Star
+                                    className={`h-8 w-8 ${
+                                      star <= field.value
+                                        ? "fill-yellow-400 text-yellow-400"
+                                        : "text-muted"
+                                    }`}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="comment"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your Review</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              value={field.value || ""}
+                              rows={6}
+                              data-testid="textarea-review-text"
+                              placeholder="Tell us about your experience..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowForm(false)}
+                        data-testid="button-cancel-review"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={submitReviewMutation.isPending}
+                        data-testid="button-submit-review"
+                      >
+                        {submitReviewMutation.isPending ? "Submitting..." : "Submit Review"}
+                      </Button>
                     </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="review" className="block text-sm font-medium mb-2">
-                      Your Review
-                    </label>
-                    <Textarea
-                      id="review"
-                      value={formData.reviewText}
-                      onChange={(e) => setFormData({ ...formData, reviewText: e.target.value })}
-                      required
-                      rows={6}
-                      data-testid="textarea-review-text"
-                      placeholder="Tell us about your experience..."
-                    />
-                  </div>
-
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowForm(false)}
-                      data-testid="button-cancel-review"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={submitReviewMutation.isPending}
-                      data-testid="button-submit-review"
-                    >
-                      {submitReviewMutation.isPending ? "Submitting..." : "Submit Review"}
-                    </Button>
-                  </div>
-                </form>
+                  </form>
+                </Form>
               </Card>
             )}
 

@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, CheckCircle, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Eye, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Quote } from "@shared/schema";
 
 const statusColors = {
@@ -13,6 +16,9 @@ const statusColors = {
 };
 
 export function QuotesTable() {
+  const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+
   const { data: quotes, isLoading } = useQuery<Quote[]>({
     queryKey: ["/api/quotes"],
   });
@@ -27,8 +33,36 @@ export function QuotesTable() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/quotes/${id}`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      setDeleteDialogOpen(null);
+      toast({
+        title: "Quote deleted",
+        description: "Quote request has been deleted successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete quote",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleStatusUpdate = (id: string, status: string) => {
     updateStatusMutation.mutate({ id, status });
+  };
+
+  const handleDelete = () => {
+    if (deleteDialogOpen) {
+      deleteMutation.mutate(deleteDialogOpen);
+    }
   };
 
   if (isLoading) {
@@ -126,6 +160,14 @@ export function QuotesTable() {
                         </Button>
                       </>
                     )}
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => setDeleteDialogOpen(quote.id)}
+                      data-testid={`button-delete-quote-${quote.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -133,6 +175,34 @@ export function QuotesTable() {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={deleteDialogOpen !== null} onOpenChange={(open) => !open && setDeleteDialogOpen(null)}>
+        <DialogContent data-testid="dialog-delete-quote">
+          <DialogHeader>
+            <DialogTitle>Delete Quote</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this quote request? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(null)}
+              data-testid="button-cancel-delete-quote"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              data-testid="button-confirm-delete-quote"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, CheckCircle, XCircle, Users } from "lucide-react";
+import { Eye, CheckCircle, XCircle, Users, Trash2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Booking, Employee } from "@shared/schema";
 
 const statusColors = {
@@ -22,8 +23,10 @@ const serviceNames: Record<string, string> = {
 };
 
 export function BookingsTable() {
+  const { toast } = useToast();
   const [assignDialogOpen, setAssignDialogOpen] = useState<string | null>(null);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
@@ -55,6 +58,28 @@ export function BookingsTable() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/bookings/${id}`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      setDeleteDialogOpen(null);
+      toast({
+        title: "Booking deleted",
+        description: "Booking has been deleted successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete booking",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleStatusUpdate = (id: string, status: string) => {
     updateStatusMutation.mutate({ id, status });
   };
@@ -74,6 +99,12 @@ export function BookingsTable() {
     setSelectedEmployees(prev =>
       prev.includes(employeeId) ? prev.filter(id => id !== employeeId) : [...prev, employeeId]
     );
+  };
+
+  const handleDelete = () => {
+    if (deleteDialogOpen) {
+      deleteMutation.mutate(deleteDialogOpen);
+    }
   };
 
   if (isLoading) {
@@ -228,6 +259,14 @@ export function BookingsTable() {
                         <CheckCircle className="h-4 w-4 text-green-600" />
                       </Button>
                     )}
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => setDeleteDialogOpen(booking.id)}
+                      data-testid={`button-delete-${booking.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -235,6 +274,34 @@ export function BookingsTable() {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={deleteDialogOpen !== null} onOpenChange={(open) => !open && setDeleteDialogOpen(null)}>
+        <DialogContent data-testid="dialog-delete-booking">
+          <DialogHeader>
+            <DialogTitle>Delete Booking</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this booking? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(null)}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
