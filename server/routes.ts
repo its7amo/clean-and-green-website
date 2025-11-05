@@ -135,6 +135,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint for customers to view their bookings by email
+  app.get("/api/bookings/customer/:email", async (req, res) => {
+    try {
+      const email = req.params.email;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      const bookings = await storage.getBookingsByEmail(email);
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error fetching customer bookings:", error);
+      res.status(500).json({ error: "Failed to fetch bookings" });
+    }
+  });
+
   app.get("/api/bookings/:id", isAuthenticated, async (req, res) => {
     try {
       const booking = await storage.getBooking(req.params.id);
