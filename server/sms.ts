@@ -42,7 +42,7 @@ export async function sendInvoicePaymentLinkSMS(
     console.log(`✓ Invoice payment link SMS sent to ${customerPhone}`);
   } catch (error) {
     console.error('Failed to send invoice payment link SMS:', error);
-    throw error;
+    // Don't throw - invoice creation should succeed even if SMS fails
   }
 }
 
