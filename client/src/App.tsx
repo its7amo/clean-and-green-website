@@ -26,6 +26,7 @@ import AdminGallery from "@/pages/AdminGallery";
 import AdminFaq from "@/pages/AdminFaq";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminEmployees from "@/pages/AdminEmployees";
+import AdminReviews from "@/pages/AdminReviews";
 import EmployeeLogin from "@/pages/EmployeeLogin";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
 import ManageBooking from "@/pages/manage-booking";
@@ -131,6 +132,9 @@ function Router() {
       </Route>
       <Route path="/admin/employees">
         <ProtectedRoute component={AdminEmployees} />
+      </Route>
+      <Route path="/admin/reviews">
+        <ProtectedRoute component={AdminReviews} />
       </Route>
       <Route path="/admin/settings">
         <ProtectedRoute component={AdminSettings} />
