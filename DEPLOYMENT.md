@@ -93,6 +93,14 @@ After deployment completes:
 4. Run these commands in the shell:
 
 ```bash
+# Create sessions table (required for authentication)
+psql $DATABASE_URL -c "CREATE TABLE IF NOT EXISTS sessions (
+  sid VARCHAR PRIMARY KEY,
+  sess JSONB NOT NULL,
+  expire TIMESTAMP NOT NULL
+);"
+psql $DATABASE_URL -c "CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions (expire);"
+
 # Add username and password columns to users table (required for new auth system)
 psql $DATABASE_URL -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR UNIQUE;"
 psql $DATABASE_URL -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR;"

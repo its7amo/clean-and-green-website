@@ -110,16 +110,39 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication & Authorization
 
-**Current State**: Basic structure in place but not fully implemented
-- User schema exists with username/password fields
-- No active authentication middleware
-- No session management or JWT implementation
-- Admin routes are currently unprotected
+**Authentication System**: Passport.js with Local Strategy (username/password)
+- **Strategy**: passport-local for username/password authentication
+- **Session Management**: Express sessions stored in PostgreSQL via connect-pg-simple
+- **Password Security**: Bcrypt hashing (10 rounds)
+- **Session Duration**: 7 days
 
-**Intended Design** (based on schema presence):
-- Username/password authentication
-- Session-based auth likely intended (connect-pg-simple package present for PostgreSQL session store)
-- Admin panel should require authentication
+**Database Tables**:
+1. **sessions** - Stores session data in PostgreSQL
+2. **users** - Admin users with username (unique), password (hashed), optional email
+
+**API Endpoints**:
+- GET `/api/setup/required` - Check if initial admin setup is needed
+- POST `/api/setup/admin` - Create initial admin account (only when no users exist)
+- POST `/api/login` - Authenticate with username/password
+- POST `/api/logout` - End current session
+- GET `/api/auth/user` - Get current authenticated user (returns 401 if not logged in)
+
+**Protected Routes**:
+- All `/admin/*` routes require authentication
+- Unauthenticated requests to admin routes redirect to `/login`
+
+**Setup Flow**:
+1. On first deployment, `/setup` page is accessible
+2. Admin creates username/password account
+3. After first admin is created, `/setup` redirects to `/login` (setup lockout)
+4. Admin logs in via `/login`
+
+**Frontend Auth Components**:
+- `/setup` - Initial admin account creation (only when no users exist)
+- `/login` - Login page
+- `ProtectedRoute` component - Wraps admin routes, redirects to `/login` if not authenticated
+- `SetupChecker` component - Redirects to `/setup` if no admin exists
+- `useAuth()` hook - Provides current user state and authentication status
 
 ### Page Structure & Routing
 

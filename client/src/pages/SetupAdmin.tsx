@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Leaf } from "lucide-react";
 
 const setupSchema = z.object({
@@ -66,6 +66,8 @@ export default function SetupAdmin() {
     try {
       const { confirmPassword, ...submitData } = data;
       await apiRequest("POST", "/api/setup/admin", submitData);
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/setup/required"] });
 
       toast({
         title: "Success!",
