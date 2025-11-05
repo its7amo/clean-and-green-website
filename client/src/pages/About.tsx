@@ -5,9 +5,10 @@ import { Leaf, Heart, Award, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import teamPhoto from "@assets/generated_images/Clean_and_Green_team_photo_4ef6f78f.png";
 import { useQuery } from "@tanstack/react-query";
-import type { BusinessSettings, GalleryImage } from "@shared/schema";
+import type { BusinessSettings, GalleryImage, TeamMember } from "@shared/schema";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const values = [
   {
@@ -39,6 +40,10 @@ export default function About() {
 
   const { data: galleryImages = [] } = useQuery<GalleryImage[]>({
     queryKey: ["/api/gallery"],
+  });
+
+  const { data: teamMembers = [] } = useQuery<TeamMember[]>({
+    queryKey: ["/api/team"],
   });
 
   const activeGalleryImages = galleryImages
@@ -108,6 +113,29 @@ export default function About() {
                       View Full Gallery
                     </Button>
                   </Link>
+                </div>
+              </div>
+            )}
+
+            {teamMembers.length > 0 && (
+              <div className="mb-16">
+                <h2 className="text-3xl font-bold mb-8 text-center">Meet Our Crew</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {teamMembers.map((member) => (
+                    <Card key={member.id} className="p-6 text-center" data-testid={`team-member-${member.id}`}>
+                      <Avatar className="h-24 w-24 mx-auto mb-4">
+                        <AvatarImage src={member.photoUrl || undefined} alt={member.name} />
+                        <AvatarFallback className="text-2xl">
+                          {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <h3 className="font-semibold text-lg mb-1" data-testid={`text-member-name-${member.id}`}>{member.name}</h3>
+                      <p className="text-sm text-primary mb-3" data-testid={`text-member-role-${member.id}`}>{member.role}</p>
+                      {member.description && (
+                        <p className="text-sm text-muted-foreground" data-testid={`text-member-bio-${member.id}`}>{member.description}</p>
+                      )}
+                    </Card>
+                  ))}
                 </div>
               </div>
             )}
