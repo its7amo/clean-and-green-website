@@ -93,8 +93,10 @@ After deployment completes:
 4. Run these commands in the shell:
 
 ```bash
-# Push database schema
-npm run db:push
+# Add username and password columns to users table (required for new auth system)
+psql $DATABASE_URL -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR UNIQUE;"
+psql $DATABASE_URL -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR;"
+psql $DATABASE_URL -c "ALTER TABLE users ALTER COLUMN email DROP NOT NULL;"
 
 # Seed database with default services and FAQs
 npx tsx server/seed.ts
@@ -102,13 +104,21 @@ npx tsx server/seed.ts
 
 ---
 
-### Step 5: Set Up Admin Account
+### Step 5: Create Your Admin Account 🔐
 
-Your app uses Replit Auth, which won't work on Render. You need to add environment variables for OpenAI (if using AI features):
+**IMPORTANT**: Your app now uses username/password authentication (not Replit Auth).
 
-1. In your **web service** → **Environment** tab
-2. Add:
-   - `OPENAI_API_KEY` = your OpenAI API key (optional, only if you re-enable chat)
+1. Visit your live website: `https://clean-and-green.onrender.com`
+2. You'll be automatically redirected to `/setup`
+3. Create your admin account:
+   - **Username**: Choose a username (e.g., "admin")
+   - **Password**: Choose a strong password (min 6 characters)
+   - **Email**: Optional
+4. Click **"Create Admin Account"**
+5. You'll be redirected to `/login`
+6. Log in with your credentials
+
+**Security Note**: The setup page is only accessible when NO users exist in the database. After creating the first admin, it's automatically disabled for security.
 
 ---
 
