@@ -80,6 +80,25 @@ Preferred communication style: Simple, everyday language.
 - Error Handling: Email failures logged but don't break quote/booking submissions
 - Implementation: `server/email.ts` module with `sendQuoteNotification()` and `sendBookingNotification()` functions
 
+**SMS Notification System**
+- Service: Twilio API for SMS delivery
+- Triggers: Booking confirmations, employee assignments, invoice payment links
+- Security: Credentials stored as environment secrets (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)
+- Error Handling: SMS failures logged but never break core operations (resilient design)
+- Implementation: `server/sms.ts` module with three main functions:
+  - `sendBookingConfirmationSMS()` - Sent when customers create bookings
+  - `sendEmployeeAssignmentSMS()` - Sent when employees assigned to jobs
+  - `sendInvoicePaymentLinkSMS()` - Sent when invoices created with status "sent"
+
+**Payment Processing System**
+- Service: Stripe for secure credit card payments
+- Security: Server-side validation of all payment intents and amounts
+- Flow: Invoice creation → Payment intent → Customer pays → Stripe verification → Status update
+- Payment Intent Creation: Validates invoice exists, uses server-side amount (prevents tampering)
+- Payment Verification: Retrieves PaymentIntent from Stripe, confirms success and amount before marking paid
+- Implementation: Payment endpoints in `server/routes.ts`, customer payment page at `/pay-invoice/:id`
+- Frontend: Stripe Elements integration with react-stripe-js for PCI-compliant card entry
+
 ### Data Storage & Schema
 
 **Database Solution**: PostgreSQL via Neon (serverless PostgreSQL)
@@ -162,11 +181,20 @@ Preferred communication style: Simple, everyday language.
 - `/contact` - Contact form and business information
 - `/book` - Multi-step booking form for scheduling cleaning services
 - `/quote` - Custom quote request form
+- `/portal` - Customer self-service portal to view bookings by email
+- `/pay-invoice/:id` - Customer payment page with Stripe Elements for secure invoice payments
 
-**Admin Pages** (currently unprotected):
+**Admin Pages** (authentication required):
 - `/admin` - Dashboard with statistics and recent bookings table
 - `/admin/bookings` - Full bookings management table with status updates
 - `/admin/quotes` - Quote requests management table with status updates
+- `/admin/invoices` - Invoice creation and management with PDF generation and payment tracking
+- `/admin/employees` - Employee management with work assignments
+- `/admin/settings` - Business settings and configuration
+
+**Employee Pages**:
+- `/employee/login` - Employee authentication
+- `/employee/dashboard` - Employee work assignments and schedule
 
 ### Build & Deployment
 
