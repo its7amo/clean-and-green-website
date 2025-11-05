@@ -118,6 +118,48 @@ export async function sendBookingNotification(
   }
 }
 
+export interface ContactMessageEmailData {
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+}
+
+export async function sendContactMessageNotification(
+  messageData: ContactMessageEmailData,
+  businessEmail: string
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: businessEmail,
+      replyTo: messageData.email,
+      subject: `New Contact Message - ${escapeHtml(messageData.name)}`,
+      html: `
+        <h2>New Contact Message Received</h2>
+        <p>You have received a new message from your website contact form.</p>
+        
+        <h3>Sender Information:</h3>
+        <ul>
+          <li><strong>Name:</strong> ${escapeHtml(messageData.name)}</li>
+          <li><strong>Email:</strong> <a href="mailto:${escapeHtml(messageData.email)}">${escapeHtml(messageData.email)}</a></li>
+          ${messageData.phone ? `<li><strong>Phone:</strong> ${escapeHtml(messageData.phone)}</li>` : ''}
+        </ul>
+        
+        <h3>Message:</h3>
+        <p style="background-color: #f3f4f6; padding: 15px; border-left: 4px solid #22c55e;">
+          ${escapeHtml(messageData.message)}
+        </p>
+        
+        <p><a href="https://clean-and-green-website.onrender.com/admin/messages">View in Admin Dashboard</a></p>
+      `,
+    });
+    console.log('Contact message notification email sent successfully');
+  } catch (error) {
+    console.error('Failed to send contact message notification email:', error);
+  }
+}
+
 export interface CustomerBookingData extends BookingEmailData {
   bookingId: string;
   managementToken: string;
