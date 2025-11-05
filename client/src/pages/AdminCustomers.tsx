@@ -1,12 +1,25 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Booking, Quote } from "@shared/schema";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type Customer = {
   name: string;
@@ -19,6 +32,10 @@ type Customer = {
 };
 
 export default function AdminCustomers() {
+  const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
   });
@@ -26,6 +43,59 @@ export default function AdminCustomers() {
   const { data: quotes = [], isLoading: quotesLoading } = useQuery<Quote[]>({
     queryKey: ["/api/quotes"],
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (customer: Customer) => {
+      let actualId: string;
+      let endpoint: string;
+      
+      if (customer.id.startsWith("booking-")) {
+        actualId = customer.id.substring("booking-".length);
+        endpoint = `/api/bookings/${actualId}`;
+      } else if (customer.id.startsWith("quote-")) {
+        actualId = customer.id.substring("quote-".length);
+        endpoint = `/api/quotes/${actualId}`;
+      } else {
+        throw new Error("Invalid customer record type");
+      }
+      
+      const res = await apiRequest("DELETE", endpoint);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete");
+      }
+      // DELETE endpoints return 204 with no body
+      return res.status === 204 ? null : res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+      toast({
+        title: "Customer record deleted",
+        description: "The customer record has been removed successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (customerToDelete) {
+      deleteMutation.mutate(customerToDelete);
+    }
+  };
 
   const customers = useMemo<Customer[]>(() => {
     const bookingCustomers: Customer[] = bookings.map((booking) => ({
@@ -85,6 +155,7 @@ export default function AdminCustomers() {
                       <TableHead>Address</TableHead>
                       <TableHead>Source</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -113,6 +184,16 @@ export default function AdminCustomers() {
                         <TableCell data-testid={`text-customer-date-${customer.id}`}>
                           {format(new Date(customer.date), "MMM dd, yyyy")}
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(customer)}
+                            data-testid={`button-delete-${customer.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -121,6 +202,29 @@ export default function AdminCustomers() {
             </CardContent>
           </Card>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Customer Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this {customerToDelete?.source} record for{" "}
+              {customerToDelete?.name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              data-testid="button-confirm-delete"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

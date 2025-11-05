@@ -36,6 +36,13 @@ export function Testimonials() {
           <p className="text-lg text-muted-foreground">
             Don't just take our word for it - hear from satisfied Oklahoma homeowners and businesses
           </p>
+          <div className="mt-4">
+            <Link href="/reviews">
+              <Button variant="outline" data-testid="button-leave-review">
+                Leave a Review
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

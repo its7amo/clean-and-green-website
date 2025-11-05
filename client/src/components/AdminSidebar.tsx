@@ -1,5 +1,21 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Calendar, FileText, Users, Settings, LogOut, Leaf, Wrench, Image, HelpCircle, Receipt } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  Calendar, 
+  FileText, 
+  Users, 
+  Settings, 
+  LogOut, 
+  Leaf, 
+  Wrench, 
+  Image, 
+  HelpCircle, 
+  Receipt,
+  UserCircle,
+  Star,
+  Mail,
+  UsersRound
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
@@ -8,6 +24,10 @@ const menuItems = [
   { href: "/admin/quotes", icon: FileText, label: "Quotes" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
+  { href: "/admin/employees", icon: UserCircle, label: "Employees" },
+  { href: "/admin/reviews", icon: Star, label: "Reviews" },
+  { href: "/admin/newsletter", icon: Mail, label: "Newsletter" },
+  { href: "/admin/team", icon: UsersRound, label: "Team" },
   { href: "/admin/services", icon: Wrench, label: "Services" },
   { href: "/admin/gallery", icon: Image, label: "Gallery" },
   { href: "/admin/faq", icon: HelpCircle, label: "FAQ" },
