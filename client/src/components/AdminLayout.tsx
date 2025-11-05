@@ -36,6 +36,7 @@ const menuItems = [
   { href: "/admin/quotes", icon: FileText, label: "Quotes" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
+  { href: "/admin/employees", icon: Users, label: "Employees" },
   { href: "/admin/services", icon: Wrench, label: "Services" },
   { href: "/admin/gallery", icon: Image, label: "Gallery" },
   { href: "/admin/faq", icon: HelpCircle, label: "FAQ" },

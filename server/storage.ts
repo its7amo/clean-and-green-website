@@ -15,6 +15,8 @@ import {
   type InsertGalleryImage,
   type Invoice,
   type InsertInvoice,
+  type Employee,
+  type InsertEmployee,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -26,6 +28,7 @@ import {
   faqItems,
   galleryImages,
   invoices,
+  employees,
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -40,6 +43,8 @@ export interface IStorage {
   createBooking(booking: InsertBooking): Promise<Booking>;
   getBookings(): Promise<Booking[]>;
   getBooking(id: string): Promise<Booking | undefined>;
+  getBookingByToken(id: string, token: string): Promise<Booking | undefined>;
+  updateBooking(id: string, booking: Partial<InsertBooking>): Promise<Booking | undefined>;
   updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
 
   // Quote operations
@@ -82,6 +87,15 @@ export interface IStorage {
   getInvoice(id: string): Promise<Invoice | undefined>;
   updateInvoice(id: string, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
   deleteInvoice(id: string): Promise<void>;
+
+  // Employee operations
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  getEmployees(): Promise<Employee[]>;
+  getActiveEmployees(): Promise<Employee[]>;
+  getEmployee(id: string): Promise<Employee | undefined>;
+  getEmployeeByEmail(email: string): Promise<Employee | undefined>;
+  updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  deleteEmployee(id: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -117,6 +131,20 @@ export class DbStorage implements IStorage {
 
   async getBooking(id: string): Promise<Booking | undefined> {
     const result = await db.select().from(bookings).where(eq(bookings.id, id));
+    return result[0];
+  }
+
+  async getBookingByToken(id: string, token: string): Promise<Booking | undefined> {
+    const result = await db.select().from(bookings).where(eq(bookings.id, id));
+    const booking = result[0];
+    if (booking && booking.managementToken === token) {
+      return booking;
+    }
+    return undefined;
+  }
+
+  async updateBooking(id: string, booking: Partial<InsertBooking>): Promise<Booking | undefined> {
+    const result = await db.update(bookings).set(booking).where(eq(bookings.id, id)).returning();
     return result[0];
   }
 
@@ -267,6 +295,39 @@ export class DbStorage implements IStorage {
 
   async deleteInvoice(id: string): Promise<void> {
     await db.delete(invoices).where(eq(invoices.id, id));
+  }
+
+  // Employee operations
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const result = await db.insert(employees).values(employee).returning();
+    return result[0];
+  }
+
+  async getEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees).orderBy(desc(employees.createdAt));
+  }
+
+  async getActiveEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees).where(eq(employees.active, true)).orderBy(desc(employees.createdAt));
+  }
+
+  async getEmployee(id: string): Promise<Employee | undefined> {
+    const result = await db.select().from(employees).where(eq(employees.id, id));
+    return result[0];
+  }
+
+  async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
+    const result = await db.select().from(employees).where(eq(employees.email, email));
+    return result[0];
+  }
+
+  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const result = await db.update(employees).set(employee).where(eq(employees.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteEmployee(id: string): Promise<void> {
+    await db.delete(employees).where(eq(employees.id, id));
   }
 }
 

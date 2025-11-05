@@ -13,7 +13,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
-import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation } from "./email";
+import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification } from "./email";
 
 const bookingStatusSchema = z.object({
   status: z.enum(["pending", "confirmed", "completed", "cancelled"]),
@@ -161,6 +161,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid status value", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update booking status" });
+    }
+  });
+
+  // Public booking management (using token, no auth required)
+  app.get("/api/bookings/:id/manage", async (req, res) => {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== 'string') {
+        return res.status(401).json({ error: "Token required" });
+      }
+      
+      const booking = await storage.getBookingByToken(req.params.id, token);
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found or invalid token" });
+      }
+      
+      res.json(booking);
+    } catch (error) {
+      console.error("Error fetching booking:", error);
+      res.status(500).json({ error: "Failed to fetch booking" });
+    }
+  });
+
+  app.patch("/api/bookings/:id/manage", async (req, res) => {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== 'string') {
+        return res.status(401).json({ error: "Token required" });
+      }
+      
+      // Verify token first
+      const existing = await storage.getBookingByToken(req.params.id, token as string);
+      if (!existing) {
+        return res.status(404).json({ error: "Booking not found or invalid token" });
+      }
+      
+      const updateSchema = z.object({
+        date: z.string().optional(),
+        timeSlot: z.string().optional(),
+        status: z.enum(["pending", "cancelled"]).optional(),
+      });
+      
+      const validatedData = updateSchema.parse(req.body);
+      const booking = await storage.updateBooking(req.params.id, validatedData);
+      
+      // Notify business owner of changes
+      (async () => {
+        try {
+          const settings = await storage.getBusinessSettings();
+          if (settings && booking) {
+            const action = validatedData.status === 'cancelled' ? 'cancelled' : 'rescheduled';
+            await sendBookingChangeNotification({
+              name: booking.name,
+              email: booking.email,
+              phone: booking.phone,
+              address: booking.address,
+              serviceType: booking.service,
+              propertySize: booking.propertySize,
+              date: booking.date,
+              timeSlot: booking.timeSlot,
+              action: action as 'rescheduled' | 'cancelled',
+              originalDate: existing.date,
+              originalTimeSlot: existing.timeSlot,
+            }, settings.email);
+          }
+        } catch (emailError) {
+          console.error("Failed to send booking change notification:", emailError);
+        }
+      })();
+      
+      res.json(booking);
+    } catch (error) {
+      console.error("Error updating booking:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid booking data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update booking" });
     }
   });
 
@@ -569,6 +646,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting invoice:", error);
       res.status(500).json({ error: "Failed to delete invoice" });
+    }
+  });
+
+  // Employee routes (all protected)
+  app.get("/api/employees", isAuthenticated, async (_req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      res.status(500).json({ error: "Failed to fetch employees" });
+    }
+  });
+
+  app.post("/api/employees", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertEmployeeSchema.parse(req.body);
+      const employee = await storage.createEmployee(validatedData);
+      res.status(201).json(employee);
+    } catch (error) {
+      console.error("Error creating employee:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid employee data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create employee" });
+    }
+  });
+
+  app.get("/api/employees/:id", isAuthenticated, async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      console.error("Error fetching employee:", error);
+      res.status(500).json({ error: "Failed to fetch employee" });
+    }
+  });
+
+  app.patch("/api/employees/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertEmployeeSchema.partial().parse(req.body);
+      const employee = await storage.updateEmployee(req.params.id, validatedData);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid employee data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update employee" });
+    }
+  });
+
+  app.delete("/api/employees/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteEmployee(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      res.status(500).json({ error: "Failed to delete employee" });
     }
   });
 

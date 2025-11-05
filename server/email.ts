@@ -205,3 +205,37 @@ export async function sendCustomerQuoteConfirmation(
     console.error('Failed to send customer quote confirmation:', error);
   }
 }
+
+export async function sendBookingChangeNotification(
+  bookingData: BookingEmailData & { action: 'rescheduled' | 'cancelled', originalDate?: string, originalTimeSlot?: string },
+  businessEmail: string
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <onboarding@resend.dev>',
+      to: businessEmail,
+      replyTo: bookingData.email,
+      subject: `Booking ${bookingData.action.charAt(0).toUpperCase() + bookingData.action.slice(1)} - ${escapeHtml(bookingData.name)}`,
+      html: `
+        <h2>Customer ${bookingData.action.charAt(0).toUpperCase() + bookingData.action.slice(1)} Booking</h2>
+        <p>${escapeHtml(bookingData.name)} has ${bookingData.action} their booking.</p>
+        
+        <h3>Customer Information:</h3>
+        <ul>
+          <li><strong>Name:</strong> ${escapeHtml(bookingData.name)}</li>
+          <li><strong>Email:</strong> <a href="mailto:${escapeHtml(bookingData.email)}">${escapeHtml(bookingData.email)}</a></li>
+          <li><strong>Phone:</strong> ${escapeHtml(bookingData.phone)}</li>
+          <li><strong>Address:</strong> ${escapeHtml(bookingData.address)}</li>
+        </ul>
+        
+        ${bookingData.originalDate ? `<p><strong>Original Date:</strong> ${escapeHtml(bookingData.originalDate)} at ${escapeHtml(bookingData.originalTimeSlot || '')}</p>` : ''}
+        ${bookingData.action === 'rescheduled' ? `<p><strong>New Date:</strong> ${escapeHtml(bookingData.date)} at ${escapeHtml(bookingData.timeSlot)}</p>` : ''}
+        
+        <p><a href="https://clean-and-green-website.onrender.com/admin/bookings">View in Admin Dashboard</a></p>
+      `,
+    });
+    console.log('Booking change notification email sent successfully');
+  } catch (error) {
+    console.error('Failed to send booking change notification:', error);
+  }
+}

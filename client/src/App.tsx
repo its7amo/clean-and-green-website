@@ -22,6 +22,8 @@ import AdminServices from "@/pages/AdminServices";
 import AdminGallery from "@/pages/AdminGallery";
 import AdminFaq from "@/pages/AdminFaq";
 import AdminSettings from "@/pages/AdminSettings";
+import AdminEmployees from "@/pages/AdminEmployees";
+import ManageBooking from "@/pages/manage-booking";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -86,6 +88,7 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/faq" component={Faq} />
       <Route path="/gallery" component={Gallery} />
+      <Route path="/booking/:id" component={ManageBooking} />
       <Route path="/login" component={Login} />
       <Route path="/setup" component={SetupAdmin} />
       <Route path="/admin">
@@ -111,6 +114,9 @@ function Router() {
       </Route>
       <Route path="/admin/faq">
         <ProtectedRoute component={AdminFaq} />
+      </Route>
+      <Route path="/admin/employees">
+        <ProtectedRoute component={AdminEmployees} />
       </Route>
       <Route path="/admin/settings">
         <ProtectedRoute component={AdminSettings} />
