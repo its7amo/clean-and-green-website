@@ -1,0 +1,87 @@
+==> Downloading cache...
+==> Cloning from https://github.com/its7amo/clean-and-green-website
+==> Checking out commit 3a56244399901da864a3d8c059225f17f30e3569 in branch main
+==> Downloaded 215MB in 4s. Extraction took 6s.
+==> Using Node.js version 22.16.0 (default)
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm install; npm run db:push -- --force; npm run build'...
+up to date, audited 523 packages in 2s
+68 packages are looking for funding
+  run `npm fund` for details
+8 vulnerabilities (3 low, 5 moderate)
+To address issues that do not require attention, run:
+  npm audit fix
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+> rest-express@1.0.0 db:push
+> drizzle-kit push --force
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/opt/render/project/src/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[⣟] Pulling schema from database...
+[⡿] Pulling schema from database...
+[⢿] Pulling schema from database...
+[⣻] Pulling schema from database...
+[⣽] Pulling schema from database...
+[⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[⣟] Pulling schema from database...
+[⡿] Pulling schema from database...
+[⢿] Pulling schema from database...
+[⣻] Pulling schema from database...
+[✓] Pulling schema from database...
+Is name column in quotes table created or renamed from another column?
+❯ + name                  create column
+  ~ customer_name › name  rename column
+  ~ customer_email › name rename column
+  ~ customer_phone › name rename column
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+vite v5.4.20 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 13 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 2996 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                                                                1.34 kB │ gzip:   0.60 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+../dist/public/assets/Clean_commercial_office_space_fdef0e70-Btv2qGmt.png            1,207.26 kB
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+../dist/public/assets/Clean_residential_kitchen_showcase_46bf75b4-B0o7gMvH.png       1,238.08 kB
+../dist/public/assets/Clean_and_Green_team_photo_4ef6f78f-BLDbLv4U.png               1,328.45 kB
+../dist/public/assets/Happy_customer_testimonial_portrait_eb9ed62d-DXPp_wEW.png      1,368.45 kB
+../dist/public/assets/Young_professional_customer_portrait_886ec1f9-CEPxs0t6.png     1,389.85 kB
+../dist/public/assets/Satisfied_customer_testimonial_portrait_4ff9a5b9-DBJ9tV5T.png  1,413.10 kB
+../dist/public/assets/Hero_cleaning_team_in_action_2c2b9c2e-B0xxI1Yb.png             1,416.92 kB
+../dist/public/assets/Deep_cleaning_before_after_cf8f1b84-BiAi0K6b.png               1,778.40 kB
+../dist/public/assets/index-Dh_eaHnb.css                                                77.54 kB │ gzip:  12.66 kB
+../dist/public/assets/purify.es-sOfw8HaZ.js                                             22.67 kB │ gzip:   8.79 kB
+../dist/public/assets/index.es-B0gv14U8.js                                             150.56 kB │ gzip:  51.51 kB
+../dist/public/assets/html2canvas.esm-CBrSDip1.js                                      201.42 kB │ gzip:  48.03 kB
+../dist/public/assets/index-C_RXq5gE.js                                              1,027.94 kB │ gzip: 313.28 kB
+✓ built in 9.20s
+  dist/index.js  39.6kb
+⚡ Done in 55ms
+==> Uploading build...
+==> Uploaded in 10.4s. Compression took 10.5s
+==> Build successful 🎉
+==> Deploying...
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+5:31:26 AM [express] serving on port 10000
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://clean-and-green-website.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
