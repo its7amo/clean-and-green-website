@@ -139,8 +139,9 @@ export default function AdminReviews() {
   const rejectedReviews = reviews.filter(r => r.status === "rejected");
 
   return (
-    <AdminLayout title="Reviews">
+    <AdminLayout>
       <div className="space-y-6">
+        <h1 className="text-3xl font-bold mb-6">Reviews</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="p-4">
             <div className="text-2xl font-bold" data-testid="text-pending-count">{pendingReviews.length}</div>
