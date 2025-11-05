@@ -40,6 +40,7 @@ export const employees = pgTable("employees", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
+  password: varchar("password"),
   phone: text("phone").notNull(),
   role: text("role").notNull().default("employee"),
   active: boolean("active").notNull().default(true),
@@ -69,7 +70,7 @@ export const bookings = pgTable("bookings", {
   address: text("address").notNull(),
   status: text("status").notNull().default("pending"),
   managementToken: varchar("management_token").notNull().default(sql`gen_random_uuid()`),
-  assignedEmployeeId: varchar("assigned_employee_id"),
+  assignedEmployeeIds: text("assigned_employee_ids").array(),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
