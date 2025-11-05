@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   Sidebar,
   SidebarContent,
@@ -42,13 +44,36 @@ const menuItems = [
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
+      setLocation("/login");
     }
-  }, [isAuthenticated, authLoading]);
+  }, [isAuthenticated, authLoading, setLocation]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await apiRequest("POST", "/api/logout", {});
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      setLocation("/login");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to logout",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   if (authLoading || !isAuthenticated) {
     return (
@@ -93,11 +118,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <SidebarFooter>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a href="/api/logout" data-testid="button-logout">
-                      <LogOut className="h-5 w-5" />
-                      <span>Logout</span>
-                    </a>
+                  <SidebarMenuButton onClick={handleLogout} disabled={isLoggingOut} data-testid="button-logout">
+                    <LogOut className="h-5 w-5" />
+                    <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
