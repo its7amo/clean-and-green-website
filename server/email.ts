@@ -281,3 +281,108 @@ export async function sendEmployeeAssignmentNotification(
     console.error('Failed to send employee assignment notification:', error);
   }
 }
+
+export async function sendInvoicePaymentLinkEmail(
+  customerEmail: string,
+  customerName: string,
+  invoiceNumber: string,
+  invoiceId: string,
+  totalAmount: number
+) {
+  try {
+    const paymentUrl = `https://clean-and-green-website.onrender.com/pay-invoice/${invoiceId}`;
+    
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: customerEmail,
+      subject: `Invoice ${escapeHtml(invoiceNumber)} - Payment Link`,
+      html: `
+        <h2>Your Invoice is Ready</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>Your invoice is ready for payment. Please review the details below:</p>
+        
+        <ul>
+          <li><strong>Invoice Number:</strong> ${escapeHtml(invoiceNumber)}</li>
+          <li><strong>Total Amount:</strong> $${totalAmount.toFixed(2)}</li>
+        </ul>
+        
+        <p><a href="${paymentUrl}" style="display: inline-block; padding: 12px 24px; background-color: #22c55e; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Pay Invoice Now</a></p>
+        
+        <p>Or copy this link: <a href="${paymentUrl}">${paymentUrl}</a></p>
+        
+        <p>Thank you for choosing Clean & Green!</p>
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Invoice payment link email sent to ${customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send invoice payment link email:', error);
+  }
+}
+
+export async function sendBookingStatusUpdateEmail(
+  customerEmail: string,
+  customerName: string,
+  status: string,
+  bookingDetails: {
+    serviceType: string;
+    date: string;
+    timeSlot: string;
+    address: string;
+  }
+) {
+  try {
+    let subject = '';
+    let message = '';
+    
+    if (status === 'confirmed') {
+      subject = 'Booking Confirmed - Clean & Green';
+      message = `
+        <h2 style="color: #22c55e;">✅ Your Booking is Confirmed!</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>Great news! Your cleaning service has been confirmed. We look forward to serving you!</p>
+      `;
+    } else if (status === 'cancelled') {
+      subject = 'Booking Cancelled - Clean & Green';
+      message = `
+        <h2 style="color: #ef4444;">❌ Your Booking Has Been Cancelled</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>Your cleaning service booking has been cancelled. If you have any questions, please contact us.</p>
+      `;
+    } else if (status === 'completed') {
+      subject = 'Service Completed - Clean & Green';
+      message = `
+        <h2 style="color: #22c55e;">✨ Service Completed!</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>Thank you for choosing Clean & Green! Your cleaning service has been completed.</p>
+      `;
+    } else {
+      return; // Don't send email for other status changes
+    }
+    
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: customerEmail,
+      subject,
+      html: `
+        ${message}
+        
+        <h3>Booking Details:</h3>
+        <ul>
+          <li><strong>Service:</strong> ${escapeHtml(bookingDetails.serviceType)}</li>
+          <li><strong>Date:</strong> ${escapeHtml(bookingDetails.date)}</li>
+          <li><strong>Time:</strong> ${escapeHtml(bookingDetails.timeSlot)}</li>
+          <li><strong>Address:</strong> ${escapeHtml(bookingDetails.address)}</li>
+        </ul>
+        
+        <p>View your booking status anytime: <a href="https://clean-and-green-website.onrender.com/portal">Customer Portal</a></p>
+        
+        <p>Thank you for choosing Clean & Green!</p>
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Booking status update email sent to ${customerEmail} (status: ${status})`);
+  } catch (error) {
+    console.error('Failed to send booking status update email:', error);
+  }
+}

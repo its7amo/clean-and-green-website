@@ -189,6 +189,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!booking) {
         return res.status(404).json({ error: "Booking not found" });
       }
+      
+      // Send status update email to customer (async, don't block response)
+      (async () => {
+        try {
+          const { sendBookingStatusUpdateEmail } = await import("./email");
+          await sendBookingStatusUpdateEmail(
+            booking.email,
+            booking.name,
+            booking.status,
+            {
+              serviceType: booking.service,
+              date: booking.date,
+              timeSlot: booking.timeSlot,
+              address: booking.address
+            }
+          );
+        } catch (emailError) {
+          console.error("Failed to send booking status update email:", emailError);
+        }
+      })();
+      
       res.json(booking);
     } catch (error) {
       console.error("Error updating booking status:", error);
@@ -694,10 +715,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertInvoiceSchema.parse(req.body);
       const invoice = await storage.createInvoice(validatedData);
       
-      // Send SMS payment link if status is "sent" (async, don't block response)
+      // Send payment link notifications if status is "sent" (async, don't block response)
       if (invoice.status === "sent") {
         (async () => {
           try {
+            // Send email payment link
+            const { sendInvoicePaymentLinkEmail } = await import("./email");
+            await sendInvoicePaymentLinkEmail(
+              invoice.customerEmail,
+              invoice.customerName,
+              invoice.invoiceNumber,
+              invoice.id,
+              invoice.total
+            );
+            
+            // Also send SMS if available (currently blocked on trial)
             await sendInvoicePaymentLinkSMS(
               invoice.customerPhone,
               invoice.customerName,
@@ -705,8 +737,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               invoice.id,
               invoice.total
             );
-          } catch (smsError) {
-            console.error("Failed to send invoice payment link SMS:", smsError);
+          } catch (notificationError) {
+            console.error("Failed to send invoice payment notifications:", notificationError);
           }
         })();
       }
