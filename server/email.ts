@@ -469,3 +469,107 @@ export async function sendAdminPaymentNotification(
     console.error('Failed to send admin payment notification:', error);
   }
 }
+
+export async function sendNewsletterWelcomeEmail(
+  email: string,
+  name: string
+) {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: email,
+      subject: '🌿 Welcome to Clean & Green Newsletter!',
+      html: `
+        <h2 style="color: #22c55e;">Welcome to Clean & Green!</h2>
+        <p>Hi ${escapeHtml(name || 'there')},</p>
+        <p>Thank you for subscribing to our newsletter! We're excited to have you join our eco-friendly cleaning community.</p>
+        
+        <p>You'll receive updates about:</p>
+        <ul>
+          <li>🌿 Eco-friendly cleaning tips and tricks</li>
+          <li>🎉 Special promotions and exclusive offers</li>
+          <li>📅 Upcoming events and seasonal services</li>
+          <li>💚 Our commitment to sustainability</li>
+        </ul>
+        
+        <p>Stay tuned for our first newsletter coming soon!</p>
+        
+        <p>Best regards,<br>The Clean & Green Team</p>
+        
+        <p style="font-size: 12px; color: #666;">You're receiving this because you subscribed to Clean & Green newsletter. If you wish to unsubscribe, please contact us.</p>
+      `,
+    });
+    console.log(`Newsletter welcome email sent to ${email}`);
+  } catch (error) {
+    console.error('Failed to send newsletter welcome email:', error);
+  }
+}
+
+export async function sendNewsletterEmail(
+  email: string,
+  name: string,
+  subject: string,
+  htmlContent: string
+) {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: email,
+      subject: subject,
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+          <p>Hi ${escapeHtml(name || 'there')},</p>
+          
+          ${htmlContent}
+          
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+          <p style="font-size: 12px; color: #666;">
+            You're receiving this email because you subscribed to Clean & Green newsletter.<br>
+            Clean & Green - Eco-Friendly Cleaning Services in Oklahoma
+          </p>
+        </div>
+      `,
+    });
+    console.log(`Newsletter email sent to ${email}`);
+  } catch (error) {
+    console.error(`Failed to send newsletter email to ${email}:`, error);
+  }
+}
+
+export async function sendReviewRequestEmail(
+  customerEmail: string,
+  customerName: string,
+  bookingId: string,
+  service: string
+) {
+  try {
+    const reviewUrl = `https://clean-and-green-website.onrender.com/review/${bookingId}`;
+    
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: customerEmail,
+      subject: '🌟 How was your cleaning service?',
+      html: `
+        <h2 style="color: #22c55e;">We'd Love Your Feedback!</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>Thank you for choosing Clean & Green for your ${escapeHtml(service)} service!</p>
+        
+        <p>We hope you're happy with the results. Your feedback helps us improve and helps others find great eco-friendly cleaning services.</p>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${reviewUrl}" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+            Leave a Review
+          </a>
+        </p>
+        
+        <p>Your review will be checked by our team before being published on our website.</p>
+        
+        <p>Thank you for your time!</p>
+        <p>Best regards,<br>The Clean & Green Team</p>
+      `,
+    });
+    console.log(`Review request email sent to ${customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send review request email:', error);
+  }
+}

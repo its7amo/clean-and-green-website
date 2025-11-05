@@ -17,6 +17,12 @@ import {
   type InsertInvoice,
   type Employee,
   type InsertEmployee,
+  type Review,
+  type InsertReview,
+  type NewsletterSubscriber,
+  type InsertNewsletterSubscriber,
+  type TeamMember,
+  type InsertTeamMember,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -29,6 +35,9 @@ import {
   galleryImages,
   invoices,
   employees,
+  reviews,
+  newsletterSubscribers,
+  teamMembers,
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -47,12 +56,14 @@ export interface IStorage {
   getBookingsByEmail(email: string): Promise<Booking[]>;
   updateBooking(id: string, booking: Partial<InsertBooking>): Promise<Booking | undefined>;
   updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
+  deleteBooking(id: string): Promise<void>;
 
   // Quote operations
   createQuote(quote: InsertQuote): Promise<Quote>;
   getQuotes(): Promise<Quote[]>;
   getQuote(id: string): Promise<Quote | undefined>;
   updateQuoteStatus(id: string, status: string): Promise<Quote | undefined>;
+  deleteQuote(id: string): Promise<void>;
 
   // Service operations
   createService(service: InsertService): Promise<Service>;
@@ -100,6 +111,32 @@ export interface IStorage {
 
   // Booking assignment operations
   assignEmployeesToBooking(id: string, employeeIds: string[]): Promise<Booking | undefined>;
+
+  // Review operations
+  createReview(review: InsertReview): Promise<Review>;
+  getReviews(): Promise<Review[]>;
+  getApprovedReviews(): Promise<Review[]>;
+  getPendingReviews(): Promise<Review[]>;
+  getReview(id: string): Promise<Review | undefined>;
+  updateReviewStatus(id: string, status: string): Promise<Review | undefined>;
+  deleteReview(id: string): Promise<void>;
+
+  // Newsletter operations
+  createNewsletterSubscriber(subscriber: InsertNewsletterSubscriber): Promise<NewsletterSubscriber>;
+  getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
+  getActiveNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
+  getNewsletterSubscriber(id: string): Promise<NewsletterSubscriber | undefined>;
+  getNewsletterSubscriberByEmail(email: string): Promise<NewsletterSubscriber | undefined>;
+  updateNewsletterSubscriber(id: string, subscriber: Partial<InsertNewsletterSubscriber>): Promise<NewsletterSubscriber | undefined>;
+  deleteNewsletterSubscriber(id: string): Promise<void>;
+
+  // Team member operations
+  createTeamMember(member: InsertTeamMember): Promise<TeamMember>;
+  getTeamMembers(): Promise<TeamMember[]>;
+  getActiveTeamMembers(): Promise<TeamMember[]>;
+  getTeamMember(id: string): Promise<TeamMember | undefined>;
+  updateTeamMember(id: string, member: Partial<InsertTeamMember>): Promise<TeamMember | undefined>;
+  deleteTeamMember(id: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -166,6 +203,10 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
+  async deleteBooking(id: string): Promise<void> {
+    await db.delete(bookings).where(eq(bookings.id, id));
+  }
+
   async createQuote(quote: InsertQuote): Promise<Quote> {
     const result = await db.insert(quotes).values(quote).returning();
     return result[0];
@@ -183,6 +224,10 @@ export class DbStorage implements IStorage {
   async updateQuoteStatus(id: string, status: string): Promise<Quote | undefined> {
     const result = await db.update(quotes).set({ status }).where(eq(quotes.id, id)).returning();
     return result[0];
+  }
+
+  async deleteQuote(id: string): Promise<void> {
+    await db.delete(quotes).where(eq(quotes.id, id));
   }
 
   // Service operations
@@ -222,10 +267,19 @@ export class DbStorage implements IStorage {
   async upsertBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings> {
     const existing = await this.getBusinessSettings();
     if (existing) {
-      const result = await db.update(businessSettings).set({ ...settings, updatedAt: new Date() }).where(eq(businessSettings.id, existing.id)).returning();
+      const updateData = {
+        ...settings,
+        socialLinks: settings.socialLinks as any,
+        updatedAt: new Date()
+      };
+      const result = await db.update(businessSettings).set(updateData).where(eq(businessSettings.id, existing.id)).returning();
       return result[0];
     } else {
-      const result = await db.insert(businessSettings).values(settings).returning();
+      const insertData = {
+        ...settings,
+        socialLinks: settings.socialLinks as any,
+      };
+      const result = await db.insert(businessSettings).values(insertData).returning();
       return result[0];
     }
   }
@@ -341,6 +395,103 @@ export class DbStorage implements IStorage {
 
   async deleteEmployee(id: string): Promise<void> {
     await db.delete(employees).where(eq(employees.id, id));
+  }
+
+  // Review operations
+  async createReview(review: InsertReview): Promise<Review> {
+    const result = await db.insert(reviews).values(review).returning();
+    return result[0];
+  }
+
+  async getReviews(): Promise<Review[]> {
+    return await db.select().from(reviews).orderBy(desc(reviews.createdAt));
+  }
+
+  async getApprovedReviews(): Promise<Review[]> {
+    return await db.select().from(reviews).where(eq(reviews.status, "approved")).orderBy(desc(reviews.approvedAt));
+  }
+
+  async getPendingReviews(): Promise<Review[]> {
+    return await db.select().from(reviews).where(eq(reviews.status, "pending")).orderBy(desc(reviews.createdAt));
+  }
+
+  async getReview(id: string): Promise<Review | undefined> {
+    const result = await db.select().from(reviews).where(eq(reviews.id, id));
+    return result[0];
+  }
+
+  async updateReviewStatus(id: string, status: string): Promise<Review | undefined> {
+    const updateData: any = { status };
+    if (status === "approved") {
+      updateData.approvedAt = new Date();
+    }
+    const result = await db.update(reviews).set(updateData).where(eq(reviews.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteReview(id: string): Promise<void> {
+    await db.delete(reviews).where(eq(reviews.id, id));
+  }
+
+  // Newsletter operations
+  async createNewsletterSubscriber(subscriber: InsertNewsletterSubscriber): Promise<NewsletterSubscriber> {
+    const result = await db.insert(newsletterSubscribers).values(subscriber).returning();
+    return result[0];
+  }
+
+  async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
+    return await db.select().from(newsletterSubscribers).orderBy(desc(newsletterSubscribers.subscribedAt));
+  }
+
+  async getActiveNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
+    return await db.select().from(newsletterSubscribers).where(eq(newsletterSubscribers.active, true)).orderBy(desc(newsletterSubscribers.subscribedAt));
+  }
+
+  async getNewsletterSubscriber(id: string): Promise<NewsletterSubscriber | undefined> {
+    const result = await db.select().from(newsletterSubscribers).where(eq(newsletterSubscribers.id, id));
+    return result[0];
+  }
+
+  async getNewsletterSubscriberByEmail(email: string): Promise<NewsletterSubscriber | undefined> {
+    const result = await db.select().from(newsletterSubscribers).where(eq(newsletterSubscribers.email, email));
+    return result[0];
+  }
+
+  async updateNewsletterSubscriber(id: string, subscriber: Partial<InsertNewsletterSubscriber>): Promise<NewsletterSubscriber | undefined> {
+    const result = await db.update(newsletterSubscribers).set(subscriber).where(eq(newsletterSubscribers.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteNewsletterSubscriber(id: string): Promise<void> {
+    await db.delete(newsletterSubscribers).where(eq(newsletterSubscribers.id, id));
+  }
+
+  // Team member operations
+  async createTeamMember(member: InsertTeamMember): Promise<TeamMember> {
+    const result = await db.insert(teamMembers).values(member).returning();
+    return result[0];
+  }
+
+  async getTeamMembers(): Promise<TeamMember[]> {
+    return await db.select().from(teamMembers).orderBy(teamMembers.order, desc(teamMembers.createdAt));
+  }
+
+  async getActiveTeamMembers(): Promise<TeamMember[]> {
+    return await db.select().from(teamMembers).where(eq(teamMembers.active, true)).orderBy(teamMembers.order, desc(teamMembers.createdAt));
+  }
+
+  async getTeamMember(id: string): Promise<TeamMember | undefined> {
+    const result = await db.select().from(teamMembers).where(eq(teamMembers.id, id));
+    return result[0];
+  }
+
+  async updateTeamMember(id: string, member: Partial<InsertTeamMember>): Promise<TeamMember | undefined> {
+    const result = await db.update(teamMembers).set({ ...member, updatedAt: new Date() }).where(eq(teamMembers.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteTeamMember(id: string): Promise<void> {
+    await db.delete(teamMembers).where(eq(teamMembers.id, id));
   }
 }
 

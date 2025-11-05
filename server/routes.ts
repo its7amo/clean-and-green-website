@@ -10,7 +10,10 @@ import {
   insertGalleryImageSchema,
   insertInvoiceSchema,
   insertUserSchema,
-  insertEmployeeSchema
+  insertEmployeeSchema,
+  insertReviewSchema,
+  insertNewsletterSubscriberSchema,
+  insertTeamMemberSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
@@ -1117,6 +1120,277 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking invoice as paid:", error);
       res.status(500).json({ error: "Failed to update invoice" });
+    }
+  });
+
+  // Review routes
+  app.post("/api/reviews", async (req, res) => {
+    try {
+      const validatedData = insertReviewSchema.parse(req.body);
+      const review = await storage.createReview(validatedData);
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Error creating review:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid review data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create review" });
+    }
+  });
+
+  app.get("/api/reviews", isAuthenticated, async (_req, res) => {
+    try {
+      const reviews = await storage.getReviews();
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  app.get("/api/reviews/approved", async (_req, res) => {
+    try {
+      const reviews = await storage.getApprovedReviews();
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching approved reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  app.get("/api/reviews/pending", isAuthenticated, async (_req, res) => {
+    try {
+      const reviews = await storage.getPendingReviews();
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching pending reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  app.patch("/api/reviews/:id/approve", isAuthenticated, async (req, res) => {
+    try {
+      const review = await storage.updateReviewStatus(req.params.id, "approved");
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+      res.json(review);
+    } catch (error) {
+      console.error("Error approving review:", error);
+      res.status(500).json({ error: "Failed to approve review" });
+    }
+  });
+
+  app.patch("/api/reviews/:id/reject", isAuthenticated, async (req, res) => {
+    try {
+      const review = await storage.updateReviewStatus(req.params.id, "rejected");
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+      res.json(review);
+    } catch (error) {
+      console.error("Error rejecting review:", error);
+      res.status(500).json({ error: "Failed to reject review" });
+    }
+  });
+
+  app.delete("/api/reviews/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteReview(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      res.status(500).json({ error: "Failed to delete review" });
+    }
+  });
+
+  // Newsletter routes
+  app.post("/api/newsletter/subscribe", async (req, res) => {
+    try {
+      const validatedData = insertNewsletterSubscriberSchema.parse(req.body);
+      
+      // Check if already subscribed
+      const existing = await storage.getNewsletterSubscriberByEmail(validatedData.email);
+      if (existing) {
+        if (existing.active) {
+          return res.status(400).json({ error: "Email already subscribed" });
+        } else {
+          // Reactivate subscription
+          const updated = await storage.updateNewsletterSubscriber(existing.id, { active: true });
+          
+          // Send welcome email
+          (async () => {
+            try {
+              const { sendNewsletterWelcomeEmail } = await import("./email");
+              await sendNewsletterWelcomeEmail(validatedData.email, validatedData.name || "");
+            } catch (emailError) {
+              console.error("Failed to send welcome email:", emailError);
+            }
+          })();
+          
+          return res.status(201).json(updated);
+        }
+      }
+
+      const subscriber = await storage.createNewsletterSubscriber(validatedData);
+      
+      // Send welcome email (async, don't block response)
+      (async () => {
+        try {
+          const { sendNewsletterWelcomeEmail } = await import("./email");
+          await sendNewsletterWelcomeEmail(validatedData.email, validatedData.name || "");
+        } catch (emailError) {
+          console.error("Failed to send welcome email:", emailError);
+        }
+      })();
+
+      res.status(201).json(subscriber);
+    } catch (error) {
+      console.error("Error subscribing to newsletter:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid subscription data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to subscribe" });
+    }
+  });
+
+  app.get("/api/newsletter/subscribers", isAuthenticated, async (_req, res) => {
+    try {
+      const subscribers = await storage.getNewsletterSubscribers();
+      res.json(subscribers);
+    } catch (error) {
+      console.error("Error fetching subscribers:", error);
+      res.status(500).json({ error: "Failed to fetch subscribers" });
+    }
+  });
+
+  const newsletterSendSchema = z.object({
+    subject: z.string().min(1).max(200),
+    htmlContent: z.string().min(1).max(50000),
+  });
+
+  app.post("/api/newsletter/send", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = newsletterSendSchema.parse(req.body);
+
+      const subscribers = await storage.getActiveNewsletterSubscribers();
+      
+      if (subscribers.length === 0) {
+        return res.status(400).json({ error: "No active subscribers" });
+      }
+
+      // Send emails in background
+      (async () => {
+        try {
+          const { sendNewsletterEmail } = await import("./email");
+          for (const subscriber of subscribers) {
+            try {
+              await sendNewsletterEmail(subscriber.email, subscriber.name || "", validatedData.subject, validatedData.htmlContent);
+            } catch (error) {
+              console.error(`Failed to send newsletter to ${subscriber.email}:`, error);
+            }
+          }
+        } catch (error) {
+          console.error("Error sending newsletter:", error);
+        }
+      })();
+
+      res.json({ message: `Newsletter queued for ${subscribers.length} subscribers` });
+    } catch (error) {
+      console.error("Error sending newsletter:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid newsletter data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to send newsletter" });
+    }
+  });
+
+  app.delete("/api/newsletter/subscribers/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteNewsletterSubscriber(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting subscriber:", error);
+      res.status(500).json({ error: "Failed to delete subscriber" });
+    }
+  });
+
+  // Team member routes
+  app.post("/api/team", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertTeamMemberSchema.parse(req.body);
+      const member = await storage.createTeamMember(validatedData);
+      res.status(201).json(member);
+    } catch (error) {
+      console.error("Error creating team member:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid team member data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create team member" });
+    }
+  });
+
+  app.get("/api/team", async (_req, res) => {
+    try {
+      const members = await storage.getActiveTeamMembers();
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      res.status(500).json({ error: "Failed to fetch team members" });
+    }
+  });
+
+  app.get("/api/team/all", isAuthenticated, async (_req, res) => {
+    try {
+      const members = await storage.getTeamMembers();
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      res.status(500).json({ error: "Failed to fetch team members" });
+    }
+  });
+
+  app.patch("/api/team/:id", isAuthenticated, async (req, res) => {
+    try {
+      const member = await storage.updateTeamMember(req.params.id, req.body);
+      if (!member) {
+        return res.status(404).json({ error: "Team member not found" });
+      }
+      res.json(member);
+    } catch (error) {
+      console.error("Error updating team member:", error);
+      res.status(500).json({ error: "Failed to update team member" });
+    }
+  });
+
+  app.delete("/api/team/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteTeamMember(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting team member:", error);
+      res.status(500).json({ error: "Failed to delete team member" });
+    }
+  });
+
+  // Delete routes for bookings and quotes
+  app.delete("/api/bookings/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteBooking(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting booking:", error);
+      res.status(500).json({ error: "Failed to delete booking" });
+    }
+  });
+
+  app.delete("/api/quotes/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteQuote(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting quote:", error);
+      res.status(500).json({ error: "Failed to delete quote" });
     }
   });
 

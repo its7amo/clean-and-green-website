@@ -3,20 +3,54 @@ import { Leaf, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Clock } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { BusinessSettings } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export function Footer() {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const { toast } = useToast();
 
   const { data: settings } = useQuery<BusinessSettings>({
     queryKey: ["/api/settings"],
   });
 
+  const subscribeMutation = useMutation({
+    mutationFn: async (data: { email: string; name?: string }) => {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to subscribe");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "🎉 Subscribed!",
+        description: "Welcome to our newsletter! Check your email for confirmation.",
+      });
+      setEmail("");
+      setName("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Subscription failed",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Newsletter signup:", email);
-    setEmail("");
+    subscribeMutation.mutate({ email, name });
   };
 
   return (
@@ -128,7 +162,7 @@ export function Footer() {
         </div>
 
         <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>&copy; 2024 Clean & Green. All rights reserved.</p>
+          <p>&copy; 2025 Clean & Green. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy">
               <span className="hover:text-primary transition-colors cursor-pointer" data-testid="link-privacy">

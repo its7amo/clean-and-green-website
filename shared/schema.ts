@@ -139,6 +139,15 @@ export const businessSettings = pgTable("business_settings", {
   hoursSat: text("hours_sat"),
   hoursSun: text("hours_sun"),
   aboutText: text("about_text"),
+  serviceAreas: text("service_areas").array(),
+  socialLinks: jsonb("social_links").$type<{
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+  }>(),
+  privacyPolicy: text("privacy_policy"),
+  termsOfService: text("terms_of_service"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
@@ -217,3 +226,64 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
 
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoices.$inferSelect;
+
+// Reviews table for customer testimonials
+export const reviews = pgTable("reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookingId: varchar("booking_id").references(() => bookings.id),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  rating: integer("rating").notNull(),
+  comment: text("comment").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  approvedAt: timestamp("approved_at"),
+});
+
+export const insertReviewSchema = createInsertSchema(reviews).omit({
+  id: true,
+  createdAt: true,
+  approvedAt: true,
+});
+
+export type InsertReview = z.infer<typeof insertReviewSchema>;
+export type Review = typeof reviews.$inferSelect;
+
+// Newsletter subscribers
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  name: text("name"),
+  active: boolean("active").notNull().default(true),
+  subscribedAt: timestamp("subscribed_at").notNull().default(sql`now()`),
+});
+
+export const insertNewsletterSubscriberSchema = createInsertSchema(newsletterSubscribers).omit({
+  id: true,
+  subscribedAt: true,
+});
+
+export type InsertNewsletterSubscriber = z.infer<typeof insertNewsletterSubscriberSchema>;
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+
+// Team members for team page
+export const teamMembers = pgTable("team_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  role: text("role").notNull(),
+  description: text("description"),
+  photoUrl: text("photo_url"),
+  order: integer("order").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+export type TeamMember = typeof teamMembers.$inferSelect;
