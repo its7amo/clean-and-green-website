@@ -23,6 +23,8 @@ import {
   type InsertNewsletterSubscriber,
   type TeamMember,
   type InsertTeamMember,
+  type ContactMessage,
+  type InsertContactMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -38,6 +40,7 @@ import {
   reviews,
   newsletterSubscribers,
   teamMembers,
+  contactMessages,
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -64,6 +67,13 @@ export interface IStorage {
   getQuote(id: string): Promise<Quote | undefined>;
   updateQuoteStatus(id: string, status: string): Promise<Quote | undefined>;
   deleteQuote(id: string): Promise<void>;
+
+  // Contact message operations
+  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+  getContactMessages(): Promise<ContactMessage[]>;
+  getContactMessage(id: string): Promise<ContactMessage | undefined>;
+  updateContactMessageStatus(id: string, status: string): Promise<ContactMessage | undefined>;
+  deleteContactMessage(id: string): Promise<void>;
 
   // Service operations
   createService(service: InsertService): Promise<Service>;
@@ -228,6 +238,30 @@ export class DbStorage implements IStorage {
 
   async deleteQuote(id: string): Promise<void> {
     await db.delete(quotes).where(eq(quotes.id, id));
+  }
+
+  // Contact message operations
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    const result = await db.insert(contactMessages).values(message).returning();
+    return result[0];
+  }
+
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+  }
+
+  async getContactMessage(id: string): Promise<ContactMessage | undefined> {
+    const result = await db.select().from(contactMessages).where(eq(contactMessages.id, id));
+    return result[0];
+  }
+
+  async updateContactMessageStatus(id: string, status: string): Promise<ContactMessage | undefined> {
+    const result = await db.update(contactMessages).set({ status }).where(eq(contactMessages.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteContactMessage(id: string): Promise<void> {
+    await db.delete(contactMessages).where(eq(contactMessages.id, id));
   }
 
   // Service operations

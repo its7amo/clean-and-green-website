@@ -13,11 +13,12 @@ import {
   insertEmployeeSchema,
   insertReviewSchema,
   insertNewsletterSubscriberSchema,
-  insertTeamMemberSchema
+  insertTeamMemberSchema,
+  insertContactMessageSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
-import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification } from "./email";
+import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification, sendContactMessageNotification } from "./email";
 import { sendBookingConfirmationSMS, sendInvoicePaymentLinkSMS, sendEmployeeAssignmentSMS } from "./sms";
 import Stripe from "stripe";
 
@@ -1391,6 +1392,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting quote:", error);
       res.status(500).json({ error: "Failed to delete quote" });
+    }
+  });
+
+  // Contact messages routes
+  app.post("/api/contact-messages", async (req, res) => {
+    try {
+      const validatedData = insertContactMessageSchema.parse(req.body);
+      const message = await storage.createContactMessage(validatedData);
+      
+      // Send email notification (async, don't block response)
+      (async () => {
+        try {
+          const settings = await storage.getBusinessSettings();
+          if (settings) {
+            await sendContactMessageNotification({
+              name: message.name,
+              email: message.email,
+              phone: message.phone || undefined,
+              message: message.message,
+            }, settings.email);
+          }
+        } catch (emailError) {
+          console.error("Failed to send contact message notification:", emailError);
+        }
+      })();
+      
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error creating contact message:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid message data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  app.get("/api/contact-messages", isAuthenticated, async (_req, res) => {
+    try {
+      const messages = await storage.getContactMessages();
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching contact messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.patch("/api/contact-messages/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (status !== "unread" && status !== "read" && status !== "archived") {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      const message = await storage.updateContactMessageStatus(req.params.id, status);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json(message);
+    } catch (error) {
+      console.error("Error updating contact message:", error);
+      res.status(500).json({ error: "Failed to update message" });
+    }
+  });
+
+  app.delete("/api/contact-messages/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteContactMessage(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting contact message:", error);
+      res.status(500).json({ error: "Failed to delete message" });
     }
   });
 
