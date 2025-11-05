@@ -179,6 +179,19 @@ export default function AdminEmployees() {
                   />
                   <FormField
                     control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password {editingEmployee && "(leave blank to keep current)"}</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} value={field.value || ""} data-testid="input-password" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="role"
                     render={({ field }) => (
                       <FormItem>

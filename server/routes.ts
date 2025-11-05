@@ -9,7 +9,8 @@ import {
   insertFaqItemSchema,
   insertGalleryImageSchema,
   insertInvoiceSchema,
-  insertUserSchema
+  insertUserSchema,
+  insertEmployeeSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
@@ -161,6 +162,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid status value", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update booking status" });
+    }
+  });
+
+  app.patch("/api/bookings/:id/assign", isAuthenticated, async (req, res) => {
+    try {
+      const assignSchema = z.object({
+        employeeIds: z.array(z.string()),
+      });
+      const { employeeIds } = assignSchema.parse(req.body);
+      
+      const booking = await storage.assignEmployeesToBooking(req.params.id, employeeIds);
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      // Send notifications to assigned employees (async, don't block response)
+      (async () => {
+        try {
+          for (const employeeId of employeeIds) {
+            const employee = await storage.getEmployee(employeeId);
+            if (employee && employee.email) {
+              const { sendEmployeeAssignmentNotification } = await import("./email");
+              await sendEmployeeAssignmentNotification({
+                name: booking.name,
+                email: booking.email,
+                phone: booking.phone,
+                address: booking.address,
+                serviceType: booking.service,
+                propertySize: booking.propertySize,
+                date: booking.date,
+                timeSlot: booking.timeSlot,
+              }, employee.email, employee.name);
+            }
+          }
+        } catch (emailError) {
+          console.error("Failed to send employee assignment notifications:", emailError);
+        }
+      })();
+
+      res.json(booking);
+    } catch (error) {
+      console.error("Error assigning employees:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid assignment data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to assign employees" });
     }
   });
 
@@ -663,6 +710,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/employees", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertEmployeeSchema.parse(req.body);
+      
+      // Hash password if provided
+      if (validatedData.password) {
+        validatedData.password = await hashPassword(validatedData.password);
+      }
+      
       const employee = await storage.createEmployee(validatedData);
       res.status(201).json(employee);
     } catch (error) {
@@ -690,6 +743,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/employees/:id", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertEmployeeSchema.partial().parse(req.body);
+      
+      // Hash password if provided
+      if (validatedData.password) {
+        validatedData.password = await hashPassword(validatedData.password);
+      }
+      
       const employee = await storage.updateEmployee(req.params.id, validatedData);
       if (!employee) {
         return res.status(404).json({ error: "Employee not found" });
@@ -711,6 +770,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting employee:", error);
       res.status(500).json({ error: "Failed to delete employee" });
+    }
+  });
+
+  // Employee authentication routes
+  app.post("/api/employee/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+
+      const employee = await storage.getEmployeeByEmail(email);
+      
+      if (!employee || !employee.password) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      if (!employee.active) {
+        return res.status(401).json({ error: "Account is inactive" });
+      }
+
+      const bcrypt = await import("bcryptjs");
+      const isValid = await bcrypt.default.compare(password, employee.password);
+      
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      const { password: _, ...employeeWithoutPassword } = employee;
+      (req.session as any).employee = employeeWithoutPassword;
+      
+      res.json({ success: true, employee: employeeWithoutPassword });
+    } catch (error) {
+      console.error("Employee login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/employee/logout", (req, res) => {
+    if ((req.session as any).employee) {
+      delete (req.session as any).employee;
+    }
+    res.json({ success: true });
+  });
+
+  app.get("/api/employee/auth/user", (req, res) => {
+    if (!(req.session as any).employee) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    res.json((req.session as any).employee);
+  });
+
+  // Employee bookings - get assignments for logged in employee
+  app.get("/api/employee/bookings", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const allBookings = await storage.getBookings();
+      const employeeBookings = allBookings.filter(
+        booking => booking.assignedEmployeeIds && booking.assignedEmployeeIds.includes(employee.id)
+      );
+      
+      res.json(employeeBookings);
+    } catch (error) {
+      console.error("Error fetching employee bookings:", error);
+      res.status(500).json({ error: "Failed to fetch bookings" });
     }
   });
 

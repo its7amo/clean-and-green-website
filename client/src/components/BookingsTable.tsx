@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, CheckCircle, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, CheckCircle, XCircle, Users } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Booking } from "@shared/schema";
+import type { Booking, Employee } from "@shared/schema";
 
 const statusColors = {
   pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
@@ -19,8 +22,15 @@ const serviceNames: Record<string, string> = {
 };
 
 export function BookingsTable() {
+  const [assignDialogOpen, setAssignDialogOpen] = useState<string | null>(null);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
+  });
+
+  const { data: employees } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
   });
 
   const updateStatusMutation = useMutation({
@@ -33,8 +43,37 @@ export function BookingsTable() {
     },
   });
 
+  const assignEmployeesMutation = useMutation({
+    mutationFn: async ({ bookingId, employeeIds }: { bookingId: string; employeeIds: string[] }) => {
+      const res = await apiRequest("PATCH", `/api/bookings/${bookingId}/assign`, { employeeIds });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      setAssignDialogOpen(null);
+      setSelectedEmployees([]);
+    },
+  });
+
   const handleStatusUpdate = (id: string, status: string) => {
     updateStatusMutation.mutate({ id, status });
+  };
+
+  const handleOpenAssignDialog = (booking: Booking) => {
+    setSelectedEmployees(booking.assignedEmployeeIds || []);
+    setAssignDialogOpen(booking.id);
+  };
+
+  const handleAssignEmployees = () => {
+    if (assignDialogOpen) {
+      assignEmployeesMutation.mutate({ bookingId: assignDialogOpen, employeeIds: selectedEmployees });
+    }
+  };
+
+  const toggleEmployee = (employeeId: string) => {
+    setSelectedEmployees(prev =>
+      prev.includes(employeeId) ? prev.filter(id => id !== employeeId) : [...prev, employeeId]
+    );
   };
 
   if (isLoading) {
@@ -75,6 +114,9 @@ export function BookingsTable() {
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Assigned
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Contact
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -101,6 +143,51 @@ export function BookingsTable() {
                   <Badge className={statusColors[booking.status as keyof typeof statusColors]}>
                     {booking.status}
                   </Badge>
+                </td>
+                <td className="px-6 py-4">
+                  <Dialog open={assignDialogOpen === booking.id} onOpenChange={(open) => !open && setAssignDialogOpen(null)}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleOpenAssignDialog(booking)}
+                        data-testid={`button-assign-${booking.id}`}
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        {booking.assignedEmployeeIds?.length || 0}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Assign Employees</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        {employees?.map((employee) => (
+                          <div key={employee.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={employee.id}
+                              checked={selectedEmployees.includes(employee.id)}
+                              onCheckedChange={() => toggleEmployee(employee.id)}
+                              data-testid={`checkbox-employee-${employee.id}`}
+                            />
+                            <label htmlFor={employee.id} className="text-sm font-medium leading-none">
+                              {employee.name} ({employee.role})
+                            </label>
+                          </div>
+                        ))}
+                        {!employees || employees.length === 0 && (
+                          <p className="text-sm text-muted-foreground">No employees available</p>
+                        )}
+                      </div>
+                      <Button 
+                        onClick={handleAssignEmployees} 
+                        disabled={assignEmployeesMutation.isPending}
+                        data-testid="button-save-assignment"
+                      >
+                        {assignEmployeesMutation.isPending ? "Saving..." : "Save Assignment"}
+                      </Button>
+                    </DialogContent>
+                  </Dialog>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm">{booking.phone}</div>

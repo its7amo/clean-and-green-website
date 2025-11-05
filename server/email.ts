@@ -239,3 +239,45 @@ export async function sendBookingChangeNotification(
     console.error('Failed to send booking change notification:', error);
   }
 }
+
+export async function sendEmployeeAssignmentNotification(
+  bookingData: BookingEmailData,
+  employeeEmail: string,
+  employeeName: string
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <onboarding@resend.dev>',
+      to: employeeEmail,
+      subject: `New Assignment - ${escapeHtml(bookingData.serviceType)} on ${escapeHtml(bookingData.date)}`,
+      html: `
+        <h2>New Cleaning Assignment</h2>
+        <p>Hi ${escapeHtml(employeeName)},</p>
+        <p>You have been assigned to a new cleaning job. Please review the details below:</p>
+        
+        <h3>Job Details:</h3>
+        <ul>
+          <li><strong>Service:</strong> ${escapeHtml(bookingData.serviceType)}</li>
+          <li><strong>Property Size:</strong> ${escapeHtml(bookingData.propertySize)}</li>
+          <li><strong>Date:</strong> ${escapeHtml(bookingData.date)}</li>
+          <li><strong>Time:</strong> ${escapeHtml(bookingData.timeSlot)}</li>
+          <li><strong>Address:</strong> ${escapeHtml(bookingData.address)}</li>
+        </ul>
+        
+        <h3>Customer Information:</h3>
+        <ul>
+          <li><strong>Name:</strong> ${escapeHtml(bookingData.name)}</li>
+          <li><strong>Phone:</strong> ${escapeHtml(bookingData.phone)}</li>
+          <li><strong>Email:</strong> ${escapeHtml(bookingData.email)}</li>
+        </ul>
+        
+        <p>Please log in to your employee dashboard to view all your assignments: <a href="https://clean-and-green-website.onrender.com/employee/dashboard">Employee Dashboard</a></p>
+        
+        <p>Thank you,<br>Clean & Green Management</p>
+      `,
+    });
+    console.log('Employee assignment notification email sent successfully');
+  } catch (error) {
+    console.error('Failed to send employee assignment notification:', error);
+  }
+}

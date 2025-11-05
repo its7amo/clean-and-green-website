@@ -96,6 +96,9 @@ export interface IStorage {
   getEmployeeByEmail(email: string): Promise<Employee | undefined>;
   updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: string): Promise<void>;
+
+  // Booking assignment operations
+  assignEmployeesToBooking(id: string, employeeIds: string[]): Promise<Booking | undefined>;
 }
 
 export class DbStorage implements IStorage {
@@ -150,6 +153,11 @@ export class DbStorage implements IStorage {
 
   async updateBookingStatus(id: string, status: string): Promise<Booking | undefined> {
     const result = await db.update(bookings).set({ status }).where(eq(bookings.id, id)).returning();
+    return result[0];
+  }
+
+  async assignEmployeesToBooking(id: string, employeeIds: string[]): Promise<Booking | undefined> {
+    const result = await db.update(bookings).set({ assignedEmployeeIds: employeeIds }).where(eq(bookings.id, id)).returning();
     return result[0];
   }
 

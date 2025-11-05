@@ -23,6 +23,8 @@ import AdminGallery from "@/pages/AdminGallery";
 import AdminFaq from "@/pages/AdminFaq";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminEmployees from "@/pages/AdminEmployees";
+import EmployeeLogin from "@/pages/EmployeeLogin";
+import EmployeeDashboard from "@/pages/EmployeeDashboard";
 import ManageBooking from "@/pages/manage-booking";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
@@ -89,6 +91,8 @@ function Router() {
       <Route path="/faq" component={Faq} />
       <Route path="/gallery" component={Gallery} />
       <Route path="/booking/:id" component={ManageBooking} />
+      <Route path="/employee/login" component={EmployeeLogin} />
+      <Route path="/employee/dashboard" component={EmployeeDashboard} />
       <Route path="/login" component={Login} />
       <Route path="/setup" component={SetupAdmin} />
       <Route path="/admin">
