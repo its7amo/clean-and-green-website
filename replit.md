@@ -73,12 +73,12 @@ Preferred communication style: Simple, everyday language.
 
 **Email Notification System**
 - Service: Resend API for transactional email delivery
-- Triggers: Automatic notifications sent when customers submit quotes or bookings
+- Triggers: Automatic notifications sent when customers submit quotes, bookings, or contact messages
 - Recipients: Business email from `business_settings` table (cleanandgreenok@gmail.com)
 - Security: All user-controlled data HTML-escaped to prevent injection attacks
 - Reply-To: Configured with customer email for easy responses
-- Error Handling: Email failures logged but don't break quote/booking submissions
-- Implementation: `server/email.ts` module with `sendQuoteNotification()` and `sendBookingNotification()` functions
+- Error Handling: Email failures logged but don't break quote/booking/contact submissions
+- Implementation: `server/email.ts` module with `sendQuoteNotification()`, `sendBookingNotification()`, and `sendContactMessageNotification()` functions
 
 **SMS Notification System**
 - Service: Twilio API for SMS delivery
@@ -130,6 +130,13 @@ Preferred communication style: Simple, everyday language.
    - Fields: id, service type, property size, custom size, details, customer contact info, status, created timestamp
    - Status workflow: pending → approved → completed
    - Allows custom property sizes for non-standard requests
+
+4. **Contact Messages Table**
+   - Purpose: Store customer contact form submissions
+   - Fields: id, name, email, phone, subject, message, status, created timestamp
+   - Status workflow: unread → read → archived
+   - Default status: "unread"
+   - Integration: Sends email notification to business owner when message submitted
 
 **Schema Validation**: Zod schemas generated from Drizzle tables using `drizzle-zod`
 - Insert schemas omit auto-generated fields (id, timestamps)
@@ -193,6 +200,7 @@ Preferred communication style: Simple, everyday language.
 - `/admin/quotes` - Quote requests management table with status updates and delete functionality
 - `/admin/invoices` - Invoice creation and management with PDF generation and payment tracking
 - `/admin/employees` - Employee management with work assignments
+- `/admin/messages` - Contact messages management (view submissions, update status, delete messages)
 - `/admin/reviews` - Review moderation (approve/deny customer reviews)
 - `/admin/newsletter` - Newsletter management (view subscribers, send email broadcasts)
 - `/admin/team` - Team member management (add/edit/delete team profiles)
