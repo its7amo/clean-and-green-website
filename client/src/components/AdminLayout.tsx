@@ -27,6 +27,10 @@ import {
   Image,
   HelpCircle,
   Receipt,
+  UserCircle,
+  Star,
+  Mail,
+  UsersRound,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -36,7 +40,10 @@ const menuItems = [
   { href: "/admin/quotes", icon: FileText, label: "Quotes" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
-  { href: "/admin/employees", icon: Users, label: "Employees" },
+  { href: "/admin/employees", icon: UserCircle, label: "Employees" },
+  { href: "/admin/reviews", icon: Star, label: "Reviews" },
+  { href: "/admin/newsletter", icon: Mail, label: "Newsletter" },
+  { href: "/admin/team", icon: UsersRound, label: "Team" },
   { href: "/admin/services", icon: Wrench, label: "Services" },
   { href: "/admin/gallery", icon: Image, label: "Gallery" },
   { href: "/admin/faq", icon: HelpCircle, label: "FAQ" },
