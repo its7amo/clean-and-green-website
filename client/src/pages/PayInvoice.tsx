@@ -100,7 +100,12 @@ export default function PayInvoice() {
   const { toast } = useToast();
 
   const { data: invoice, isLoading } = useQuery<Invoice>({
-    queryKey: ["/api/invoices", invoiceId],
+    queryKey: ["/api/invoices", invoiceId, "public"],
+    queryFn: async () => {
+      const res = await fetch(`/api/invoices/${invoiceId}/public`);
+      if (!res.ok) throw new Error("Invoice not found");
+      return res.json();
+    },
     enabled: !!invoiceId,
   });
 
