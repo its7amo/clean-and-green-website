@@ -15,6 +15,15 @@ import {
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification } from "./email";
+import Stripe from "stripe";
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.warn('Warning: STRIPE_SECRET_KEY not set. Payment features will not work.');
+}
+
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-10-29.clover" })
+  : null;
 
 const bookingStatusSchema = z.object({
   status: z.enum(["pending", "confirmed", "completed", "cancelled"]),
@@ -896,6 +905,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid message format", details: error.errors });
       }
       res.status(500).json({ error: "Failed to get chat response" });
+    }
+  });
+
+  // Stripe payment endpoints
+  app.post("/api/create-payment-intent", async (req, res) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ error: "Payment processing not configured" });
+      }
+
+      const { invoiceId } = req.body;
+      
+      if (!invoiceId) {
+        return res.status(400).json({ error: "Invoice ID required" });
+      }
+
+      // Get invoice from database to verify it exists and get the actual amount
+      const invoice = await storage.getInvoice(invoiceId);
+      
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      if (invoice.status === "paid") {
+        return res.status(400).json({ error: "Invoice already paid" });
+      }
+
+      // Use the invoice's actual total (server-side truth)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: invoice.total, // Already in cents from database
+        currency: "usd",
+        metadata: { invoiceId: invoice.id },
+      });
+
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Failed to create payment intent: " + error.message });
+    }
+  });
+
+  // Mark invoice as paid (verifies payment with Stripe first)
+  app.post("/api/invoices/:id/mark-paid", async (req, res) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ error: "Payment processing not configured" });
+      }
+
+      const { paymentIntentId } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ error: "Payment intent ID required" });
+      }
+
+      // Verify the payment with Stripe
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status !== 'succeeded') {
+        return res.status(400).json({ error: "Payment not successful" });
+      }
+
+      // Verify the payment intent belongs to this invoice
+      if (paymentIntent.metadata.invoiceId !== req.params.id) {
+        return res.status(400).json({ error: "Payment intent does not match invoice" });
+      }
+
+      // Get invoice to verify amount matches
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      if (paymentIntent.amount !== invoice.total) {
+        return res.status(400).json({ error: "Payment amount does not match invoice total" });
+      }
+
+      // All verified - mark as paid
+      const updatedInvoice = await storage.updateInvoice(req.params.id, {
+        status: "paid",
+        paidDate: new Date(),
+      });
+
+      res.json(updatedInvoice);
+    } catch (error) {
+      console.error("Error marking invoice as paid:", error);
+      res.status(500).json({ error: "Failed to update invoice" });
     }
   });
 

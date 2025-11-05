@@ -27,6 +27,7 @@ import EmployeeLogin from "@/pages/EmployeeLogin";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
 import ManageBooking from "@/pages/manage-booking";
 import CustomerPortal from "@/pages/CustomerPortal";
+import PayInvoice from "@/pages/PayInvoice";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -93,6 +94,7 @@ function Router() {
       <Route path="/gallery" component={Gallery} />
       <Route path="/booking/:id" component={ManageBooking} />
       <Route path="/portal" component={CustomerPortal} />
+      <Route path="/pay-invoice/:id" component={PayInvoice} />
       <Route path="/employee/login" component={EmployeeLogin} />
       <Route path="/employee/dashboard" component={EmployeeDashboard} />
       <Route path="/login" component={Login} />
