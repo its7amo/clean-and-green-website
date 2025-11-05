@@ -1,6 +1,6 @@
 import {
   type User,
-  type UpsertUser,
+  type InsertUser,
   type Booking,
   type InsertBooking,
   type Quote,
@@ -30,9 +30,11 @@ import {
 import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  // Auth user operations (required for Replit Auth)
+  // Auth user operations
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  countUsers(): Promise<number>;
 
   // Booking operations
   createBooking(booking: InsertBooking): Promise<Booking>;
@@ -83,25 +85,25 @@ export interface IStorage {
 }
 
 export class DbStorage implements IStorage {
-  // Auth user operations (required for Replit Auth)
+  // Auth user operations
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
+  }
+
+  async countUsers(): Promise<number> {
+    const result = await db.select().from(users);
+    return result.length;
   }
 
   async createBooking(booking: InsertBooking): Promise<Booking> {

@@ -8,10 +8,11 @@ import {
   insertBusinessSettingsSchema,
   insertFaqItemSchema,
   insertGalleryImageSchema,
-  insertInvoiceSchema
+  insertInvoiceSchema,
+  insertUserSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 
 const bookingStatusSchema = z.object({
   status: z.enum(["pending", "confirmed", "completed", "cancelled"]),
@@ -22,21 +23,51 @@ const quoteStatusSchema = z.object({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup Replit Auth
+  // Setup authentication
   await setupAuth(app);
 
-  // Auth user endpoint (protected)
-  app.get("/api/auth/user", isAuthenticated, async (req, res) => {
+  // Check if setup is required (no users exist)
+  app.get("/api/setup/required", async (_req, res) => {
     try {
-      const user = req.user as any;
-      if (!user.claims) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      const dbUser = await storage.getUser(user.claims.sub);
-      res.json(dbUser);
+      const userCount = await storage.countUsers();
+      res.json({ required: userCount === 0 });
     } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ error: "Failed to fetch user" });
+      console.error("Error checking setup status:", error);
+      res.status(500).json({ error: "Failed to check setup status" });
+    }
+  });
+
+  // Create initial admin user (only works if no users exist)
+  app.post("/api/setup/admin", async (req, res) => {
+    try {
+      const userCount = await storage.countUsers();
+      if (userCount > 0) {
+        return res.status(403).json({ error: "Setup already completed" });
+      }
+
+      const setupSchema = z.object({
+        username: z.string().min(3),
+        password: z.string().min(6),
+        email: z.string().email().optional(),
+      });
+
+      const validatedData = setupSchema.parse(req.body);
+      const hashedPassword = await hashPassword(validatedData.password);
+
+      const user = await storage.createUser({
+        username: validatedData.username,
+        password: hashedPassword,
+        email: validatedData.email,
+      });
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json({ success: true, user: userWithoutPassword });
+    } catch (error) {
+      console.error("Error creating admin user:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create admin user" });
     }
   });
 
