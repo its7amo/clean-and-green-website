@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useEmployeePermissions } from "@/hooks/use-employee-permissions";
 import { EmployeeLayout } from "@/components/EmployeeLayout";
@@ -102,16 +103,6 @@ export default function EmployeeBookings() {
             <CardDescription>
               {canEdit("bookings") ? "View and manage all bookings" : "View all bookings (read-only)"}
             </CardDescription>
-            {/* DEBUG: Show current permissions */}
-            <div className="mt-2 p-2 bg-muted rounded text-xs">
-              <strong>Debug - Your Permissions:</strong>
-              <br />
-              View: {canView("bookings") ? "✓" : "✗"}
-              {" | "}
-              Edit: {canEdit("bookings") ? "✓" : "✗"}
-              {" | "}
-              Delete: {canDelete("bookings") ? "✓" : "✗"}
-            </div>
           </CardHeader>
           <CardContent>
             {bookingsLoading ? (
@@ -153,26 +144,22 @@ export default function EmployeeBookings() {
                       {(canEdit("bookings") || canDelete("bookings")) && (
                         <TableCell>
                           <div className="flex gap-2">
-                            {canEdit("bookings") && booking.status === "pending" && (
-                              <Button
-                                size="sm"
-                                onClick={() => updateStatusMutation.mutate({ id: booking.id, status: "confirmed" })}
+                            {canEdit("bookings") && (
+                              <Select
+                                value={booking.status}
+                                onValueChange={(newStatus) => updateStatusMutation.mutate({ id: booking.id, status: newStatus })}
                                 disabled={updateStatusMutation.isPending}
-                                data-testid={`button-confirm-${booking.id}`}
                               >
-                                Confirm
-                              </Button>
-                            )}
-                            {canEdit("bookings") && booking.status === "confirmed" && (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => updateStatusMutation.mutate({ id: booking.id, status: "completed" })}
-                                disabled={updateStatusMutation.isPending}
-                                data-testid={`button-complete-${booking.id}`}
-                              >
-                                Complete
-                              </Button>
+                                <SelectTrigger className="w-32" data-testid={`select-status-${booking.id}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                                  <SelectItem value="completed">Completed</SelectItem>
+                                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                                </SelectContent>
+                              </Select>
                             )}
                             {canDelete("bookings") && (
                               <Button
