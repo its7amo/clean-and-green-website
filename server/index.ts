@@ -51,6 +51,36 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Validate required environment variables
+  const requiredEnvVars = [
+    'DATABASE_URL',
+    'SESSION_SECRET',
+  ];
+
+  const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingEnvVars.length > 0) {
+    console.error('❌ Missing required environment variables:');
+    missingEnvVars.forEach(varName => console.error(`   - ${varName}`));
+    console.error('\nPlease set these variables before starting the server.');
+    process.exit(1);
+  }
+
+  // Warn about optional but recommended environment variables
+  const optionalEnvVars = [
+    'STRIPE_SECRET_KEY',
+    'RESEND_API_KEY',
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_PHONE_NUMBER',
+  ];
+
+  const missingOptional = optionalEnvVars.filter(varName => !process.env[varName]);
+  if (missingOptional.length > 0) {
+    console.warn('⚠️  Optional environment variables not set (some features may not work):');
+    missingOptional.forEach(varName => console.warn(`   - ${varName}`));
+  }
+
   // Run database migrations on startup
   try {
     await runMigrations();
