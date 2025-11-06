@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Shield } from "lucide-react";
+import { Plus, Pencil, Trash2, Shield, Mail } from "lucide-react";
 import { PERMISSION_METADATA, type PermissionTemplate, type Feature, type Action } from "@shared/permissions";
 
 export default function AdminEmployees() {
@@ -27,6 +28,10 @@ export default function AdminEmployees() {
   const [permissionsEmployee, setPermissionsEmployee] = useState<Employee | null>(null);
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<Map<Feature, Set<Action>>>(new Map());
+  const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
 
   const { data: employees, isLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -86,6 +91,23 @@ export default function AdminEmployees() {
     },
     onError: () => {
       toast({ title: "Failed to delete employee", variant: "destructive" });
+    },
+  });
+
+  const sendEmailMutation = useMutation({
+    mutationFn: async (data: { employeeIds: string[]; subject: string; message: string }) => {
+      const res = await apiRequest("POST", "/api/employees/send-email", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Emails sent successfully" });
+      setIsEmailDialogOpen(false);
+      setEmailSubject("");
+      setEmailMessage("");
+      setSelectedEmployees(new Set());
+    },
+    onError: () => {
+      toast({ title: "Failed to send emails", variant: "destructive" });
     },
   });
 
@@ -203,6 +225,42 @@ export default function AdminEmployees() {
     updatePermissionsMutation.mutate({
       employeeId: permissionsEmployee.id,
       permissions,
+    });
+  };
+
+  const toggleEmployeeSelection = (employeeId: string) => {
+    setSelectedEmployees(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(employeeId)) {
+        newSet.delete(employeeId);
+      } else {
+        newSet.add(employeeId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedEmployees.size === employees?.length) {
+      setSelectedEmployees(new Set());
+    } else {
+      setSelectedEmployees(new Set(employees?.map(e => e.id) || []));
+    }
+  };
+
+  const handleSendEmail = () => {
+    if (selectedEmployees.size === 0) {
+      toast({ title: "Please select at least one employee", variant: "destructive" });
+      return;
+    }
+    if (!emailSubject.trim() || !emailMessage.trim()) {
+      toast({ title: "Please fill in subject and message", variant: "destructive" });
+      return;
+    }
+    sendEmailMutation.mutate({
+      employeeIds: Array.from(selectedEmployees),
+      subject: emailSubject,
+      message: emailMessage,
     });
   };
 
@@ -338,6 +396,25 @@ export default function AdminEmployees() {
           </Dialog>
         </div>
 
+        {selectedEmployees.size > 0 && (
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              onClick={() => setIsEmailDialogOpen(true)}
+              data-testid="button-send-email"
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Send Email ({selectedEmployees.size} selected)
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedEmployees(new Set())}
+              data-testid="button-clear-selection"
+            >
+              Clear Selection
+            </Button>
+          </div>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>All Employees</CardTitle>
@@ -356,6 +433,13 @@ export default function AdminEmployees() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedEmployees.size === employees.length}
+                        onCheckedChange={toggleSelectAll}
+                        data-testid="checkbox-select-all"
+                      />
+                    </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
@@ -367,6 +451,13 @@ export default function AdminEmployees() {
                 <TableBody>
                   {employees.map((employee) => (
                     <TableRow key={employee.id} data-testid={`row-employee-${employee.id}`}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedEmployees.has(employee.id)}
+                          onCheckedChange={() => toggleEmployeeSelection(employee.id)}
+                          data-testid={`checkbox-employee-${employee.id}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {employee.name}
                       </TableCell>
@@ -521,6 +612,55 @@ export default function AdminEmployees() {
                 data-testid="button-save-permissions"
               >
                 {updatePermissionsMutation.isPending ? "Saving..." : "Save Permissions"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Email Dialog */}
+        <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Send Email to Employees</DialogTitle>
+              <DialogDescription>
+                Compose an email to send to {selectedEmployees.size} selected employee{selectedEmployees.size !== 1 ? 's' : ''}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Subject</label>
+                <Input
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="Email subject"
+                  data-testid="input-email-subject"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Message</label>
+                <Textarea
+                  value={emailMessage}
+                  onChange={(e) => setEmailMessage(e.target.value)}
+                  placeholder="Your message to employees..."
+                  rows={6}
+                  data-testid="textarea-email-message"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEmailDialogOpen(false)}
+                data-testid="button-cancel-email"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSendEmail}
+                disabled={sendEmailMutation.isPending}
+                data-testid="button-confirm-send-email"
+              >
+                {sendEmailMutation.isPending ? "Sending..." : "Send Email"}
               </Button>
             </DialogFooter>
           </DialogContent>

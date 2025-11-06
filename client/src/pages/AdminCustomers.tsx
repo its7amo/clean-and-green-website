@@ -24,8 +24,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, Edit, Trash2, UserPlus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Eye, Edit, Trash2, UserPlus, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +46,10 @@ export default function AdminCustomers() {
     phone: "",
     address: "",
   });
+  const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set());
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
 
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -129,6 +135,23 @@ export default function AdminCustomers() {
     },
   });
 
+  const sendEmailMutation = useMutation({
+    mutationFn: async (data: { customerIds: string[]; subject: string; message: string }) => {
+      const res = await apiRequest("POST", "/api/customers/send-email", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Emails sent successfully" });
+      setIsEmailDialogOpen(false);
+      setEmailSubject("");
+      setEmailMessage("");
+      setSelectedCustomers(new Set());
+    },
+    onError: () => {
+      toast({ title: "Failed to send emails", variant: "destructive" });
+    },
+  });
+
   const handleView = (customer: Customer) => {
     setSelectedCustomer(customer);
     setViewDialogOpen(true);
@@ -171,6 +194,42 @@ export default function AdminCustomers() {
     }
   };
 
+  const toggleCustomerSelection = (customerId: string) => {
+    setSelectedCustomers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(customerId)) {
+        newSet.delete(customerId);
+      } else {
+        newSet.add(customerId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCustomers.size === customers.length) {
+      setSelectedCustomers(new Set());
+    } else {
+      setSelectedCustomers(new Set(customers.map(c => c.id)));
+    }
+  };
+
+  const handleSendEmail = () => {
+    if (selectedCustomers.size === 0) {
+      toast({ title: "Please select at least one customer", variant: "destructive" });
+      return;
+    }
+    if (!emailSubject.trim() || !emailMessage.trim()) {
+      toast({ title: "Please fill in subject and message", variant: "destructive" });
+      return;
+    }
+    sendEmailMutation.mutate({
+      customerIds: Array.from(selectedCustomers),
+      subject: emailSubject,
+      message: emailMessage,
+    });
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -183,6 +242,25 @@ export default function AdminCustomers() {
             Add Customer
           </Button>
         </div>
+
+        {selectedCustomers.size > 0 && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setIsEmailDialogOpen(true)}
+              data-testid="button-send-email"
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Send Email ({selectedCustomers.size} selected)
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedCustomers(new Set())}
+              data-testid="button-clear-selection"
+            >
+              Clear Selection
+            </Button>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -201,6 +279,13 @@ export default function AdminCustomers() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedCustomers.size === customers.length}
+                        onCheckedChange={toggleSelectAll}
+                        data-testid="checkbox-select-all"
+                      />
+                    </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
@@ -213,6 +298,13 @@ export default function AdminCustomers() {
                 <TableBody>
                   {customers.map((customer) => (
                     <TableRow key={customer.id} data-testid={`row-customer-${customer.id}`}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedCustomers.has(customer.id)}
+                          onCheckedChange={() => toggleCustomerSelection(customer.id)}
+                          data-testid={`checkbox-customer-${customer.id}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium" data-testid={`text-customer-name-${customer.id}`}>
                         {customer.name}
                       </TableCell>
@@ -425,6 +517,55 @@ export default function AdminCustomers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Email Dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Email to Customers</DialogTitle>
+            <DialogDescription>
+              Compose an email to send to {selectedCustomers.size} selected customer{selectedCustomers.size !== 1 ? 's' : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Subject</label>
+              <Input
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Email subject"
+                data-testid="input-email-subject"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Message</label>
+              <Textarea
+                value={emailMessage}
+                onChange={(e) => setEmailMessage(e.target.value)}
+                placeholder="Your message to customers..."
+                rows={6}
+                data-testid="textarea-email-message"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEmailDialogOpen(false)}
+              data-testid="button-cancel-email"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendEmail}
+              disabled={sendEmailMutation.isPending}
+              data-testid="button-confirm-send-email"
+            >
+              {sendEmailMutation.isPending ? "Sending..." : "Send Email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

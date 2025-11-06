@@ -19,7 +19,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
-import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification, sendContactMessageNotification } from "./email";
+import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification, sendContactMessageNotification, resend, escapeHtml } from "./email";
 import { sendBookingConfirmationSMS, sendInvoicePaymentLinkSMS, sendEmployeeAssignmentSMS } from "./sms";
 import { logActivity, getUserContext } from "./activityLogger";
 import Stripe from "stripe";
@@ -1043,6 +1043,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching permission templates:", error);
       res.status(500).json({ error: "Failed to fetch templates" });
+    }
+  });
+
+  // Send bulk email to employees
+  app.post("/api/employees/send-email", isAuthenticated, async (req, res) => {
+    try {
+      const { employeeIds, subject, message } = req.body;
+      
+      if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+        return res.status(400).json({ error: "Employee IDs must be a non-empty array" });
+      }
+      
+      if (!subject || !message) {
+        return res.status(400).json({ error: "Subject and message are required" });
+      }
+
+      const employees = await storage.getEmployees();
+      const selectedEmployees = employees.filter(e => employeeIds.includes(e.id));
+
+      if (selectedEmployees.length === 0) {
+        return res.status(404).json({ error: "No employees found" });
+      }
+
+      // Send emails to each employee
+      const emailPromises = selectedEmployees
+        .filter(e => e.email)
+        .map(async (employee) => {
+          try {
+            await resend.emails.send({
+              from: 'Clean & Green <noreply@voryn.store>',
+              to: employee.email,
+              subject: subject,
+              html: `
+                <h2>Message from Clean & Green Management</h2>
+                <p>Hi ${escapeHtml(employee.name)},</p>
+                <div style="white-space: pre-wrap;">${escapeHtml(message)}</div>
+                <br>
+                <p>Best regards,<br>Clean & Green Team</p>
+              `,
+            });
+          } catch (error) {
+            console.error(`Failed to send email to ${employee.email}:`, error);
+          }
+        });
+
+      await Promise.all(emailPromises);
+
+      res.json({ success: true, sent: emailPromises.length });
+    } catch (error) {
+      console.error("Error sending emails to employees:", error);
+      res.status(500).json({ error: "Failed to send emails" });
     }
   });
 
@@ -2653,6 +2704,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting customer:", error);
       res.status(500).json({ error: "Failed to delete customer" });
+    }
+  });
+
+  // Send bulk email to customers
+  app.post("/api/customers/send-email", isAuthenticated, async (req, res) => {
+    try {
+      const { customerIds, subject, message } = req.body;
+      
+      if (!Array.isArray(customerIds) || customerIds.length === 0) {
+        return res.status(400).json({ error: "Customer IDs must be a non-empty array" });
+      }
+      
+      if (!subject || !message) {
+        return res.status(400).json({ error: "Subject and message are required" });
+      }
+
+      const customers = await storage.getCustomers();
+      const selectedCustomers = customers.filter(c => customerIds.includes(c.id));
+
+      if (selectedCustomers.length === 0) {
+        return res.status(404).json({ error: "No customers found" });
+      }
+
+      // Send emails to each customer
+      const emailPromises = selectedCustomers
+        .filter(c => c.email)
+        .map(async (customer) => {
+          try {
+            await resend.emails.send({
+              from: 'Clean & Green <noreply@voryn.store>',
+              to: customer.email!,
+              subject: subject,
+              html: `
+                <h2>Message from Clean & Green</h2>
+                <p>Hi ${escapeHtml(customer.name)},</p>
+                <div style="white-space: pre-wrap;">${escapeHtml(message)}</div>
+                <br>
+                <p>Best regards,<br>Clean & Green Team</p>
+              `,
+            });
+          } catch (error) {
+            console.error(`Failed to send email to ${customer.email}:`, error);
+          }
+        });
+
+      await Promise.all(emailPromises);
+
+      res.json({ success: true, sent: emailPromises.length });
+    } catch (error) {
+      console.error("Error sending emails to customers:", error);
+      res.status(500).json({ error: "Failed to send emails" });
     }
   });
 
