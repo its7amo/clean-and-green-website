@@ -615,3 +615,57 @@ export async function sendReviewRequestEmail(
     console.error('Failed to send review request email:', error);
   }
 }
+
+export interface PaymentThankYouEmailData {
+  customerEmail: string;
+  customerName: string;
+  serviceDescription: string;
+  invoiceNumber: string;
+}
+
+export async function sendPaymentThankYouEmail(data: PaymentThankYouEmailData): Promise<void> {
+  try {
+    const reviewUrl = `https://clean-and-green-website.onrender.com/reviews#review-form`;
+    
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: data.customerEmail,
+      subject: '✨ Thank You for Your Payment!',
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
+          <h2 style="color: #22c55e;">Thank You, ${escapeHtml(data.customerName)}!</h2>
+          
+          <p>We've received your payment for invoice #${escapeHtml(data.invoiceNumber)}.</p>
+          
+          <p>We sincerely appreciate you choosing Clean & Green for your ${escapeHtml(data.serviceDescription)}. Our eco-friendly approach means a lot to us, and we hope you're thrilled with the results!</p>
+          
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+          
+          <h3 style="color: #22c55e;">💚 We'd Love Your Feedback!</h3>
+          
+          <p>Your opinion matters to us and helps others in the Oklahoma community discover great eco-friendly cleaning services. Would you take a moment to share your experience?</p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${reviewUrl}" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
+              Leave a Review ⭐
+            </a>
+          </p>
+          
+          <p style="font-size: 14px; color: #666;">Your review will be checked by our team before being published on our website.</p>
+          
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+          
+          <p>Thank you for being part of our eco-friendly cleaning community!</p>
+          
+          <p>Best regards,<br><strong>The Clean & Green Team</strong><br>Oklahoma's Eco-Friendly Cleaning Service</p>
+          
+          <p style="font-size: 12px; color: #999; margin-top: 30px;">Clean & Green - Making Oklahoma cleaner, one eco-friendly service at a time.</p>
+        </div>
+      `,
+    });
+    console.log(`Payment thank you email sent to ${data.customerEmail} for invoice ${data.invoiceNumber}`);
+  } catch (error) {
+    console.error('Failed to send payment thank you email:', error);
+    // Don't throw - email failures shouldn't break the process
+  }
+}

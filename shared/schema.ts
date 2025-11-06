@@ -230,6 +230,7 @@ export const invoices = pgTable("invoices", {
   status: text("status").notNull().default("draft"),
   dueDate: timestamp("due_date"),
   paidDate: timestamp("paid_date"),
+  reviewEmailSent: boolean("review_email_sent").notNull().default(false),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
