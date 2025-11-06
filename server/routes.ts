@@ -1066,31 +1066,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "No employees found" });
       }
 
+      // Filter employees with valid email addresses
+      const employeesWithEmail = selectedEmployees.filter(e => e.email && e.email.trim() !== '');
+      const employeesWithoutEmail = selectedEmployees.filter(e => !e.email || e.email.trim() === '');
+
+      if (employeesWithoutEmail.length > 0) {
+        console.warn(`Skipping ${employeesWithoutEmail.length} employee(s) without email addresses:`, 
+          employeesWithoutEmail.map(e => e.name).join(', '));
+      }
+
+      if (employeesWithEmail.length === 0) {
+        return res.status(400).json({ error: "None of the selected employees have email addresses" });
+      }
+
       // Send emails to each employee
-      const emailPromises = selectedEmployees
-        .filter(e => e.email)
-        .map(async (employee) => {
-          try {
-            await resend.emails.send({
-              from: 'Clean & Green <noreply@voryn.store>',
-              to: employee.email,
-              subject: subject,
-              html: `
-                <h2>Message from Clean & Green Management</h2>
-                <p>Hi ${escapeHtml(employee.name)},</p>
-                <div style="white-space: pre-wrap;">${escapeHtml(message)}</div>
-                <br>
-                <p>Best regards,<br>Clean & Green Team</p>
-              `,
-            });
-          } catch (error) {
-            console.error(`Failed to send email to ${employee.email}:`, error);
-          }
-        });
+      const emailPromises = employeesWithEmail.map(async (employee) => {
+        try {
+          await resend.emails.send({
+            from: 'Clean & Green <noreply@voryn.store>',
+            to: employee.email,
+            subject: subject,
+            html: `
+              <h2>Message from Clean & Green Management</h2>
+              <p>Hi ${escapeHtml(employee.name)},</p>
+              <div style="white-space: pre-wrap;">${escapeHtml(message)}</div>
+              <br>
+              <p>Best regards,<br>Clean & Green Team</p>
+            `,
+          });
+        } catch (error) {
+          console.error(`Failed to send email to ${employee.email}:`, error);
+        }
+      });
 
       await Promise.all(emailPromises);
 
-      res.json({ success: true, sent: emailPromises.length });
+      // Log activity
+      await logActivity({
+        context: getUserContext(req),
+        action: 'sent_bulk_email',
+        entityType: 'employee',
+        details: `Sent email to ${employeesWithEmail.length} employee(s). Subject: "${subject}"`,
+      });
+
+      res.json({ 
+        success: true, 
+        sent: employeesWithEmail.length,
+        skipped: employeesWithoutEmail.length
+      });
     } catch (error) {
       console.error("Error sending emails to employees:", error);
       res.status(500).json({ error: "Failed to send emails" });
@@ -2727,31 +2750,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "No customers found" });
       }
 
+      // Filter customers with valid email addresses
+      const customersWithEmail = selectedCustomers.filter(c => c.email && c.email.trim() !== '');
+      const customersWithoutEmail = selectedCustomers.filter(c => !c.email || c.email.trim() === '');
+
+      if (customersWithoutEmail.length > 0) {
+        console.warn(`Skipping ${customersWithoutEmail.length} customer(s) without email addresses:`, 
+          customersWithoutEmail.map(c => c.name).join(', '));
+      }
+
+      if (customersWithEmail.length === 0) {
+        return res.status(400).json({ error: "None of the selected customers have email addresses" });
+      }
+
       // Send emails to each customer
-      const emailPromises = selectedCustomers
-        .filter(c => c.email)
-        .map(async (customer) => {
-          try {
-            await resend.emails.send({
-              from: 'Clean & Green <noreply@voryn.store>',
-              to: customer.email!,
-              subject: subject,
-              html: `
-                <h2>Message from Clean & Green</h2>
-                <p>Hi ${escapeHtml(customer.name)},</p>
-                <div style="white-space: pre-wrap;">${escapeHtml(message)}</div>
-                <br>
-                <p>Best regards,<br>Clean & Green Team</p>
-              `,
-            });
-          } catch (error) {
-            console.error(`Failed to send email to ${customer.email}:`, error);
-          }
-        });
+      const emailPromises = customersWithEmail.map(async (customer) => {
+        try {
+          await resend.emails.send({
+            from: 'Clean & Green <noreply@voryn.store>',
+            to: customer.email!,
+            subject: subject,
+            html: `
+              <h2>Message from Clean & Green</h2>
+              <p>Hi ${escapeHtml(customer.name)},</p>
+              <div style="white-space: pre-wrap;">${escapeHtml(message)}</div>
+              <br>
+              <p>Best regards,<br>Clean & Green Team</p>
+            `,
+          });
+        } catch (error) {
+          console.error(`Failed to send email to ${customer.email}:`, error);
+        }
+      });
 
       await Promise.all(emailPromises);
 
-      res.json({ success: true, sent: emailPromises.length });
+      // Log activity
+      await logActivity({
+        context: getUserContext(req),
+        action: 'sent_bulk_email',
+        entityType: 'customer',
+        details: `Sent email to ${customersWithEmail.length} customer(s). Subject: "${subject}"`,
+      });
+
+      res.json({ 
+        success: true, 
+        sent: customersWithEmail.length,
+        skipped: customersWithoutEmail.length
+      });
     } catch (error) {
       console.error("Error sending emails to customers:", error);
       res.status(500).json({ error: "Failed to send emails" });

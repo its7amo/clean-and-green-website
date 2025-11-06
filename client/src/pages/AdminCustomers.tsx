@@ -138,17 +138,41 @@ export default function AdminCustomers() {
   const sendEmailMutation = useMutation({
     mutationFn: async (data: { customerIds: string[]; subject: string; message: string }) => {
       const res = await apiRequest("POST", "/api/customers/send-email", data);
-      return res.json();
+      if (!res.ok) {
+        try {
+          const error = await res.json();
+          throw new Error(error.error || "Failed to send emails");
+        } catch (e) {
+          throw new Error("Failed to send emails");
+        }
+      }
+      try {
+        return await res.json();
+      } catch (e) {
+        throw new Error("Invalid response from server");
+      }
     },
-    onSuccess: () => {
-      toast({ title: "Emails sent successfully" });
+    onSuccess: (data: any) => {
+      const { sent, skipped } = data;
+      let description = `Email sent to ${sent} customer(s)`;
+      if (skipped > 0) {
+        description += `. ${skipped} customer(s) skipped (no email address)`;
+      }
+      toast({ 
+        title: "Emails sent successfully",
+        description 
+      });
       setIsEmailDialogOpen(false);
       setEmailSubject("");
       setEmailMessage("");
       setSelectedCustomers(new Set());
     },
-    onError: () => {
-      toast({ title: "Failed to send emails", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ 
+        title: "Failed to send emails", 
+        description: error.message,
+        variant: "destructive" 
+      });
     },
   });
 
