@@ -1,15 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Booking, Employee } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, MapPin, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, MapPin, Clock, Camera } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { EmployeeLayout } from "@/components/EmployeeLayout";
+import { PhotoUpload } from "@/components/PhotoUpload";
 
 export default function EmployeeDashboard() {
   const [, setLocation] = useLocation();
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   const { data: employee, isLoading: employeeLoading } = useQuery<Employee>({
     queryKey: ["/api/employee/auth/user"],
@@ -98,6 +102,7 @@ export default function EmployeeDashboard() {
                     <TableHead>Customer</TableHead>
                     <TableHead>Address</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Photos</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -121,6 +126,20 @@ export default function EmployeeDashboard() {
                           {booking.status}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedBookingId(booking.id);
+                            setPhotoDialogOpen(true);
+                          }}
+                          data-testid={`button-photos-${booking.id}`}
+                        >
+                          <Camera className="h-4 w-4 mr-2" />
+                          Manage Photos
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -129,6 +148,19 @@ export default function EmployeeDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {selectedBookingId && (
+        <PhotoUpload
+          bookingId={selectedBookingId}
+          open={photoDialogOpen}
+          onOpenChange={(open) => {
+            setPhotoDialogOpen(open);
+            if (!open) {
+              setSelectedBookingId(null);
+            }
+          }}
+        />
+      )}
     </EmployeeLayout>
   );
 }
