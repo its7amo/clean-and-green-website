@@ -598,27 +598,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Promo code is not valid for current date" });
       }
 
-      // Get the base price to calculate discount
-      let basePrice = booking.actualPrice || 0;
-      
-      // If no actual price, try to get service base price
-      if (!basePrice) {
-        const service = await storage.getServiceByName(booking.service);
-        if (service) {
-          basePrice = service.basePrice;
-        }
-      }
-
-      // Calculate discount amount
+      // Calculate discount amount only if actual price is set
+      // If no actual price, discount will be calculated when actual price is set
       let discountAmount = 0;
-      if (promo.discountType === "percentage") {
-        discountAmount = Math.round((basePrice * promo.discountValue) / 100);
-      } else {
-        discountAmount = promo.discountValue;
+      if (booking.actualPrice) {
+        // Note: booking.actualPrice is stored in cents in the database
+        // This calculation pattern matches the actual-price endpoint (line 512)
+        if (promo.discountType === "percentage") {
+          // Calculate percentage discount on price in cents
+          discountAmount = Math.round((booking.actualPrice * promo.discountValue) / 100);
+        } else {
+          // Fixed discount value is already in cents
+          discountAmount = promo.discountValue;
+        }
+        // Ensure discount doesn't exceed actual price
+        discountAmount = Math.min(discountAmount, booking.actualPrice);
       }
-
-      // Ensure discount doesn't exceed base price
-      discountAmount = Math.min(discountAmount, basePrice);
 
       // Update the booking with new promo code and discount
       const updatedBooking = await storage.updateBooking(req.params.id, {
