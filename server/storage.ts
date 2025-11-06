@@ -29,6 +29,8 @@ import {
   type InsertCustomer,
   type ActivityLog,
   type InsertActivityLog,
+  type EmployeePermission,
+  type InsertEmployeePermission,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -41,6 +43,7 @@ import {
   galleryImages,
   invoices,
   employees,
+  employeePermissions,
   reviews,
   newsletterSubscribers,
   teamMembers,
@@ -124,6 +127,11 @@ export interface IStorage {
   getEmployeeByEmail(email: string): Promise<Employee | undefined>;
   updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: string): Promise<void>;
+
+  // Employee permission operations
+  getEmployeePermissions(employeeId: string): Promise<EmployeePermission[]>;
+  setEmployeePermissions(employeeId: string, permissions: Array<{ feature: string, actions: string[] }>): Promise<void>;
+  deleteEmployeePermissions(employeeId: string): Promise<void>;
 
   // Booking assignment operations
   assignEmployeesToBooking(id: string, employeeIds: string[]): Promise<Booking | undefined>;
@@ -461,6 +469,31 @@ export class DbStorage implements IStorage {
 
   async deleteEmployee(id: string): Promise<void> {
     await db.delete(employees).where(eq(employees.id, id));
+  }
+
+  // Employee permission operations
+  async getEmployeePermissions(employeeId: string): Promise<EmployeePermission[]> {
+    return await db.select().from(employeePermissions).where(eq(employeePermissions.employeeId, employeeId));
+  }
+
+  async setEmployeePermissions(employeeId: string, permissions: Array<{ feature: string, actions: string[] }>): Promise<void> {
+    // Delete existing permissions for this employee
+    await db.delete(employeePermissions).where(eq(employeePermissions.employeeId, employeeId));
+    
+    // Insert new permissions
+    if (permissions.length > 0) {
+      await db.insert(employeePermissions).values(
+        permissions.map(p => ({
+          employeeId,
+          feature: p.feature,
+          actions: p.actions,
+        }))
+      );
+    }
+  }
+
+  async deleteEmployeePermissions(employeeId: string): Promise<void> {
+    await db.delete(employeePermissions).where(eq(employeePermissions.employeeId, employeeId));
   }
 
   // Review operations

@@ -58,6 +58,25 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type Employee = typeof employees.$inferSelect;
 
+// Employee permissions table for granular access control
+export const employeePermissions = pgTable("employee_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  feature: text("feature").notNull(), // dashboard, bookings, quotes, etc
+  actions: jsonb("actions").notNull().$type<string[]>(), // ['view', 'create', 'edit', 'delete']
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertEmployeePermissionSchema = createInsertSchema(employeePermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertEmployeePermission = z.infer<typeof insertEmployeePermissionSchema>;
+export type EmployeePermission = typeof employeePermissions.$inferSelect;
+
 export const bookings = pgTable("bookings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   customerId: varchar("customer_id").references(() => customers.id),
