@@ -950,6 +950,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee permission routes
+  app.get("/api/employees/:id/permissions", isAuthenticated, async (req, res) => {
+    try {
+      const permissions = await storage.getEmployeePermissions(req.params.id);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching employee permissions:", error);
+      res.status(500).json({ error: "Failed to fetch permissions" });
+    }
+  });
+
+  app.put("/api/employees/:id/permissions", isAuthenticated, async (req, res) => {
+    try {
+      const { permissions } = req.body;
+      
+      if (!Array.isArray(permissions)) {
+        return res.status(400).json({ error: "Permissions must be an array" });
+      }
+
+      // Validate permission structure
+      for (const perm of permissions) {
+        if (!perm.feature || !Array.isArray(perm.actions)) {
+          return res.status(400).json({ error: "Invalid permission structure" });
+        }
+      }
+
+      await storage.setEmployeePermissions(req.params.id, permissions);
+      
+      // Fetch and return updated permissions
+      const updated = await storage.getEmployeePermissions(req.params.id);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating employee permissions:", error);
+      res.status(500).json({ error: "Failed to update permissions" });
+    }
+  });
+
+  app.get("/api/permission-templates", isAuthenticated, async (_req, res) => {
+    try {
+      const { DEFAULT_TEMPLATES } = await import("@shared/permissions");
+      res.json(DEFAULT_TEMPLATES);
+    } catch (error) {
+      console.error("Error fetching permission templates:", error);
+      res.status(500).json({ error: "Failed to fetch templates" });
+    }
+  });
+
   // Employee authentication routes
   app.post("/api/employee/login", async (req, res) => {
     try {
