@@ -102,6 +102,16 @@ export default function EmployeeBookings() {
             <CardDescription>
               {canEdit("bookings") ? "View and manage all bookings" : "View all bookings (read-only)"}
             </CardDescription>
+            {/* DEBUG: Show current permissions */}
+            <div className="mt-2 p-2 bg-muted rounded text-xs">
+              <strong>Debug - Your Permissions:</strong>
+              <br />
+              View: {canView("bookings") ? "✓" : "✗"}
+              {" | "}
+              Edit: {canEdit("bookings") ? "✓" : "✗"}
+              {" | "}
+              Delete: {canDelete("bookings") ? "✓" : "✗"}
+            </div>
           </CardHeader>
           <CardContent>
             {bookingsLoading ? (
