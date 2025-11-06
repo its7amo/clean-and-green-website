@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Calendar } from "lucide-react";
+import { Plus, Edit2, Trash2, Calendar, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -168,6 +168,31 @@ export default function AdminRecurringBookings() {
     if (confirm("Are you sure you want to delete this recurring booking?")) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, newStatus }: { id: string; newStatus: 'active' | 'paused' }) => {
+      await apiRequest("PATCH", `/api/recurring-bookings/${id}`, { status: newStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recurring-bookings"] });
+      toast({
+        title: "Success",
+        description: "Recurring booking status updated",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleTogglePause = (booking: RecurringBooking) => {
+    const newStatus = booking.status === 'active' ? 'paused' : 'active';
+    toggleStatusMutation.mutate({ id: booking.id, newStatus });
   };
 
   const handleDialogChange = (open: boolean) => {
@@ -457,6 +482,27 @@ export default function AdminRecurringBookings() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {booking.status === 'active' ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleTogglePause(booking)}
+                              data-testid={`button-pause-${booking.id}`}
+                              title="Pause recurring bookings"
+                            >
+                              <Pause className="h-4 w-4" />
+                            </Button>
+                          ) : booking.status === 'paused' ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleTogglePause(booking)}
+                              data-testid={`button-resume-${booking.id}`}
+                              title="Resume recurring bookings"
+                            >
+                              <Play className="h-4 w-4" />
+                            </Button>
+                          ) : null}
                           <Button
                             variant="ghost"
                             size="icon"

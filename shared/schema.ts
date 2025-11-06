@@ -407,6 +407,7 @@ export const recurringBookings = pgTable("recurring_bookings", {
   phone: text("phone").notNull(),
   address: text("address").notNull(),
   startDate: text("start_date").notNull(),
+  endDate: text("end_date"), // Optional end date
   nextOccurrence: text("next_occurrence").notNull(),
   status: text("status").notNull().default("active"), // 'active', 'paused', 'cancelled'
   assignedEmployeeIds: text("assigned_employee_ids").array(),

@@ -129,6 +129,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Increment customer booking count
       await storage.incrementCustomerBookings(customer.id);
+
+      // Create recurring booking if requested
+      if (req.body.isRecurring && validatedData.date && validatedData.timeSlot) {
+        const frequency = req.body.recurringFrequency || 'weekly';
+        const currentDate = new Date(validatedData.date);
+        
+        // Calculate next occurrence based on frequency
+        let nextOccurrence: Date;
+        switch (frequency) {
+          case 'weekly':
+            nextOccurrence = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 'biweekly':
+            nextOccurrence = new Date(currentDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+            break;
+          case 'monthly':
+            // Use calendar month math instead of fixed 30 days
+            nextOccurrence = new Date(currentDate);
+            nextOccurrence.setMonth(nextOccurrence.getMonth() + 1);
+            break;
+          default:
+            nextOccurrence = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        }
+
+        await storage.createRecurringBooking({
+          customerId: customer.id,
+          service: validatedData.service,
+          propertySize: validatedData.propertySize,
+          frequency,
+          preferredTimeSlot: validatedData.timeSlot,
+          name: validatedData.name,
+          email: validatedData.email,
+          phone: validatedData.phone,
+          address: validatedData.address,
+          startDate: validatedData.date,
+          nextOccurrence: nextOccurrence.toISOString().split('T')[0],
+          status: 'active',
+          endDate: req.body.recurringEndDate || null,
+          promoCode: promoCodeData.promoCode,
+          assignedEmployeeIds: [],
+        });
+      }
       
       // Send email notifications (async, don't block response)
       (async () => {

@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./migrate";
 import { startReviewEmailScheduler } from "./reviewEmailScheduler";
 import { startReminderScheduler } from "./reminderScheduler";
+import { startRecurringBookingScheduler } from "./recurringBookingScheduler";
 
 const app = express();
 
@@ -63,6 +64,9 @@ app.use((req, res, next) => {
 
   // Start appointment reminder scheduler (sends SMS/email 24h before booking)
   startReminderScheduler();
+
+  // Start recurring booking scheduler (auto-creates bookings from recurring schedules)
+  startRecurringBookingScheduler();
 
   const server = await registerRoutes(app);
 

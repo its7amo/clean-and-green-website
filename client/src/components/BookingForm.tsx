@@ -102,6 +102,9 @@ export function BookingForm() {
     promoCode: "",
     promoCodeId: null as string | null,
     promoCodeDiscount: 0,
+    isRecurring: false,
+    recurringFrequency: "weekly" as "weekly" | "biweekly" | "monthly",
+    recurringEndDate: undefined as Date | undefined,
   });
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
@@ -205,6 +208,9 @@ export function BookingForm() {
       status: "pending",
       paymentMethodId: formData.paymentMethodId,
       promoCodeId: formData.promoCodeId,
+      isRecurring: formData.isRecurring,
+      recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined,
+      recurringEndDate: formData.isRecurring && formData.recurringEndDate ? format(formData.recurringEndDate, "yyyy-MM-dd") : undefined,
     };
     createBookingMutation.mutate(bookingData);
   };
@@ -359,6 +365,84 @@ export function BookingForm() {
                   </Button>
                 ))}
               </div>
+            </div>
+
+            <div className="border-t pt-6 mt-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Checkbox
+                  id="recurring"
+                  checked={formData.isRecurring}
+                  onCheckedChange={(checked) => updateFormData("isRecurring", checked)}
+                  data-testid="checkbox-recurring"
+                />
+                <Label htmlFor="recurring" className="cursor-pointer font-medium">
+                  Make this a recurring booking
+                </Label>
+              </div>
+
+              {formData.isRecurring && (
+                <div className="space-y-4 pl-6 border-l-2 border-primary/20">
+                  <div className="space-y-2">
+                    <Label>Frequency</Label>
+                    <RadioGroup 
+                      value={formData.recurringFrequency} 
+                      onValueChange={(value) => updateFormData("recurringFrequency", value as "weekly" | "biweekly" | "monthly")}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="weekly" id="weekly" data-testid="radio-frequency-weekly" />
+                        <Label htmlFor="weekly" className="cursor-pointer">Weekly</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="biweekly" id="biweekly" data-testid="radio-frequency-biweekly" />
+                        <Label htmlFor="biweekly" className="cursor-pointer">Bi-weekly (Every 2 weeks)</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="monthly" id="monthly" data-testid="radio-frequency-monthly" />
+                        <Label htmlFor="monthly" className="cursor-pointer">Monthly</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>End Date (Optional)</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Leave blank for ongoing service, or select when to stop recurring bookings
+                    </p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                          data-testid="button-recurring-end-date"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.recurringEndDate ? format(formData.recurringEndDate, "PPP") : "No end date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={formData.recurringEndDate}
+                          onSelect={(date) => updateFormData("recurringEndDate", date)}
+                          disabled={(date) => date < (formData.date || new Date())}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="bg-primary/5 rounded-lg p-4 text-sm">
+                    <p className="font-medium text-foreground mb-1">
+                      Your recurring schedule:
+                    </p>
+                    <p className="text-muted-foreground">
+                      Service will be scheduled {formData.recurringFrequency === "weekly" ? "every week" : formData.recurringFrequency === "biweekly" ? "every 2 weeks" : "every month"} 
+                      {formData.date ? ` starting ${format(formData.date, "PPP")}` : ""}
+                      {formData.recurringEndDate ? ` until ${format(formData.recurringEndDate, "PPP")}` : " with no end date"}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
