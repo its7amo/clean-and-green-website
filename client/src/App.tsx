@@ -32,6 +32,7 @@ import AdminNewsletter from "@/pages/AdminNewsletter";
 import AdminTeam from "@/pages/AdminTeam";
 import AdminContactMessages from "@/pages/AdminContactMessages";
 import AdminActivityLogs from "@/pages/AdminActivityLogs";
+import AdminPromoCodes from "@/pages/AdminPromoCodes";
 import EmployeeLogin from "@/pages/EmployeeLogin";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
 import EmployeeBookings from "@/pages/EmployeeBookings";
@@ -193,6 +194,9 @@ function Router() {
       </Route>
       <Route path="/admin/activity-logs">
         <ProtectedRoute component={AdminActivityLogs} />
+      </Route>
+      <Route path="/admin/promo-codes">
+        <ProtectedRoute component={AdminPromoCodes} />
       </Route>
       <Route component={NotFound} />
       </Switch>

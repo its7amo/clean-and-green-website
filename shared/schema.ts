@@ -97,6 +97,11 @@ export const bookings = pgTable("bookings", {
   paymentMethodId: text("payment_method_id"),
   cancellationFeeStatus: text("cancellation_fee_status").notNull().default("not_applicable"),
   cancelledAt: timestamp("cancelled_at"),
+  promoCode: text("promo_code"),
+  discountAmount: integer("discount_amount").default(0),
+  reminderSent: boolean("reminder_sent").notNull().default(false),
+  reminderSentAt: timestamp("reminder_sent_at"),
+  recurringBookingId: varchar("recurring_booking_id"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -388,3 +393,82 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
 
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type ActivityLog = typeof activityLogs.$inferSelect;
+
+// Recurring bookings for scheduled cleanings
+export const recurringBookings = pgTable("recurring_bookings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+  service: text("service").notNull(),
+  propertySize: text("property_size").notNull(),
+  frequency: text("frequency").notNull(), // 'weekly', 'bi-weekly', 'monthly'
+  preferredTimeSlot: text("preferred_time_slot").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address").notNull(),
+  startDate: text("start_date").notNull(),
+  nextOccurrence: text("next_occurrence").notNull(),
+  status: text("status").notNull().default("active"), // 'active', 'paused', 'cancelled'
+  assignedEmployeeIds: text("assigned_employee_ids").array(),
+  promoCode: text("promo_code"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertRecurringBookingSchema = createInsertSchema(recurringBookings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertRecurringBooking = z.infer<typeof insertRecurringBookingSchema>;
+export type RecurringBooking = typeof recurringBookings.$inferSelect;
+
+// Promo codes for discounts
+export const promoCodes = pgTable("promo_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  description: text("description").notNull(),
+  discountType: text("discount_type").notNull(), // 'percentage', 'fixed'
+  discountValue: integer("discount_value").notNull(), // Percentage (0-100) or cents for fixed
+  validFrom: timestamp("valid_from").notNull(),
+  validTo: timestamp("valid_to").notNull(),
+  maxUses: integer("max_uses"), // null for unlimited
+  currentUses: integer("current_uses").notNull().default(0),
+  status: text("status").notNull().default("active"), // 'active', 'inactive'
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({
+  id: true,
+  currentUses: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  validFrom: z.coerce.date(),
+  validTo: z.coerce.date(),
+});
+
+export type InsertPromoCode = z.infer<typeof insertPromoCodeSchema>;
+export type PromoCode = typeof promoCodes.$inferSelect;
+
+// Job photos for before/after documentation
+export const jobPhotos = pgTable("job_photos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookingId: varchar("booking_id").notNull().references(() => bookings.id, { onDelete: "cascade" }),
+  photoData: text("photo_data").notNull(), // Base64 encoded image
+  photoType: text("photo_type").notNull(), // 'before', 'after'
+  uploadedByEmployeeId: varchar("uploaded_by_employee_id").references(() => employees.id),
+  uploadedByName: text("uploaded_by_name").notNull(),
+  caption: text("caption"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertJobPhotoSchema = createInsertSchema(jobPhotos).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertJobPhoto = z.infer<typeof insertJobPhotoSchema>;
+export type JobPhoto = typeof jobPhotos.$inferSelect;

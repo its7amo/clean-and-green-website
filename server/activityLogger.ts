@@ -9,16 +9,17 @@ export interface LogContext {
 
 export async function logActivity(params: {
   context: LogContext;
-  action: 'created' | 'updated' | 'deleted';
+  action: 'created' | 'updated' | 'deleted' | 'sent_bulk_email' | 'sent_reminder' | 'applied_promo' | 'other';
   entityType: string;
-  entityId: string;
+  entityId?: string;
   entityName?: string;
+  details?: string;
   changes?: {
     before?: Record<string, any>;
     after?: Record<string, any>;
   };
 }) {
-  const { context, action, entityType, entityId, entityName, changes } = params;
+  const { context, action, entityType, entityId, entityName, details, changes } = params;
 
   try {
     const logData: InsertActivityLog = {
@@ -27,8 +28,8 @@ export async function logActivity(params: {
       userName: context.userName,
       action,
       entityType,
-      entityId,
-      entityName: entityName || null,
+      entityId: entityId || 'N/A',
+      entityName: entityName || details || null,
       changes: changes || null,
     };
 

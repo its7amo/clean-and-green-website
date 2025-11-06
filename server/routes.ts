@@ -16,6 +16,9 @@ import {
   insertTeamMemberSchema,
   insertContactMessageSchema,
   insertCustomerSchema,
+  insertPromoCodeSchema,
+  insertRecurringBookingSchema,
+  insertJobPhotoSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
@@ -2826,6 +2829,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching lead stats:", error);
       res.status(500).json({ error: "Failed to fetch lead statistics" });
+    }
+  });
+
+  // Promo code routes
+  app.get("/api/promo-codes", isAuthenticated, async (_req, res) => {
+    try {
+      const promoCodes = await storage.getPromoCodes();
+      res.json(promoCodes);
+    } catch (error) {
+      console.error("Error fetching promo codes:", error);
+      res.status(500).json({ error: "Failed to fetch promo codes" });
+    }
+  });
+
+  app.post("/api/promo-codes", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertPromoCodeSchema.parse(req.body);
+      const promoCode = await storage.createPromoCode(validatedData);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'created',
+        entityType: 'promo_code',
+        entityId: promoCode.id,
+        entityName: promoCode.code,
+      });
+
+      res.status(201).json(promoCode);
+    } catch (error) {
+      console.error("Error creating promo code:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create promo code" });
+    }
+  });
+
+  app.patch("/api/promo-codes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = insertPromoCodeSchema.partial().parse(req.body);
+      const promoCode = await storage.updatePromoCode(id, updates);
+
+      if (!promoCode) {
+        return res.status(404).json({ error: "Promo code not found" });
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'promo_code',
+        entityId: promoCode.id,
+        entityName: promoCode.code,
+      });
+
+      res.json(promoCode);
+    } catch (error) {
+      console.error("Error updating promo code:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update promo code" });
+    }
+  });
+
+  app.delete("/api/promo-codes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const promoCode = await storage.getPromoCode(id);
+      
+      if (!promoCode) {
+        return res.status(404).json({ error: "Promo code not found" });
+      }
+
+      await storage.deletePromoCode(id);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'deleted',
+        entityType: 'promo_code',
+        entityId: id,
+        entityName: promoCode.code,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting promo code:", error);
+      res.status(500).json({ error: "Failed to delete promo code" });
+    }
+  });
+
+  // Public promo code validation endpoint
+  app.post("/api/promo-codes/validate", async (req, res) => {
+    try {
+      const { code, amount } = req.body;
+
+      if (!code) {
+        return res.status(400).json({ error: "Promo code is required" });
+      }
+
+      const promoCode = await storage.getPromoCodeByCode(code.toUpperCase());
+
+      if (!promoCode) {
+        return res.status(404).json({ error: "Invalid promo code" });
+      }
+
+      if (promoCode.status !== 'active') {
+        return res.status(400).json({ error: "Promo code is not active" });
+      }
+
+      const now = new Date();
+      if (now < new Date(promoCode.validFrom) || now > new Date(promoCode.validTo)) {
+        return res.status(400).json({ error: "Promo code has expired or is not yet valid" });
+      }
+
+      if (promoCode.maxUses !== null && promoCode.currentUses >= promoCode.maxUses) {
+        return res.status(400).json({ error: "Promo code has reached maximum usage" });
+      }
+
+      // Calculate discount
+      let discountAmount = 0;
+      if (promoCode.discountType === 'percentage') {
+        discountAmount = Math.round((amount * promoCode.discountValue) / 100);
+      } else {
+        discountAmount = promoCode.discountValue;
+      }
+
+      res.json({
+        valid: true,
+        code: promoCode.code,
+        discountType: promoCode.discountType,
+        discountValue: promoCode.discountValue,
+        discountAmount,
+        description: promoCode.description,
+      });
+    } catch (error) {
+      console.error("Error validating promo code:", error);
+      res.status(500).json({ error: "Failed to validate promo code" });
     }
   });
 

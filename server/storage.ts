@@ -31,6 +31,12 @@ import {
   type InsertActivityLog,
   type EmployeePermission,
   type InsertEmployeePermission,
+  type PromoCode,
+  type InsertPromoCode,
+  type RecurringBooking,
+  type InsertRecurringBooking,
+  type JobPhoto,
+  type InsertJobPhoto,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -50,6 +56,9 @@ import {
   contactMessages,
   customers,
   activityLogs,
+  promoCodes,
+  recurringBookings,
+  jobPhotos,
 } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -181,6 +190,33 @@ export interface IStorage {
   getActivityLogs(limit?: number): Promise<ActivityLog[]>;
   getActivityLogsByEntity(entityType: string, entityId: string): Promise<ActivityLog[]>;
   getActivityLogsByUser(userId: string): Promise<ActivityLog[]>;
+
+  // Promo code operations
+  createPromoCode(promoCode: InsertPromoCode): Promise<PromoCode>;
+  getPromoCodes(): Promise<PromoCode[]>;
+  getPromoCode(id: string): Promise<PromoCode | undefined>;
+  getPromoCodeByCode(code: string): Promise<PromoCode | undefined>;
+  updatePromoCode(id: string, promoCode: Partial<InsertPromoCode>): Promise<PromoCode | undefined>;
+  updatePromoCodeStatus(id: string, status: string): Promise<PromoCode | undefined>;
+  incrementPromoCodeUsage(id: string): Promise<PromoCode | undefined>;
+  deletePromoCode(id: string): Promise<void>;
+
+  // Recurring booking operations
+  createRecurringBooking(booking: InsertRecurringBooking): Promise<RecurringBooking>;
+  getRecurringBookings(): Promise<RecurringBooking[]>;
+  getActiveRecurringBookings(): Promise<RecurringBooking[]>;
+  getRecurringBooking(id: string): Promise<RecurringBooking | undefined>;
+  getRecurringBookingsByCustomer(customerId: string): Promise<RecurringBooking[]>;
+  updateRecurringBooking(id: string, booking: Partial<InsertRecurringBooking>): Promise<RecurringBooking | undefined>;
+  updateRecurringBookingStatus(id: string, status: string): Promise<RecurringBooking | undefined>;
+  updateRecurringBookingNextOccurrence(id: string, nextOccurrence: string): Promise<RecurringBooking | undefined>;
+  deleteRecurringBooking(id: string): Promise<void>;
+
+  // Job photo operations
+  createJobPhoto(photo: InsertJobPhoto): Promise<JobPhoto>;
+  getJobPhotosByBooking(bookingId: string): Promise<JobPhoto[]>;
+  getJobPhoto(id: string): Promise<JobPhoto | undefined>;
+  deleteJobPhoto(id: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -688,6 +724,112 @@ export class DbStorage implements IStorage {
     return await db.select().from(activityLogs)
       .where(eq(activityLogs.userId, userId))
       .orderBy(desc(activityLogs.createdAt));
+  }
+
+  // Promo code operations
+  async createPromoCode(promoCode: InsertPromoCode): Promise<PromoCode> {
+    const result = await db.insert(promoCodes).values(promoCode).returning();
+    return result[0];
+  }
+
+  async getPromoCodes(): Promise<PromoCode[]> {
+    return await db.select().from(promoCodes).orderBy(desc(promoCodes.createdAt));
+  }
+
+  async getPromoCode(id: string): Promise<PromoCode | undefined> {
+    const result = await db.select().from(promoCodes).where(eq(promoCodes.id, id));
+    return result[0];
+  }
+
+  async getPromoCodeByCode(code: string): Promise<PromoCode | undefined> {
+    const result = await db.select().from(promoCodes).where(eq(promoCodes.code, code));
+    return result[0];
+  }
+
+  async updatePromoCode(id: string, promoCode: Partial<InsertPromoCode>): Promise<PromoCode | undefined> {
+    const result = await db.update(promoCodes).set({ ...promoCode, updatedAt: new Date() }).where(eq(promoCodes.id, id)).returning();
+    return result[0];
+  }
+
+  async updatePromoCodeStatus(id: string, status: string): Promise<PromoCode | undefined> {
+    const result = await db.update(promoCodes).set({ status, updatedAt: new Date() }).where(eq(promoCodes.id, id)).returning();
+    return result[0];
+  }
+
+  async incrementPromoCodeUsage(id: string): Promise<PromoCode | undefined> {
+    const result = await db.update(promoCodes)
+      .set({ 
+        currentUses: sql`${promoCodes.currentUses} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(promoCodes.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deletePromoCode(id: string): Promise<void> {
+    await db.delete(promoCodes).where(eq(promoCodes.id, id));
+  }
+
+  // Recurring booking operations
+  async createRecurringBooking(booking: InsertRecurringBooking): Promise<RecurringBooking> {
+    const result = await db.insert(recurringBookings).values(booking).returning();
+    return result[0];
+  }
+
+  async getRecurringBookings(): Promise<RecurringBooking[]> {
+    return await db.select().from(recurringBookings).orderBy(desc(recurringBookings.createdAt));
+  }
+
+  async getActiveRecurringBookings(): Promise<RecurringBooking[]> {
+    return await db.select().from(recurringBookings).where(eq(recurringBookings.status, 'active')).orderBy(desc(recurringBookings.nextOccurrence));
+  }
+
+  async getRecurringBooking(id: string): Promise<RecurringBooking | undefined> {
+    const result = await db.select().from(recurringBookings).where(eq(recurringBookings.id, id));
+    return result[0];
+  }
+
+  async getRecurringBookingsByCustomer(customerId: string): Promise<RecurringBooking[]> {
+    return await db.select().from(recurringBookings).where(eq(recurringBookings.customerId, customerId)).orderBy(desc(recurringBookings.createdAt));
+  }
+
+  async updateRecurringBooking(id: string, booking: Partial<InsertRecurringBooking>): Promise<RecurringBooking | undefined> {
+    const result = await db.update(recurringBookings).set({ ...booking, updatedAt: new Date() }).where(eq(recurringBookings.id, id)).returning();
+    return result[0];
+  }
+
+  async updateRecurringBookingStatus(id: string, status: string): Promise<RecurringBooking | undefined> {
+    const result = await db.update(recurringBookings).set({ status, updatedAt: new Date() }).where(eq(recurringBookings.id, id)).returning();
+    return result[0];
+  }
+
+  async updateRecurringBookingNextOccurrence(id: string, nextOccurrence: string): Promise<RecurringBooking | undefined> {
+    const result = await db.update(recurringBookings).set({ nextOccurrence, updatedAt: new Date() }).where(eq(recurringBookings.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteRecurringBooking(id: string): Promise<void> {
+    await db.delete(recurringBookings).where(eq(recurringBookings.id, id));
+  }
+
+  // Job photo operations
+  async createJobPhoto(photo: InsertJobPhoto): Promise<JobPhoto> {
+    const result = await db.insert(jobPhotos).values(photo).returning();
+    return result[0];
+  }
+
+  async getJobPhotosByBooking(bookingId: string): Promise<JobPhoto[]> {
+    return await db.select().from(jobPhotos).where(eq(jobPhotos.bookingId, bookingId)).orderBy(desc(jobPhotos.createdAt));
+  }
+
+  async getJobPhoto(id: string): Promise<JobPhoto | undefined> {
+    const result = await db.select().from(jobPhotos).where(eq(jobPhotos.id, id));
+    return result[0];
+  }
+
+  async deleteJobPhoto(id: string): Promise<void> {
+    await db.delete(jobPhotos).where(eq(jobPhotos.id, id));
   }
 }
 
