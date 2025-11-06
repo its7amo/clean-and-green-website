@@ -537,6 +537,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove promo code from booking
+  app.delete("/api/bookings/:id/promo-code", isAuthenticated, async (req, res) => {
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Remove promo code, discount amount, and actual price
+      const updatedBooking = await storage.updateBooking(req.params.id, {
+        promoCode: null,
+        discountAmount: 0,
+        actualPrice: null,
+      });
+      
+      if (!updatedBooking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      res.json(updatedBooking);
+    } catch (error) {
+      console.error("Error removing promo code:", error);
+      res.status(500).json({ error: "Failed to remove promo code" });
+    }
+  });
+
   // Public booking management (using token, no auth required)
   app.get("/api/bookings/manage/:token", async (req, res) => {
     try {

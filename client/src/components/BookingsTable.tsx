@@ -109,6 +109,27 @@ export function BookingsTable() {
     },
   });
 
+  const removePromoCodeMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const res = await apiRequest("DELETE", `/api/bookings/${bookingId}/promo-code`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      toast({
+        title: "Promo code removed",
+        description: "Promo code and discount have been removed from this booking.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to remove promo code",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleStatusUpdate = (id: string, status: string) => {
     updateStatusMutation.mutate({ id, status });
   };
@@ -390,6 +411,19 @@ export function BookingsTable() {
                           <span className="text-sm text-primary font-medium">
                             Discount: ${((booking.discountAmount || 0) / 100).toFixed(2)}
                           </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm("Remove promo code from this booking? This will also remove the actual price if set.")) {
+                                removePromoCodeMutation.mutate(booking.id);
+                              }
+                            }}
+                            disabled={removePromoCodeMutation.isPending}
+                            data-testid="button-remove-promo"
+                          >
+                            <XCircle className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
                       </div>
                       <div className="col-span-2 p-4 border rounded-md bg-muted/30">
