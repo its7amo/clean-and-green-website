@@ -102,9 +102,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.promoCodeId) {
         const promoCode = await storage.getPromoCode(req.body.promoCodeId);
         if (promoCode) {
+          // Get service price to calculate discount
+          const services = await storage.getServices();
+          const service = services.find(s => s.name.toLowerCase().includes(validatedData.service.toLowerCase()));
+          const servicePrice = service?.basePrice || 0;
+          
+          // Calculate discount based on type
+          let discountAmount = 0;
+          if (promoCode.discountType === 'percentage') {
+            discountAmount = Math.round((servicePrice * promoCode.discountValue) / 100);
+          } else {
+            discountAmount = promoCode.discountValue;
+          }
+          
           promoCodeData = {
             promoCode: promoCode.code,
-            discountAmount: promoCode.discountValue,
+            discountAmount: discountAmount,
           };
           // Increment promo code usage
           await storage.incrementPromoCodeUsage(promoCode.id);
@@ -228,9 +241,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.promoCodeId) {
         const promoCode = await storage.getPromoCode(req.body.promoCodeId);
         if (promoCode) {
+          // Get service price to calculate discount
+          const services = await storage.getServices();
+          const service = services.find(s => s.name.toLowerCase().includes(validatedData.service.toLowerCase()));
+          const servicePrice = service?.basePrice || 0;
+          
+          // Calculate discount based on type
+          let discountAmount = 0;
+          if (promoCode.discountType === 'percentage') {
+            discountAmount = Math.round((servicePrice * promoCode.discountValue) / 100);
+          } else {
+            discountAmount = promoCode.discountValue;
+          }
+          
           promoCodeData = {
             promoCode: promoCode.code,
-            discountAmount: promoCode.discountValue,
+            discountAmount: discountAmount,
           };
           // Increment promo code usage
           await storage.incrementPromoCodeUsage(promoCode.id);
@@ -3012,7 +3038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public promo code validation endpoint
   app.post("/api/promo-codes/validate", async (req, res) => {
     try {
-      const { code, amount } = req.body;
+      const { code } = req.body;
 
       if (!code) {
         return res.json({ 
@@ -3052,14 +3078,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Calculate discount
-      let discountAmount = 0;
-      if (promoCode.discountType === 'percentage') {
-        discountAmount = Math.round((amount * promoCode.discountValue) / 100);
-      } else {
-        discountAmount = promoCode.discountValue;
-      }
-
+      // Return promo code info - discount will be calculated when booking is created with service info
       res.json({
         valid: true,
         promoCode: {
@@ -3069,7 +3088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           discountValue: promoCode.discountValue,
           description: promoCode.description,
         },
-        discountAmount,
+        discountAmount: 0,
       });
     } catch (error) {
       console.error("Error validating promo code:", error);
