@@ -55,6 +55,9 @@ export function EmployeeLayout({ children }: EmployeeLayoutProps) {
     },
   });
 
+  // Features that have employee-facing pages implemented
+  const availableFeatures: Feature[] = ["bookings", "customers"];
+
   const menuItems = [
     {
       feature: null,
@@ -64,7 +67,8 @@ export function EmployeeLayout({ children }: EmployeeLayoutProps) {
     },
     ...PERMISSION_METADATA.filter(meta => {
       const hasPermission = permissions?.some(p => p.feature === meta.feature);
-      return hasPermission;
+      const hasPage = availableFeatures.includes(meta.feature);
+      return hasPermission && hasPage;
     }).map(meta => ({
       feature: meta.feature,
       title: meta.label,
