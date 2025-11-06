@@ -56,7 +56,18 @@ export function EmployeeLayout({ children }: EmployeeLayoutProps) {
   });
 
   // Features that have employee-facing pages implemented
-  const availableFeatures: Feature[] = ["bookings", "customers"];
+  const availableFeatures: Feature[] = [
+    "bookings",
+    "customers",
+    "activity_logs",
+    "quotes",
+    "messages",
+    "team",
+    "reviews",
+    "invoices",
+    "newsletter",
+    "employees",
+  ];
 
   const menuItems = [
     {

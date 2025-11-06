@@ -1221,6 +1221,618 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee - get all quotes (permission-gated)
+  app.get("/api/employee/quotes", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "quotes" && p.actions.includes("view"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to view quotes" });
+      }
+
+      const quotes = await storage.getQuotes();
+      res.json(quotes);
+    } catch (error) {
+      console.error("Error fetching quotes:", error);
+      res.status(500).json({ error: "Failed to fetch quotes" });
+    }
+  });
+
+  // Employee - update quote status with activity logging
+  app.patch("/api/employee/quotes/:id/status", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "quotes" && p.actions.includes("edit"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to edit quotes" });
+      }
+
+      const quoteStatusSchema = z.object({
+        status: z.enum(["pending", "approved", "completed"]),
+      });
+      const validatedData = quoteStatusSchema.parse(req.body);
+
+      const quoteBefore = await storage.getQuote(req.params.id);
+      if (!quoteBefore) {
+        return res.status(404).json({ error: "Quote not found" });
+      }
+
+      const updatedQuote = await storage.updateQuote(req.params.id, { status: validatedData.status });
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "updated",
+        entityType: "quote",
+        entityId: req.params.id,
+        entityName: `${quoteBefore.serviceType} - ${quoteBefore.name}`,
+        changes: {
+          before: { status: quoteBefore.status },
+          after: { status: validatedData.status },
+        },
+      });
+
+      res.json(updatedQuote);
+    } catch (error) {
+      console.error("Error updating quote status:", error);
+      res.status(500).json({ error: "Failed to update quote status" });
+    }
+  });
+
+  // Employee - delete quote with activity logging
+  app.delete("/api/employee/quotes/:id", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "quotes" && p.actions.includes("delete"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to delete quotes" });
+      }
+
+      const quote = await storage.getQuote(req.params.id);
+      if (!quote) {
+        return res.status(404).json({ error: "Quote not found" });
+      }
+
+      await storage.deleteQuote(req.params.id);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "deleted",
+        entityType: "quote",
+        entityId: req.params.id,
+        entityName: `${quote.serviceType} - ${quote.name}`,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting quote:", error);
+      res.status(500).json({ error: "Failed to delete quote" });
+    }
+  });
+
+  // Employee - get all contact messages (permission-gated)
+  app.get("/api/employee/messages", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "messages" && p.actions.includes("view"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to view messages" });
+      }
+
+      const messages = await storage.getContactMessages();
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // Employee - update message status with activity logging
+  app.patch("/api/employee/messages/:id/status", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "messages" && p.actions.includes("edit"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to edit messages" });
+      }
+
+      const messageStatusSchema = z.object({
+        status: z.enum(["unread", "read", "archived"]),
+      });
+      const validatedData = messageStatusSchema.parse(req.body);
+
+      const messageBefore = await storage.getContactMessage(req.params.id);
+      if (!messageBefore) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      const updatedMessage = await storage.updateContactMessage(req.params.id, { status: validatedData.status });
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "updated",
+        entityType: "contact_message",
+        entityId: req.params.id,
+        entityName: `${messageBefore.subject} - ${messageBefore.name}`,
+        changes: {
+          before: { status: messageBefore.status },
+          after: { status: validatedData.status },
+        },
+      });
+
+      res.json(updatedMessage);
+    } catch (error) {
+      console.error("Error updating message status:", error);
+      res.status(500).json({ error: "Failed to update message status" });
+    }
+  });
+
+  // Employee - delete contact message with activity logging
+  app.delete("/api/employee/messages/:id", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "messages" && p.actions.includes("delete"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to delete messages" });
+      }
+
+      const message = await storage.getContactMessage(req.params.id);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      await storage.deleteContactMessage(req.params.id);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "deleted",
+        entityType: "contact_message",
+        entityId: req.params.id,
+        entityName: `${message.subject} - ${message.name}`,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  // Employee - get all team members (permission-gated)
+  app.get("/api/employee/team", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "team" && p.actions.includes("view"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to view team members" });
+      }
+
+      const teamMembers = await storage.getTeamMembers();
+      res.json(teamMembers);
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      res.status(500).json({ error: "Failed to fetch team members" });
+    }
+  });
+
+  // Employee - create team member with activity logging
+  app.post("/api/employee/team", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "team" && p.actions.includes("create"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to create team members" });
+      }
+
+      const validatedData = insertTeamMemberSchema.parse(req.body);
+      const teamMember = await storage.createTeamMember(validatedData);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "created",
+        entityType: "team_member",
+        entityId: teamMember.id,
+        entityName: teamMember.name,
+      });
+
+      res.status(201).json(teamMember);
+    } catch (error) {
+      console.error("Error creating team member:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid team member data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create team member" });
+    }
+  });
+
+  // Employee - update team member with activity logging
+  app.patch("/api/employee/team/:id", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "team" && p.actions.includes("edit"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to edit team members" });
+      }
+
+      const validatedData = insertTeamMemberSchema.partial().parse(req.body);
+      const memberBefore = await storage.getTeamMember(req.params.id);
+      
+      if (!memberBefore) {
+        return res.status(404).json({ error: "Team member not found" });
+      }
+
+      const updatedMember = await storage.updateTeamMember(req.params.id, validatedData);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "updated",
+        entityType: "team_member",
+        entityId: req.params.id,
+        entityName: memberBefore.name,
+      });
+
+      res.json(updatedMember);
+    } catch (error) {
+      console.error("Error updating team member:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid team member data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update team member" });
+    }
+  });
+
+  // Employee - delete team member with activity logging
+  app.delete("/api/employee/team/:id", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "team" && p.actions.includes("delete"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to delete team members" });
+      }
+
+      const member = await storage.getTeamMember(req.params.id);
+      if (!member) {
+        return res.status(404).json({ error: "Team member not found" });
+      }
+
+      await storage.deleteTeamMember(req.params.id);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "deleted",
+        entityType: "team_member",
+        entityId: req.params.id,
+        entityName: member.name,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting team member:", error);
+      res.status(500).json({ error: "Failed to delete team member" });
+    }
+  });
+
+  // Employee - get all reviews (permission-gated)
+  app.get("/api/employee/reviews", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "reviews" && p.actions.includes("view"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to view reviews" });
+      }
+
+      const reviews = await storage.getReviews();
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  // Employee - approve review with activity logging
+  app.patch("/api/employee/reviews/:id/approve", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "reviews" && p.actions.includes("approve"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to approve reviews" });
+      }
+
+      const reviewBefore = await storage.getReview(req.params.id);
+      if (!reviewBefore) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+
+      const updatedReview = await storage.updateReview(req.params.id, { approved: true });
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "approved",
+        entityType: "review",
+        entityId: req.params.id,
+        entityName: `Review by ${reviewBefore.name}`,
+      });
+
+      res.json(updatedReview);
+    } catch (error) {
+      console.error("Error approving review:", error);
+      res.status(500).json({ error: "Failed to approve review" });
+    }
+  });
+
+  // Employee - deny review with activity logging
+  app.patch("/api/employee/reviews/:id/deny", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "reviews" && p.actions.includes("deny"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to deny reviews" });
+      }
+
+      const reviewBefore = await storage.getReview(req.params.id);
+      if (!reviewBefore) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+
+      const updatedReview = await storage.updateReview(req.params.id, { approved: false });
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "denied",
+        entityType: "review",
+        entityId: req.params.id,
+        entityName: `Review by ${reviewBefore.name}`,
+      });
+
+      res.json(updatedReview);
+    } catch (error) {
+      console.error("Error denying review:", error);
+      res.status(500).json({ error: "Failed to deny review" });
+    }
+  });
+
+  // Employee - delete review with activity logging
+  app.delete("/api/employee/reviews/:id", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "reviews" && p.actions.includes("delete"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to delete reviews" });
+      }
+
+      const review = await storage.getReview(req.params.id);
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+
+      await storage.deleteReview(req.params.id);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "deleted",
+        entityType: "review",
+        entityId: req.params.id,
+        entityName: `Review by ${review.name}`,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      res.status(500).json({ error: "Failed to delete review" });
+    }
+  });
+
+  // Employee - get all invoices (permission-gated)
+  app.get("/api/employee/invoices", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "invoices" && p.actions.includes("view"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to view invoices" });
+      }
+
+      const invoices = await storage.getInvoices();
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
+
+  // Employee - send invoice payment link with activity logging
+  app.post("/api/employee/invoices/:id/send-payment-link", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "invoices" && p.actions.includes("send_payment_link"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to send payment links" });
+      }
+
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      // Send payment link notifications (async, don't block response)
+      (async () => {
+        try {
+          const { sendInvoicePaymentLinkEmail } = await import("./email");
+          await sendInvoicePaymentLinkEmail(
+            invoice.customerEmail,
+            invoice.customerName,
+            invoice.invoiceNumber,
+            invoice.id,
+            invoice.total
+          );
+          
+          await sendInvoicePaymentLinkSMS(
+            invoice.customerPhone,
+            invoice.customerName,
+            invoice.invoiceNumber,
+            invoice.id,
+            invoice.total
+          );
+        } catch (notificationError) {
+          console.error("Failed to send invoice payment notifications:", notificationError);
+        }
+      })();
+
+      await logActivity({
+        context: getUserContext(req),
+        action: "sent_payment_link",
+        entityType: "invoice",
+        entityId: req.params.id,
+        entityName: `Invoice #${invoice.invoiceNumber}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error sending payment link:", error);
+      res.status(500).json({ error: "Failed to send payment link" });
+    }
+  });
+
+  // Employee - get newsletter subscribers (permission-gated)
+  app.get("/api/employee/newsletter", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "newsletter" && p.actions.includes("view"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to view newsletter subscribers" });
+      }
+
+      const subscribers = await storage.getNewsletterSubscribers();
+      res.json(subscribers);
+    } catch (error) {
+      console.error("Error fetching newsletter subscribers:", error);
+      res.status(500).json({ error: "Failed to fetch subscribers" });
+    }
+  });
+
+  // Employee - get all employees (permission-gated)
+  app.get("/api/employee/employees", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      const hasPermission = permissions.some(p => p.feature === "employees" && p.actions.includes("view"));
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: "No permission to view employees" });
+      }
+
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      res.status(500).json({ error: "Failed to fetch employees" });
+    }
+  });
+
   // AI Chat Assistant endpoint (public)
   app.post("/api/chat", async (req, res) => {
     try {

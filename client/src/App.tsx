@@ -35,6 +35,14 @@ import EmployeeLogin from "@/pages/EmployeeLogin";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
 import EmployeeBookings from "@/pages/EmployeeBookings";
 import EmployeeCustomers from "@/pages/EmployeeCustomers";
+import EmployeeActivityLogs from "@/pages/EmployeeActivityLogs";
+import EmployeeQuotes from "@/pages/EmployeeQuotes";
+import EmployeeMessages from "@/pages/EmployeeMessages";
+import EmployeeTeam from "@/pages/EmployeeTeam";
+import EmployeeReviews from "@/pages/EmployeeReviews";
+import EmployeeInvoices from "@/pages/EmployeeInvoices";
+import EmployeeNewsletter from "@/pages/EmployeeNewsletter";
+import EmployeeEmployees from "@/pages/EmployeeEmployees";
 import ManageBooking from "@/pages/manage-booking";
 import CustomerPortal from "@/pages/CustomerPortal";
 import PayInvoice from "@/pages/PayInvoice";
@@ -127,6 +135,14 @@ function Router() {
       <Route path="/employee/dashboard" component={EmployeeDashboard} />
       <Route path="/employee/bookings" component={EmployeeBookings} />
       <Route path="/employee/customers" component={EmployeeCustomers} />
+      <Route path="/employee/activity-logs" component={EmployeeActivityLogs} />
+      <Route path="/employee/quotes" component={EmployeeQuotes} />
+      <Route path="/employee/messages" component={EmployeeMessages} />
+      <Route path="/employee/team" component={EmployeeTeam} />
+      <Route path="/employee/reviews" component={EmployeeReviews} />
+      <Route path="/employee/invoices" component={EmployeeInvoices} />
+      <Route path="/employee/newsletter" component={EmployeeNewsletter} />
+      <Route path="/employee/employees" component={EmployeeEmployees} />
       <Route path="/login" component={Login} />
       <Route path="/setup" component={SetupAdmin} />
       <Route path="/admin">
