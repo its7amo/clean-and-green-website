@@ -94,6 +94,9 @@ export const bookings = pgTable("bookings", {
   reviewEmailSent: boolean("review_email_sent").notNull().default(false),
   managementToken: varchar("management_token").notNull().default(sql`gen_random_uuid()`),
   assignedEmployeeIds: text("assigned_employee_ids").array(),
+  paymentMethodId: text("payment_method_id"),
+  cancellationFeeStatus: text("cancellation_fee_status").notNull().default("not_applicable"),
+  cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -218,6 +221,7 @@ export const businessSettings = pgTable("business_settings", {
   }>(),
   privacyPolicy: text("privacy_policy"),
   termsOfService: text("terms_of_service"),
+  cancellationPolicy: text("cancellation_policy"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
