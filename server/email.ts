@@ -630,14 +630,14 @@ export async function sendPaymentThankYouEmail(data: PaymentThankYouEmailData): 
     await resend.emails.send({
       from: 'Clean & Green <noreply@voryn.store>',
       to: data.customerEmail,
-      subject: '✨ Thank You for Your Payment!',
+      subject: '💚 Thank You for Choosing Clean & Green!',
       html: `
         <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
           <h2 style="color: #22c55e;">Thank You, ${escapeHtml(data.customerName)}!</h2>
           
-          <p>We've received your payment for invoice #${escapeHtml(data.invoiceNumber)}.</p>
+          <p>We sincerely appreciate you choosing Clean & Green for your ${escapeHtml(data.serviceDescription)}. Your trust in our eco-friendly cleaning services means the world to us!</p>
           
-          <p>We sincerely appreciate you choosing Clean & Green for your ${escapeHtml(data.serviceDescription)}. Our eco-friendly approach means a lot to us, and we hope you're thrilled with the results!</p>
+          <p>We hope you're thrilled with the results and that your space is sparkling clean. 🌿</p>
           
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
           
@@ -663,9 +663,9 @@ export async function sendPaymentThankYouEmail(data: PaymentThankYouEmailData): 
         </div>
       `,
     });
-    console.log(`Payment thank you email sent to ${data.customerEmail} for invoice ${data.invoiceNumber}`);
+    console.log(`Service thank you email sent to ${data.customerEmail} for invoice ${data.invoiceNumber}`);
   } catch (error) {
-    console.error('Failed to send payment thank you email:', error);
+    console.error('Failed to send service thank you email:', error);
     // Don't throw - email failures shouldn't break the process
   }
 }
