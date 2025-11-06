@@ -99,6 +99,9 @@ export function BookingForm() {
     address: "",
     paymentMethodId: "",
     agreedToCancellationPolicy: false,
+    promoCode: "",
+    promoCodeId: null as string | null,
+    promoCodeDiscount: 0,
   });
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
@@ -155,6 +158,40 @@ export function BookingForm() {
     },
   });
 
+  const validatePromoCodeMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/promo-codes/validate", { code });
+      return await res.json();
+    },
+    onSuccess: (data: any) => {
+      if (data.valid) {
+        updateFormData("promoCodeId", data.promoCode.id);
+        updateFormData("promoCodeDiscount", data.promoCode.discountValue);
+        toast({
+          title: "Promo code applied!",
+          description: `You'll save ${data.promoCode.discountType === "percentage" ? `${data.promoCode.discountValue}%` : `$${(data.promoCode.discountValue / 100).toFixed(2)}`}`,
+        });
+      } else {
+        updateFormData("promoCodeId", null);
+        updateFormData("promoCodeDiscount", 0);
+        toast({
+          title: "Invalid promo code",
+          description: data.message || "This promo code is not valid",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      updateFormData("promoCodeId", null);
+      updateFormData("promoCodeDiscount", 0);
+      toast({
+        title: "Error",
+        description: "Failed to validate promo code",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = () => {
     const bookingData = {
       service: formData.service,
@@ -167,6 +204,7 @@ export function BookingForm() {
       address: formData.address,
       status: "pending",
       paymentMethodId: formData.paymentMethodId,
+      promoCodeId: formData.promoCodeId,
     };
     createBookingMutation.mutate(bookingData);
   };
@@ -370,6 +408,33 @@ export function BookingForm() {
                   onChange={(e) => updateFormData("address", e.target.value)}
                   data-testid="input-address"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promo-code">Promo Code (Optional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="promo-code"
+                    value={formData.promoCode}
+                    onChange={(e) => updateFormData("promoCode", e.target.value.toUpperCase())}
+                    placeholder="Enter promo code"
+                    data-testid="input-promo-code"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => validatePromoCodeMutation.mutate(formData.promoCode)}
+                    disabled={!formData.promoCode || validatePromoCodeMutation.isPending}
+                    data-testid="button-apply-promo"
+                  >
+                    {validatePromoCodeMutation.isPending ? "Checking..." : "Apply"}
+                  </Button>
+                </div>
+                {formData.promoCodeId && (
+                  <p className="text-sm text-primary font-medium" data-testid="text-promo-applied">
+                    ✓ Promo code applied
+                  </p>
+                )}
               </div>
             </div>
           </div>

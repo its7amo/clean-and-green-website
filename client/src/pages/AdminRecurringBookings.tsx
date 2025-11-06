@@ -75,7 +75,7 @@ export default function AdminRecurringBookings() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      await apiRequest("/api/recurring-bookings", "POST", data);
+      await apiRequest("POST", "/api/recurring-bookings", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recurring-bookings"] });
@@ -97,7 +97,7 @@ export default function AdminRecurringBookings() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<FormData> }) => {
-      await apiRequest(`/api/recurring-bookings/${id}`, "PATCH", data);
+      await apiRequest("PATCH", `/api/recurring-bookings/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recurring-bookings"] });
@@ -120,7 +120,7 @@ export default function AdminRecurringBookings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/recurring-bookings/${id}`, "DELETE");
+      await apiRequest("DELETE", `/api/recurring-bookings/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recurring-bookings"] });

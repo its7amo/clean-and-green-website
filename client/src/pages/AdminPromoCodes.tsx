@@ -82,7 +82,7 @@ export default function AdminPromoCodes() {
         code: data.code.toUpperCase(),
         maxUses: data.maxUses ? parseInt(data.maxUses) : null,
       };
-      await apiRequest("/api/promo-codes", "POST", payload);
+      await apiRequest("POST", "/api/promo-codes", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
@@ -109,7 +109,7 @@ export default function AdminPromoCodes() {
         code: data.code?.toUpperCase(),
         maxUses: data.maxUses ? parseInt(data.maxUses) : null,
       };
-      await apiRequest(`/api/promo-codes/${id}`, "PATCH", payload);
+      await apiRequest("PATCH", `/api/promo-codes/${id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
@@ -132,7 +132,7 @@ export default function AdminPromoCodes() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/promo-codes/${id}`, "DELETE");
+      await apiRequest("DELETE", `/api/promo-codes/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
