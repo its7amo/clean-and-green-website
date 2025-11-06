@@ -32,6 +32,7 @@ import {
   Mail,
   UsersRound,
   MessageSquare,
+  ClipboardList,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -46,6 +47,7 @@ const menuItems = [
   { href: "/admin/newsletter", icon: Mail, label: "Newsletter" },
   { href: "/admin/team", icon: UsersRound, label: "Team" },
   { href: "/admin/messages", icon: MessageSquare, label: "Messages" },
+  { href: "/admin/activity-logs", icon: ClipboardList, label: "Activity Logs" },
   { href: "/admin/services", icon: Wrench, label: "Services" },
   { href: "/admin/gallery", icon: Image, label: "Gallery" },
   { href: "/admin/faq", icon: HelpCircle, label: "FAQ" },
