@@ -4,17 +4,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Booking } from "@shared/schema";
 import { Link } from "wouter";
-import { Calendar, Clock, Home, Mail, Phone, MapPin } from "lucide-react";
+import { Calendar, Clock, Home, Mail, Phone, MapPin, AlertTriangle, DollarSign } from "lucide-react";
 
 const statusColors = {
   pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
   confirmed: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
   completed: "bg-green-500/10 text-green-700 dark:text-green-400",
   cancelled: "bg-red-500/10 text-red-700 dark:text-red-400",
+};
+
+const feeStatusColors = {
+  not_applicable: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  pending: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  dismissed: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
+  charged: "bg-green-500/10 text-green-700 dark:text-green-400",
+};
+
+const feeStatusLabels = {
+  not_applicable: "No Fee",
+  pending: "Fee Pending",
+  dismissed: "Fee Waived",
+  charged: "Fee Charged",
 };
 
 const serviceNames: Record<string, string> = {
@@ -150,6 +165,42 @@ export default function CustomerPortal() {
                       </div>
                     </div>
                   </div>
+
+                  {booking.status === "cancelled" && booking.cancellationFeeStatus && booking.cancellationFeeStatus !== "not_applicable" && (
+                    <div className="border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Cancellation Fee</span>
+                        </div>
+                        <Badge
+                          className={feeStatusColors[booking.cancellationFeeStatus as keyof typeof feeStatusColors]}
+                          data-testid={`badge-fee-status-${booking.id}`}
+                        >
+                          {feeStatusLabels[booking.cancellationFeeStatus as keyof typeof feeStatusLabels]}
+                        </Badge>
+                      </div>
+                      {booking.cancellationFeeStatus === "pending" && (
+                        <Alert className="mt-3">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertTitle>Late Cancellation</AlertTitle>
+                          <AlertDescription>
+                            Your booking was cancelled less than 24 hours before the scheduled appointment. A $35 cancellation fee is pending review.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      {booking.cancellationFeeStatus === "charged" && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          A $35 late cancellation fee was charged to your payment method on file.
+                        </p>
+                      )}
+                      {booking.cancellationFeeStatus === "dismissed" && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          The cancellation fee was waived as a courtesy.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {booking.managementToken && booking.status !== "cancelled" && booking.status !== "completed" && (
                     <div className="border-t pt-4">

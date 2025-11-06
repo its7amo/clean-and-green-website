@@ -49,7 +49,6 @@ function PaymentMethodForm({ onSuccess }: { onSuccess: (pmId: string) => void })
 
       if (submitError) {
         setError(submitError.message || "Failed to process payment method");
-        setProcessing(false);
         return;
       }
 
@@ -58,6 +57,7 @@ function PaymentMethodForm({ onSuccess }: { onSuccess: (pmId: string) => void })
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred");
+    } finally {
       setProcessing(false);
     }
   };
