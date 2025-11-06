@@ -362,7 +362,7 @@ export default function AdminPromoCodes() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={handleDialogClose} data-testid="button-cancel">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} data-testid="button-cancel">
                     Cancel
                   </Button>
                   <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-save-promo">
