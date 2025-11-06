@@ -563,6 +563,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Replace/update promo code on booking
+  app.patch("/api/bookings/:id/promo-code", isAuthenticated, async (req, res) => {
+    try {
+      const { promoCode } = req.body;
+      
+      if (!promoCode || typeof promoCode !== "string") {
+        return res.status(400).json({ error: "Valid promo code is required" });
+      }
+
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      // Find and validate the new promo code
+      const promo = await storage.getPromoCodeByCode(promoCode);
+      if (!promo) {
+        return res.status(404).json({ error: "Promo code not found" });
+      }
+
+      if (promo.status !== "active") {
+        return res.status(400).json({ error: "Promo code is not active" });
+      }
+
+      // Check if promo code has reached max uses
+      if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) {
+        return res.status(400).json({ error: "Promo code has reached maximum uses" });
+      }
+
+      // Check if promo code is valid for current date
+      const now = new Date();
+      if (now < new Date(promo.validFrom) || now > new Date(promo.validTo)) {
+        return res.status(400).json({ error: "Promo code is not valid for current date" });
+      }
+
+      // Get the base price to calculate discount
+      let basePrice = booking.actualPrice || 0;
+      
+      // If no actual price, try to get service base price
+      if (!basePrice) {
+        const service = await storage.getServiceByName(booking.service);
+        if (service) {
+          basePrice = service.basePrice;
+        }
+      }
+
+      // Calculate discount amount
+      let discountAmount = 0;
+      if (promo.discountType === "percentage") {
+        discountAmount = Math.round((basePrice * promo.discountValue) / 100);
+      } else {
+        discountAmount = promo.discountValue;
+      }
+
+      // Ensure discount doesn't exceed base price
+      discountAmount = Math.min(discountAmount, basePrice);
+
+      // Update the booking with new promo code and discount
+      const updatedBooking = await storage.updateBooking(req.params.id, {
+        promoCode: promo.code,
+        discountAmount,
+      });
+
+      if (!updatedBooking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      res.json(updatedBooking);
+    } catch (error) {
+      console.error("Error replacing promo code:", error);
+      res.status(500).json({ error: "Failed to replace promo code" });
+    }
+  });
+
   // Public booking management (using token, no auth required)
   app.get("/api/bookings/manage/:token", async (req, res) => {
     try {

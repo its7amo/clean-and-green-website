@@ -449,7 +449,7 @@ export function BookingsTable() {
                               </SelectTrigger>
                               <SelectContent>
                                 {promoCodes
-                                  .filter(pc => pc.isActive && pc.code !== booking.promoCode)
+                                  .filter(pc => pc.status === "active" && pc.code !== booking.promoCode)
                                   .map((pc) => (
                                     <SelectItem key={pc.id} value={pc.code}>
                                       {pc.code} ({pc.discountType === "percentage" ? `${pc.discountValue}%` : `$${pc.discountValue}`})
