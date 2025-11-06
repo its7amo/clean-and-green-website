@@ -1197,11 +1197,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertInvoiceSchema.partial().parse(req.body);
       
-      // Validate discount doesn't exceed amount (if both are being updated)
-      if (validatedData.discountAmount !== undefined && validatedData.amount !== undefined) {
-        if (validatedData.discountAmount > validatedData.amount) {
-          return res.status(400).json({ error: "Discount cannot exceed the invoice amount" });
-        }
+      // Fetch existing invoice to validate merged data
+      const existingInvoice = await storage.getInvoice(req.params.id);
+      if (!existingInvoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      
+      // Merge existing data with updates
+      const mergedAmount = validatedData.amount !== undefined ? validatedData.amount : existingInvoice.amount;
+      const mergedDiscount = validatedData.discountAmount !== undefined ? validatedData.discountAmount : existingInvoice.discountAmount;
+      
+      // Validate discount doesn't exceed amount in merged result
+      if (mergedDiscount !== null && mergedDiscount > mergedAmount) {
+        return res.status(400).json({ error: "Discount cannot exceed the invoice amount" });
       }
       
       const invoice = await storage.updateInvoice(req.params.id, validatedData);
