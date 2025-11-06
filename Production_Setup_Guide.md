@@ -53,8 +53,8 @@
 3. **Update these variables**:
 
 ```
-STRIPE_SECRET_KEY = sk_live_XXXXXXXXXXXXXXXXXXXXXXXX
-VITE_STRIPE_PUBLIC_KEY = pk_live_XXXXXXXXXXXXXXXXXXXXXXXX
+STRIPE_SECRET_KEY = sk_live_[your_secret_key_here]
+VITE_STRIPE_PUBLIC_KEY = pk_live_[your_publishable_key_here]
 ```
 
 4. Click **Save Changes**
@@ -81,7 +81,7 @@ VITE_STRIPE_PUBLIC_KEY = pk_live_XXXXXXXXXXXXXXXXXXXXXXXX
 
 Add/Update this environment variable:
 ```
-STRIPE_WEBHOOK_SECRET = whsec_XXXXXXXXXXXXXXXXXXXXXXXX
+STRIPE_WEBHOOK_SECRET = whsec_[your_webhook_secret_here]
 ```
 
 ### Step 6: Recreate Products in Live Mode
