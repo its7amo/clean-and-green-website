@@ -169,7 +169,7 @@ export function BookingForm() {
     onSuccess: (data: any) => {
       if (data.valid) {
         updateFormData("promoCodeId", data.promoCode.id);
-        updateFormData("promoCodeDiscount", data.promoCode.discountValue);
+        updateFormData("promoCodeDiscount", data.discountAmount || 0);
         toast({
           title: "Promo code applied!",
           description: `You'll save ${data.promoCode.discountType === "percentage" ? `${data.promoCode.discountValue}%` : `$${(data.promoCode.discountValue / 100).toFixed(2)}`}`,
@@ -208,6 +208,7 @@ export function BookingForm() {
       status: "pending",
       paymentMethodId: formData.paymentMethodId,
       promoCodeId: formData.promoCodeId,
+      discountAmount: formData.promoCodeDiscount,
       isRecurring: formData.isRecurring,
       recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined,
       recurringEndDate: formData.isRecurring && formData.recurringEndDate ? format(formData.recurringEndDate, "yyyy-MM-dd") : undefined,
