@@ -1,25 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Employee, InsertEmployee } from "@shared/schema";
+import type { Employee, InsertEmployee, EmployeePermission } from "@shared/schema";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Shield } from "lucide-react";
+import { PERMISSION_METADATA, type PermissionTemplate, type Feature, type Action } from "@shared/permissions";
 
 export default function AdminEmployees() {
   const { toast } = useToast();
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [permissionsEmployee, setPermissionsEmployee] = useState<Employee | null>(null);
+  const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+  const [selectedPermissions, setSelectedPermissions] = useState<Map<Feature, Set<Action>>>(new Map());
 
   const { data: employees, isLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -82,6 +89,42 @@ export default function AdminEmployees() {
     },
   });
 
+  const { data: templates } = useQuery<PermissionTemplate[]>({
+    queryKey: ["/api/permission-templates"],
+  });
+
+  const { data: employeePermissions, refetch: refetchPermissions } = useQuery<EmployeePermission[]>({
+    queryKey: ["/api/employees", permissionsEmployee?.id, "permissions"],
+    enabled: !!permissionsEmployee,
+  });
+
+  const updatePermissionsMutation = useMutation({
+    mutationFn: async ({ employeeId, permissions }: { employeeId: string; permissions: Array<{ feature: string; actions: string[] }> }) => {
+      const res = await apiRequest("PUT", `/api/employees/${employeeId}/permissions`, { permissions });
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", variables.employeeId, "permissions"] });
+      toast({ title: "Permissions updated successfully" });
+      setIsPermissionsDialogOpen(false);
+      setPermissionsEmployee(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to update permissions", variant: "destructive" });
+    },
+  });
+
+  // Load permissions when dialog opens
+  useEffect(() => {
+    if (employeePermissions) {
+      const permsMap = new Map<Feature, Set<Action>>();
+      employeePermissions.forEach(perm => {
+        permsMap.set(perm.feature as Feature, new Set(perm.actions as Action[]));
+      });
+      setSelectedPermissions(permsMap);
+    }
+  }, [employeePermissions]);
+
   const onSubmit = (data: InsertEmployee) => {
     if (editingEmployee) {
       updateMutation.mutate({ id: editingEmployee.id, data });
@@ -112,6 +155,55 @@ export default function AdminEmployees() {
     setIsDialogOpen(false);
     setEditingEmployee(null);
     form.reset();
+  };
+
+  const handleManagePermissions = (employee: Employee) => {
+    setPermissionsEmployee(employee);
+    setIsPermissionsDialogOpen(true);
+  };
+
+  const togglePermission = (feature: Feature, action: Action) => {
+    setSelectedPermissions(prev => {
+      const newMap = new Map(prev);
+      const actions = newMap.get(feature) || new Set<Action>();
+      
+      if (actions.has(action)) {
+        actions.delete(action);
+      } else {
+        actions.add(action);
+      }
+      
+      if (actions.size === 0) {
+        newMap.delete(feature);
+      } else {
+        newMap.set(feature, actions);
+      }
+      
+      return newMap;
+    });
+  };
+
+  const applyTemplate = (template: PermissionTemplate) => {
+    const permsMap = new Map<Feature, Set<Action>>();
+    template.permissions.forEach(perm => {
+      permsMap.set(perm.feature, new Set(perm.actions));
+    });
+    setSelectedPermissions(permsMap);
+    toast({ title: `Applied ${template.name} template` });
+  };
+
+  const savePermissions = () => {
+    if (!permissionsEmployee) return;
+    
+    const permissions = Array.from(selectedPermissions.entries()).map(([feature, actions]) => ({
+      feature,
+      actions: Array.from(actions),
+    }));
+    
+    updatePermissionsMutation.mutate({
+      employeeId: permissionsEmployee.id,
+      permissions,
+    });
   };
 
   return (
@@ -298,6 +390,15 @@ export default function AdminEmployees() {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => handleManagePermissions(employee)}
+                            data-testid={`button-permissions-${employee.id}`}
+                            title="Manage Permissions"
+                          >
+                            <Shield className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleEdit(employee)}
                             data-testid={`button-edit-${employee.id}`}
                           >
@@ -320,6 +421,110 @@ export default function AdminEmployees() {
             )}
           </CardContent>
         </Card>
+
+        {/* Permissions Management Dialog */}
+        <Dialog open={isPermissionsDialogOpen} onOpenChange={setIsPermissionsDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" data-testid="dialog-manage-permissions">
+            <DialogHeader>
+              <DialogTitle>Manage Permissions - {permissionsEmployee?.name}</DialogTitle>
+              <DialogDescription>
+                Control what features this employee can access
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Tabs defaultValue="manual" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="manual">Custom Permissions</TabsTrigger>
+                <TabsTrigger value="templates">Quick Templates</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="manual" className="space-y-4 mt-4">
+                <div className="grid gap-4">
+                  {PERMISSION_METADATA.map((meta) => {
+                    const featureActions = selectedPermissions.get(meta.feature) || new Set<Action>();
+                    const allSelected = meta.availableActions.every(a => featureActions.has(a.action));
+                    const someSelected = meta.availableActions.some(a => featureActions.has(a.action));
+                    
+                    return (
+                      <Card key={meta.feature}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">{meta.label}</CardTitle>
+                            <Badge variant={allSelected ? "default" : someSelected ? "secondary" : "outline"}>
+                              {featureActions.size} / {meta.availableActions.length}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {meta.availableActions.map((actionMeta) => (
+                              <div key={actionMeta.action} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`${meta.feature}-${actionMeta.action}`}
+                                  checked={featureActions.has(actionMeta.action)}
+                                  onCheckedChange={() => togglePermission(meta.feature, actionMeta.action)}
+                                  data-testid={`checkbox-${meta.feature}-${actionMeta.action}`}
+                                />
+                                <label
+                                  htmlFor={`${meta.feature}-${actionMeta.action}`}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                >
+                                  {actionMeta.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="templates" className="space-y-4 mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Quick apply predefined permission sets
+                </p>
+                <div className="grid gap-3">
+                  {templates?.map((template) => (
+                    <Card key={template.id} className="hover-elevate cursor-pointer" onClick={() => applyTemplate(template)}>
+                      <CardHeader>
+                        <CardTitle className="text-base">{template.name}</CardTitle>
+                        <CardDescription>{template.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {template.permissions.map((perm) => (
+                            <Badge key={perm.feature} variant="secondary">
+                              {PERMISSION_METADATA.find(m => m.feature === perm.feature)?.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsPermissionsDialogOpen(false)}
+                data-testid="button-cancel-permissions"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={savePermissions}
+                disabled={updatePermissionsMutation.isPending || !employeePermissions}
+                data-testid="button-save-permissions"
+              >
+                {updatePermissionsMutation.isPending ? "Saving..." : "Save Permissions"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
