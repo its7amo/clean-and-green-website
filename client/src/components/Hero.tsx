@@ -50,12 +50,8 @@ export function Hero() {
 
           <div className="flex flex-wrap gap-6 text-white">
             <div className="flex items-center gap-2">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <span className="font-medium">500+ Happy Customers</span>
+              <CheckCircle className="h-5 w-5 text-primary" />
+              <span className="font-medium">Locally Owned & Operated</span>
             </div>
             <div className="flex items-center gap-2">
               <Leaf className="h-5 w-5 text-primary" />
