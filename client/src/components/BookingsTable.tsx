@@ -4,10 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, CheckCircle, XCircle, Users, Trash2 } from "lucide-react";
+import { Eye, CheckCircle, XCircle, Users, Trash2, Camera } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { PhotoUpload } from "@/components/PhotoUpload";
 import type { Booking, Employee } from "@shared/schema";
 
 const statusColors = {
@@ -28,6 +29,8 @@ export function BookingsTable() {
   const [assignDialogOpen, setAssignDialogOpen] = useState<string | null>(null);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
@@ -238,6 +241,17 @@ export function BookingsTable() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => {
+                        setSelectedBookingId(booking.id);
+                        setPhotoDialogOpen(true);
+                      }}
+                      data-testid={`button-photos-${booking.id}`}
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
                     {booking.status === "pending" && (
                       <>
                         <Button 
@@ -376,6 +390,19 @@ export function BookingsTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {selectedBookingId && (
+        <PhotoUpload
+          bookingId={selectedBookingId}
+          open={photoDialogOpen}
+          onOpenChange={(open) => {
+            setPhotoDialogOpen(open);
+            if (!open) {
+              setSelectedBookingId(null);
+            }
+          }}
+        />
+      )}
     </Card>
   );
 }

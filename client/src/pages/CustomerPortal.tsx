@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Booking } from "@shared/schema";
 import { Link } from "wouter";
+import { PhotoViewButton } from "@/components/CustomerPhotoViewer";
 import { Calendar, Clock, Home, Mail, Phone, MapPin, AlertTriangle, DollarSign } from "lucide-react";
 
 const statusColors = {
@@ -164,6 +165,14 @@ export default function CustomerPortal() {
                         <span>{booking.phone}</span>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-2">Before & After Photos</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      View photos of your cleaning service
+                    </p>
+                    <PhotoViewButton bookingId={booking.id} />
                   </div>
 
                   {booking.status === "cancelled" && booking.cancellationFeeStatus && booking.cancellationFeeStatus !== "not_applicable" && (

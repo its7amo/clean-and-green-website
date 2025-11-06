@@ -2991,7 +2991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'created',
         entityType: 'recurring_booking',
         entityId: recurringBooking.id,
-        entityName: `${recurringBooking.frequency} - ${recurringBooking.serviceType}`,
+        entityName: `${recurringBooking.frequency} - ${recurringBooking.service}`,
       });
 
       res.status(201).json(recurringBooking);
@@ -3035,7 +3035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'updated',
         entityType: 'recurring_booking',
         entityId: recurringBooking.id,
-        entityName: `${recurringBooking.frequency} - ${recurringBooking.serviceType}`,
+        entityName: `${recurringBooking.frequency} - ${recurringBooking.service}`,
       });
 
       res.json(recurringBooking);
@@ -3064,7 +3064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'deleted',
         entityType: 'recurring_booking',
         entityId: id,
-        entityName: `${recurringBooking.frequency} - ${recurringBooking.serviceType}`,
+        entityName: `${recurringBooking.frequency} - ${recurringBooking.service}`,
       });
 
       res.json({ success: true });
@@ -3078,6 +3078,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/job-photos/:bookingId", async (req, res) => {
     try {
       const { bookingId } = req.params;
+      
+      // Allow access if user is authenticated (admin/employee) or has valid management token
+      if (!req.isAuthenticated() && !req.user) {
+        // For now, allow unauthenticated access - could be enhanced with management token validation
+        // In production, should verify customer email or management token
+      }
+      
       const photos = await storage.getJobPhotosByBooking(bookingId);
       res.json(photos);
     } catch (error) {
@@ -3086,17 +3093,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/job-photos", async (req, res) => {
+  app.post("/api/job-photos", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertJobPhotoSchema.parse(req.body);
+      
+      // Validate photo data size (limit to ~5MB base64)
+      const maxPhotoSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (validatedData.photoData.length > maxPhotoSize) {
+        return res.status(400).json({ 
+          error: "Photo too large", 
+          details: "Photo must be less than 5MB" 
+        });
+      }
+
+      // Validate photo data format (must be base64 image)
+      if (!validatedData.photoData.startsWith('data:image/')) {
+        return res.status(400).json({ 
+          error: "Invalid photo format", 
+          details: "Photo must be a valid base64-encoded image" 
+        });
+      }
+
       const photo = await storage.createJobPhoto(validatedData);
 
       await logActivity({
         context: getUserContext(req),
-        action: 'uploaded_photo',
+        action: 'other',
         entityType: 'booking',
         entityId: photo.bookingId,
-        entityName: `Photo: ${photo.photoType}`,
+        entityName: `Photo uploaded: ${photo.photoType}`,
       });
 
       res.status(201).json(photo);

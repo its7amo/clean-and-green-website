@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -11,13 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useEmployeePermissions } from "@/hooks/use-employee-permissions";
 import { EmployeeLayout } from "@/components/EmployeeLayout";
+import { PhotoUpload } from "@/components/PhotoUpload";
 import { format, parseISO } from "date-fns";
-import { Calendar } from "lucide-react";
+import { Calendar, Camera } from "lucide-react";
 
 export default function EmployeeBookings() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { canView, canEdit, canDelete, isLoading: permissionsLoading } = useEmployeePermissions();
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   const { data: employee, isLoading: employeeLoading } = useQuery<Employee>({
     queryKey: ["/api/employee/auth/user"],
@@ -143,7 +146,19 @@ export default function EmployeeBookings() {
                       </TableCell>
                       {(canEdit("bookings") || canDelete("bookings")) && (
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedBookingId(booking.id);
+                                setPhotoDialogOpen(true);
+                              }}
+                              data-testid={`button-photos-${booking.id}`}
+                            >
+                              <Camera className="h-4 w-4 mr-1" />
+                              Photos
+                            </Button>
                             {canEdit("bookings") && (
                               <Select
                                 value={booking.status}
@@ -186,6 +201,19 @@ export default function EmployeeBookings() {
             )}
           </CardContent>
         </Card>
+
+        {selectedBookingId && (
+          <PhotoUpload
+            bookingId={selectedBookingId}
+            open={photoDialogOpen}
+            onOpenChange={(open) => {
+              setPhotoDialogOpen(open);
+              if (!open) {
+                setSelectedBookingId(null);
+              }
+            }}
+          />
+        )}
       </div>
     </EmployeeLayout>
   );
