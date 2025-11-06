@@ -1,6 +1,6 @@
 import { storage } from "./storage";
 import { sendBookingConfirmationSMS } from "./sms";
-import { sendCustomerBookingConfirmation } from "./email";
+import { sendBookingUnderReviewEmail } from "./email";
 
 export function startRecurringBookingScheduler() {
   // Run every hour to check for recurring bookings that need new appointments
@@ -76,8 +76,8 @@ async function processRecurringBookings() {
               try {
                 const settings = await storage.getBusinessSettings();
                 if (settings) {
-                  // Send email confirmation to customer
-                  await sendCustomerBookingConfirmation({
+                  // Send "under review" email to customer (not confirmed yet)
+                  await sendBookingUnderReviewEmail({
                     bookingId: newBooking.id,
                     managementToken: newBooking.managementToken,
                     name: newBooking.name,
@@ -89,15 +89,6 @@ async function processRecurringBookings() {
                     date: newBooking.date,
                     timeSlot: newBooking.timeSlot,
                   });
-
-                  // Send SMS confirmation
-                  await sendBookingConfirmationSMS(
-                    newBooking.phone,
-                    newBooking.name,
-                    newBooking.service,
-                    new Date(newBooking.date),
-                    newBooking.timeSlot
-                  );
                 }
               } catch (notificationError) {
                 console.error("Failed to send recurring booking notifications:", notificationError);

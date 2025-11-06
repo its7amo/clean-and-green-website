@@ -165,6 +165,50 @@ export interface CustomerBookingData extends BookingEmailData {
   managementToken: string;
 }
 
+export async function sendBookingUnderReviewEmail(
+  bookingData: CustomerBookingData
+): Promise<void> {
+  const portalUrl = `https://clean-and-green-website.onrender.com/portal`;
+  
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: bookingData.email,
+      subject: `Booking Request Received - ${escapeHtml(bookingData.serviceType)}`,
+      html: `
+        <h2>📋 Your Booking Request is Under Review</h2>
+        <p>Hi ${escapeHtml(bookingData.name)},</p>
+        <p>Thank you for choosing Clean & Green! We've received your booking request and are checking our availability.</p>
+        
+        <h3>Your Booking Details:</h3>
+        <ul>
+          <li><strong>Service:</strong> ${escapeHtml(bookingData.serviceType)}</li>
+          <li><strong>Property Size:</strong> ${escapeHtml(bookingData.propertySize)}</li>
+          <li><strong>Requested Date:</strong> ${escapeHtml(bookingData.date)}</li>
+          <li><strong>Requested Time:</strong> ${escapeHtml(bookingData.timeSlot)}</li>
+          <li><strong>Address:</strong> ${escapeHtml(bookingData.address)}</li>
+        </ul>
+        
+        <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #1e40af;">ℹ️ What's Next?</h3>
+          <p style="margin-bottom: 0; color: #1e40af;">Our team is reviewing your request to confirm availability for your preferred date and time. You'll receive a confirmation email once your booking is approved. This usually takes less than 24 hours.</p>
+        </div>
+        
+        <p>View your booking status anytime: <a href="${portalUrl}" style="color: #22c55e; font-weight: bold;">Customer Portal</a></p>
+        
+        <p>If you have any questions or need to make changes, feel free to reply to this email or call us.</p>
+        
+        <p>Thank you for choosing Clean & Green!</p>
+        
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log('Customer booking under review email sent successfully');
+  } catch (error) {
+    console.error('Failed to send booking under review email:', error);
+  }
+}
+
 export async function sendCustomerBookingConfirmation(
   bookingData: CustomerBookingData
 ): Promise<void> {

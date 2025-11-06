@@ -22,7 +22,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
-import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification, sendContactMessageNotification, resend, escapeHtml } from "./email";
+import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendBookingUnderReviewEmail, sendCustomerQuoteConfirmation, sendBookingChangeNotification, sendContactMessageNotification, resend, escapeHtml } from "./email";
 import { sendBookingConfirmationSMS, sendInvoicePaymentLinkSMS, sendEmployeeAssignmentSMS } from "./sms";
 import { logActivity, getUserContext } from "./activityLogger";
 import Stripe from "stripe";
@@ -189,8 +189,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               timeSlot: booking.timeSlot,
             }, settings.email);
             
-            // Send confirmation to customer
-            await sendCustomerBookingConfirmation({
+            // Send "under review" email to customer (not confirmed yet)
+            await sendBookingUnderReviewEmail({
               bookingId: booking.id,
               managementToken: booking.managementToken,
               name: booking.name,
@@ -202,15 +202,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               date: booking.date,
               timeSlot: booking.timeSlot,
             });
-            
-            // Send SMS confirmation to customer
-            await sendBookingConfirmationSMS(
-              booking.phone,
-              booking.name,
-              booking.service,
-              new Date(booking.date),
-              booking.timeSlot
-            );
           }
         } catch (emailError) {
           console.error("Failed to send booking emails:", emailError);
@@ -350,21 +341,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Booking not found" });
       }
       
-      // Send status update email to customer (async, don't block response)
+      // Send appropriate email based on status change (async, don't block response)
       (async () => {
         try {
-          const { sendBookingStatusUpdateEmail } = await import("./email");
-          await sendBookingStatusUpdateEmail(
-            booking.email,
-            booking.name,
-            booking.status,
-            {
+          if (booking.status === 'confirmed') {
+            // Send full confirmation email with management links
+            await sendCustomerBookingConfirmation({
+              bookingId: booking.id,
+              managementToken: booking.managementToken,
+              name: booking.name,
+              email: booking.email,
+              phone: booking.phone,
+              address: booking.address,
               serviceType: booking.service,
+              propertySize: booking.propertySize,
               date: booking.date,
               timeSlot: booking.timeSlot,
-              address: booking.address
-            }
-          );
+            });
+            
+            // Also send SMS confirmation
+            await sendBookingConfirmationSMS(
+              booking.phone,
+              booking.name,
+              booking.service,
+              new Date(booking.date),
+              booking.timeSlot
+            );
+          } else {
+            // For other status changes, send simple status update email
+            const { sendBookingStatusUpdateEmail } = await import("./email");
+            await sendBookingStatusUpdateEmail(
+              booking.email,
+              booking.name,
+              booking.status,
+              {
+                serviceType: booking.service,
+                date: booking.date,
+                timeSlot: booking.timeSlot,
+                address: booking.address
+              }
+            );
+          }
         } catch (emailError) {
           console.error("Failed to send booking status update email:", emailError);
         }
