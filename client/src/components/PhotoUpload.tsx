@@ -56,7 +56,7 @@ export function PhotoUpload({ bookingId, open, onOpenChange }: PhotoUploadProps)
         employeeName: employee?.name
       });
       
-      const result = await apiRequest("/api/job-photos", "POST", {
+      const result = await apiRequest("POST", "/api/job-photos", {
         bookingId,
         photoData: data.photoData,
         photoType: data.photoType,
@@ -89,7 +89,7 @@ export function PhotoUpload({ bookingId, open, onOpenChange }: PhotoUploadProps)
 
   const deleteMutation = useMutation({
     mutationFn: async (photoId: string) => {
-      await apiRequest(`/api/job-photos/${photoId}`, "DELETE");
+      await apiRequest("DELETE", `/api/job-photos/${photoId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-photos", bookingId] });
