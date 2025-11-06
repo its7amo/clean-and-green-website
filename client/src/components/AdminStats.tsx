@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Calendar, FileText, CheckCircle, Clock } from "lucide-react";
+import { Calendar, FileText, CheckCircle, Clock, Globe, Phone } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Booking, Quote } from "@shared/schema";
 
@@ -16,12 +16,18 @@ export function AdminStats() {
   const pendingBookings = bookings?.filter(b => b.status === "pending").length || 0;
   const completedBookings = bookings?.filter(b => b.status === "completed").length || 0;
   const pendingQuotes = quotes?.filter(q => q.status === "pending").length || 0;
+  
+  // Lead type statistics
+  const webLeads = bookings?.filter(b => b.leadType === 'web').length || 0;
+  const phoneLeads = bookings?.filter(b => b.leadType === 'phone').length || 0;
 
   const stats = [
     { id: 1, label: "Total Bookings", value: totalBookings.toString(), icon: Calendar },
     { id: 2, label: "Pending Bookings", value: pendingBookings.toString(), icon: Clock },
     { id: 3, label: "Completed", value: completedBookings.toString(), icon: CheckCircle },
     { id: 4, label: "Pending Quotes", value: pendingQuotes.toString(), icon: FileText },
+    { id: 5, label: "Web Leads", value: webLeads.toString(), icon: Globe },
+    { id: 6, label: "Phone Leads", value: phoneLeads.toString(), icon: Phone },
   ];
 
   return (

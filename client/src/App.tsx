@@ -30,6 +30,7 @@ import AdminReviews from "@/pages/AdminReviews";
 import AdminNewsletter from "@/pages/AdminNewsletter";
 import AdminTeam from "@/pages/AdminTeam";
 import AdminContactMessages from "@/pages/AdminContactMessages";
+import AdminActivityLogs from "@/pages/AdminActivityLogs";
 import EmployeeLogin from "@/pages/EmployeeLogin";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
 import ManageBooking from "@/pages/manage-booking";
@@ -165,6 +166,9 @@ function Router() {
       </Route>
       <Route path="/admin/settings">
         <ProtectedRoute component={AdminSettings} />
+      </Route>
+      <Route path="/admin/activity-logs">
+        <ProtectedRoute component={AdminActivityLogs} />
       </Route>
       <Route component={NotFound} />
       </Switch>

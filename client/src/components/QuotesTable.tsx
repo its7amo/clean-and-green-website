@@ -17,6 +17,7 @@ const statusColors = {
 
 export function QuotesTable() {
   const { toast } = useToast();
+  const [viewDialogOpen, setViewDialogOpen] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
 
   const { data: quotes, isLoading } = useQuery<Quote[]>({
@@ -137,7 +138,12 @@ export function QuotesTable() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex gap-2">
-                    <Button size="icon" variant="ghost" data-testid={`button-view-quote-${quote.id}`}>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => setViewDialogOpen(quote.id)}
+                      data-testid={`button-view-quote-${quote.id}`}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                     {quote.status === "pending" && (
@@ -175,6 +181,69 @@ export function QuotesTable() {
           </tbody>
         </table>
       </div>
+
+      {/* View Quote Dialog */}
+      <Dialog open={viewDialogOpen !== null} onOpenChange={(open) => !open && setViewDialogOpen(null)}>
+        <DialogContent data-testid="dialog-view-quote">
+          <DialogHeader>
+            <DialogTitle>Quote Request Details</DialogTitle>
+            <DialogDescription>
+              View complete quote request information and customer details
+            </DialogDescription>
+          </DialogHeader>
+          {viewDialogOpen && quotes?.find(q => q.id === viewDialogOpen) && (() => {
+            const quote = quotes.find(q => q.id === viewDialogOpen)!;
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Customer Name</p>
+                    <p className="font-medium" data-testid="view-quote-name">{quote.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge className={statusColors[quote.status as keyof typeof statusColors]} data-testid="view-quote-status">
+                      {quote.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p data-testid="view-quote-email">{quote.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p data-testid="view-quote-phone">{quote.phone}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Address</p>
+                    <p data-testid="view-quote-address">{quote.address}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Service Type</p>
+                    <p className="font-medium" data-testid="view-quote-service">{quote.serviceType}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Property Size</p>
+                    <p data-testid="view-quote-property">{quote.propertySize}</p>
+                  </div>
+                  {quote.customSize && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Custom Size</p>
+                      <p data-testid="view-quote-custom-size">{quote.customSize} sq ft</p>
+                    </div>
+                  )}
+                  {quote.details && (
+                    <div className="col-span-2 pt-2 border-t">
+                      <p className="text-sm text-muted-foreground">Additional Details</p>
+                      <p className="mt-1" data-testid="view-quote-details">{quote.details}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteDialogOpen !== null} onOpenChange={(open) => !open && setDeleteDialogOpen(null)}>
         <DialogContent data-testid="dialog-delete-quote">

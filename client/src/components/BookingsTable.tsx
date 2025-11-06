@@ -24,6 +24,7 @@ const serviceNames: Record<string, string> = {
 
 export function BookingsTable() {
   const { toast } = useToast();
+  const [viewDialogOpen, setViewDialogOpen] = useState<string | null>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState<string | null>(null);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
@@ -191,6 +192,9 @@ export function BookingsTable() {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Assign Employees</DialogTitle>
+                        <DialogDescription>
+                          Select employees to assign to this booking
+                        </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         {employees?.map((employee) => (
@@ -226,7 +230,12 @@ export function BookingsTable() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex gap-2">
-                    <Button size="icon" variant="ghost" data-testid={`button-view-${booking.id}`}>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => setViewDialogOpen(booking.id)}
+                      data-testid={`button-view-${booking.id}`}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                     {booking.status === "pending" && (
@@ -274,6 +283,71 @@ export function BookingsTable() {
           </tbody>
         </table>
       </div>
+
+      {/* View Booking Dialog */}
+      <Dialog open={viewDialogOpen !== null} onOpenChange={(open) => !open && setViewDialogOpen(null)}>
+        <DialogContent data-testid="dialog-view-booking">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+            <DialogDescription>
+              View complete booking information and customer details
+            </DialogDescription>
+          </DialogHeader>
+          {viewDialogOpen && bookings?.find(b => b.id === viewDialogOpen) && (() => {
+            const booking = bookings.find(b => b.id === viewDialogOpen)!;
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Customer Name</p>
+                    <p className="font-medium" data-testid="view-booking-name">{booking.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge className={statusColors[booking.status as keyof typeof statusColors]} data-testid="view-booking-status">
+                      {booking.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p data-testid="view-booking-email">{booking.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p data-testid="view-booking-phone">{booking.phone}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Address</p>
+                    <p data-testid="view-booking-address">{booking.address}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Service</p>
+                    <p className="font-medium" data-testid="view-booking-service">{serviceNames[booking.service] || booking.service}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Property Size</p>
+                    <p data-testid="view-booking-property">{booking.propertySize}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Date</p>
+                    <p className="font-medium" data-testid="view-booking-date">{booking.date}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Time</p>
+                    <p data-testid="view-booking-time">{booking.timeSlot}</p>
+                  </div>
+                  {booking.assignedEmployeeIds && booking.assignedEmployeeIds.length > 0 && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Assigned Employees</p>
+                      <p data-testid="view-booking-employees">{booking.assignedEmployeeIds.length} employee(s)</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteDialogOpen !== null} onOpenChange={(open) => !open && setDeleteDialogOpen(null)}>
         <DialogContent data-testid="dialog-delete-booking">
