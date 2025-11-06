@@ -669,3 +669,87 @@ export async function sendPaymentThankYouEmail(data: PaymentThankYouEmailData): 
     // Don't throw - email failures shouldn't break the process
   }
 }
+
+export interface CancellationFeeBookingDetails {
+  serviceType: string;
+  date: string;
+  timeSlot: string;
+  address: string;
+}
+
+export async function sendCancellationFeeDismissedEmail(
+  customerEmail: string,
+  customerName: string,
+  bookingDetails: CancellationFeeBookingDetails
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: customerEmail,
+      subject: 'Cancellation Fee Waived - Clean & Green',
+      html: `
+        <h2 style="color: #22c55e;">Cancellation Fee Waived</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>We wanted to let you know that your $35 cancellation fee has been waived as a courtesy.</p>
+        
+        <h3>Cancelled Booking Details:</h3>
+        <ul>
+          <li><strong>Service:</strong> ${escapeHtml(bookingDetails.serviceType)}</li>
+          <li><strong>Date:</strong> ${escapeHtml(bookingDetails.date)}</li>
+          <li><strong>Time:</strong> ${escapeHtml(bookingDetails.timeSlot)}</li>
+          <li><strong>Address:</strong> ${escapeHtml(bookingDetails.address)}</li>
+        </ul>
+        
+        <p>We understand that plans change, and we appreciate your business. We hope to serve you again in the future!</p>
+        
+        <p>If you'd like to schedule a new cleaning, we're just a click away: <a href="https://clean-and-green-website.onrender.com/book">Book Now</a></p>
+        
+        <p>Thank you for choosing Clean & Green!</p>
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Cancellation fee dismissed email sent to ${customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send cancellation fee dismissed email:', error);
+  }
+}
+
+export async function sendCancellationFeeChargedEmail(
+  customerEmail: string,
+  customerName: string,
+  amount: number,
+  bookingDetails: CancellationFeeBookingDetails
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: customerEmail,
+      subject: 'Cancellation Fee Processed - Clean & Green',
+      html: `
+        <h2>Cancellation Fee Processed</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>This email confirms that a $${amount.toFixed(2)} cancellation fee has been charged to your card on file.</p>
+        
+        <h3>Cancelled Booking Details:</h3>
+        <ul>
+          <li><strong>Service:</strong> ${escapeHtml(bookingDetails.serviceType)}</li>
+          <li><strong>Date:</strong> ${escapeHtml(bookingDetails.date)}</li>
+          <li><strong>Time:</strong> ${escapeHtml(bookingDetails.timeSlot)}</li>
+          <li><strong>Address:</strong> ${escapeHtml(bookingDetails.address)}</li>
+        </ul>
+        
+        <h3>About This Fee:</h3>
+        <p>This fee was applied because the booking was cancelled less than 24 hours before the scheduled service time. Our cancellation policy helps us manage our schedule and compensate our team.</p>
+        
+        <p>We appreciate your understanding. If you have any questions about this charge, please don't hesitate to contact us.</p>
+        
+        <p>We hope to serve you again in the future: <a href="https://clean-and-green-website.onrender.com/book">Book a Service</a></p>
+        
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Cancellation fee charged email sent to ${customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send cancellation fee charged email:', error);
+  }
+}

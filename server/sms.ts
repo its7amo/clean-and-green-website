@@ -158,3 +158,66 @@ export async function sendEmployeeAssignmentSMS(
     // Don't throw - assignment should succeed even if SMS fails
   }
 }
+
+/**
+ * Send SMS notification when cancellation fee is waived
+ */
+export async function sendCancellationFeeDismissedSMS(
+  phone: string,
+  name: string
+): Promise<void> {
+  if (!twilioClient || !twilioPhoneNumber) {
+    console.log('SMS not configured - skipping cancellation fee dismissed SMS');
+    return;
+  }
+
+  try {
+    const normalizedPhone = normalizePhoneNumber(phone);
+    console.log(`📱 Normalizing phone: "${phone}" → "${normalizedPhone}"`);
+    
+    const message = `Hi ${name}, your $35 cancellation fee has been waived. Thank you for choosing Clean & Green!`;
+
+    await twilioClient.messages.create({
+      body: message,
+      from: twilioPhoneNumber,
+      to: normalizedPhone,
+    });
+
+    console.log(`✓ Cancellation fee dismissed SMS sent to ${normalizedPhone}`);
+  } catch (error) {
+    console.error('Failed to send cancellation fee dismissed SMS:', error);
+  }
+}
+
+/**
+ * Send SMS notification when cancellation fee is charged
+ */
+export async function sendCancellationFeeChargedSMS(
+  phone: string,
+  name: string,
+  amount: number,
+  businessPhone?: string
+): Promise<void> {
+  if (!twilioClient || !twilioPhoneNumber) {
+    console.log('SMS not configured - skipping cancellation fee charged SMS');
+    return;
+  }
+
+  try {
+    const normalizedPhone = normalizePhoneNumber(phone);
+    console.log(`📱 Normalizing phone: "${phone}" → "${normalizedPhone}"`);
+    
+    const contactInfo = businessPhone ? ` Questions? Call us at ${businessPhone}` : '';
+    const message = `Hi ${name}, a $${amount.toFixed(2)} cancellation fee was charged to your card for late cancellation.${contactInfo}`;
+
+    await twilioClient.messages.create({
+      body: message,
+      from: twilioPhoneNumber,
+      to: normalizedPhone,
+    });
+
+    console.log(`✓ Cancellation fee charged SMS sent to ${normalizedPhone}`);
+  } catch (error) {
+    console.error('Failed to send cancellation fee charged SMS:', error);
+  }
+}

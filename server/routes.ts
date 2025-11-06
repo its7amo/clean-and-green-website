@@ -250,7 +250,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/bookings/:id/status", isAuthenticated, async (req, res) => {
     try {
       const validatedData = bookingStatusSchema.parse(req.body);
-      const booking = await storage.updateBookingStatus(req.params.id, validatedData.status);
+      
+      // Get existing booking to check cancellation timing
+      const existing = await storage.getBooking(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // If cancelling, check if within 24 hours and set fee status
+      let additionalData = {};
+      if (validatedData.status === 'cancelled' && existing.status !== 'cancelled') {
+        const appointmentDateTime = new Date(`${existing.date}T${convertTimeSlotTo24Hour(existing.timeSlot)}`);
+        const now = new Date();
+        const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+        
+        additionalData = {
+          cancelledAt: new Date(),
+          cancellationFeeStatus: hoursUntilAppointment < 24 ? 'pending' : 'not_applicable',
+        };
+      }
+      
+      const booking = await storage.updateBooking(req.params.id, { status: validatedData.status, ...additionalData });
       if (!booking) {
         return res.status(404).json({ error: "Booking not found" });
       }
@@ -384,7 +404,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const validatedData = updateSchema.parse(req.body);
-      const booking = await storage.updateBooking(req.params.id, validatedData);
+      
+      // If cancelling, check if within 24 hours and set fee status
+      let additionalData = {};
+      if (validatedData.status === 'cancelled') {
+        const appointmentDateTime = new Date(`${existing.date}T${convertTimeSlotTo24Hour(existing.timeSlot)}`);
+        const now = new Date();
+        const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+        
+        additionalData = {
+          cancelledAt: new Date(),
+          cancellationFeeStatus: hoursUntilAppointment < 24 ? 'pending' : 'not_applicable',
+        };
+      }
+      
+      const booking = await storage.updateBooking(req.params.id, { ...validatedData, ...additionalData });
       
       // Notify business owner of changes
       (async () => {
@@ -420,6 +454,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to update booking" });
     }
   });
+  
+  // Helper function to convert time slot to 24-hour format
+  function convertTimeSlotTo24Hour(timeSlot: string): string {
+    const match = timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return "12:00";
+    
+    let hours = parseInt(match[1]);
+    const minutes = match[2];
+    const period = match[3].toUpperCase();
+    
+    if (period === "PM" && hours !== 12) hours += 12;
+    if (period === "AM" && hours === 12) hours = 0;
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes}`;
+  }
 
   // Quote routes (public submissions, protected admin actions)
   app.post("/api/quotes", async (req, res) => {
@@ -1912,6 +1961,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create SetupIntent for payment method collection
+  app.post("/api/create-setup-intent", async (_req, res) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ error: "Payment processing not configured" });
+      }
+
+      const setupIntent = await stripe.setupIntents.create({
+        payment_method_types: ['card'],
+      });
+
+      res.json({ clientSecret: setupIntent.client_secret });
+    } catch (error: any) {
+      console.error("Error creating setup intent:", error);
+      res.status(500).json({ error: "Failed to create setup intent: " + error.message });
+    }
+  });
+
   // Mark invoice as paid (verifies payment with Stripe first)
   app.post("/api/invoices/:id/mark-paid", async (req, res) => {
     try {
@@ -2256,6 +2323,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting booking:", error);
       res.status(500).json({ error: "Failed to delete booking" });
+    }
+  });
+
+  // Admin cancellation management endpoints
+  app.get("/api/admin/cancellations", isAuthenticated, async (_req, res) => {
+    try {
+      const bookings = await storage.getBookings();
+      const cancelledBookings = bookings
+        .filter(booking => booking.status === 'cancelled')
+        .sort((a, b) => {
+          if (!a.cancelledAt) return 1;
+          if (!b.cancelledAt) return -1;
+          return new Date(b.cancelledAt).getTime() - new Date(a.cancelledAt).getTime();
+        });
+      res.json(cancelledBookings);
+    } catch (error) {
+      console.error("Error fetching cancelled bookings:", error);
+      res.status(500).json({ error: "Failed to fetch cancelled bookings" });
+    }
+  });
+
+  app.patch("/api/admin/cancellations/:id/dismiss", isAuthenticated, async (req, res) => {
+    try {
+      const booking = await storage.updateBooking(req.params.id, { 
+        cancellationFeeStatus: 'dismissed' 
+      });
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'booking',
+        entityId: booking.id,
+        entityName: `Dismissed cancellation fee for ${booking.name}`,
+      });
+
+      // Send notifications (async, don't block response)
+      (async () => {
+        try {
+          const { sendCancellationFeeDismissedEmail } = await import("./email");
+          const { sendCancellationFeeDismissedSMS } = await import("./sms");
+          
+          await sendCancellationFeeDismissedEmail(
+            booking.email,
+            booking.name,
+            {
+              serviceType: booking.service,
+              date: booking.date,
+              timeSlot: booking.timeSlot,
+              address: booking.address,
+            }
+          );
+          
+          if (booking.phone) {
+            await sendCancellationFeeDismissedSMS(booking.phone, booking.name);
+          }
+        } catch (notificationError) {
+          console.error("Failed to send cancellation fee dismissed notifications:", notificationError);
+        }
+      })();
+
+      res.json(booking);
+    } catch (error) {
+      console.error("Error dismissing cancellation fee:", error);
+      res.status(500).json({ error: "Failed to dismiss cancellation fee" });
+    }
+  });
+
+  app.post("/api/admin/cancellations/:id/charge", isAuthenticated, async (req, res) => {
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      if (booking.cancellationFeeStatus !== 'pending') {
+        return res.status(400).json({ error: "Cancellation fee is not pending" });
+      }
+
+      if (!booking.paymentMethodId) {
+        return res.status(400).json({ error: "No payment method on file for this booking" });
+      }
+
+      if (!stripe) {
+        return res.status(500).json({ error: "Stripe is not configured" });
+      }
+
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: 3500,
+          currency: 'usd',
+          payment_method: booking.paymentMethodId,
+          confirm: true,
+          automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+          description: `Cancellation fee for booking ${booking.id}`,
+          metadata: { bookingId: booking.id, type: 'cancellation_fee' },
+        });
+
+        if (paymentIntent.status === 'succeeded') {
+          const updatedBooking = await storage.updateBooking(req.params.id, {
+            cancellationFeeStatus: 'charged',
+          });
+
+          await logActivity({
+            context: getUserContext(req),
+            action: 'updated',
+            entityType: 'booking',
+            entityId: booking.id,
+            entityName: `Charged $35 cancellation fee for ${booking.name}`,
+          });
+
+          // Send notifications (async, don't block response)
+          (async () => {
+            try {
+              const { sendCancellationFeeChargedEmail } = await import("./email");
+              const { sendCancellationFeeChargedSMS } = await import("./sms");
+              const settings = await storage.getBusinessSettings();
+              
+              await sendCancellationFeeChargedEmail(
+                booking.email,
+                booking.name,
+                35.00,
+                {
+                  serviceType: booking.service,
+                  date: booking.date,
+                  timeSlot: booking.timeSlot,
+                  address: booking.address,
+                }
+              );
+              
+              if (booking.phone && settings) {
+                await sendCancellationFeeChargedSMS(
+                  booking.phone, 
+                  booking.name, 
+                  35.00,
+                  settings.phone
+                );
+              }
+            } catch (notificationError) {
+              console.error("Failed to send cancellation fee charged notifications:", notificationError);
+            }
+          })();
+
+          res.json({ success: true, booking: updatedBooking });
+        } else {
+          res.status(400).json({ error: `Payment failed with status: ${paymentIntent.status}` });
+        }
+      } catch (stripeError: any) {
+        console.error("Stripe payment error:", stripeError);
+        res.status(400).json({ 
+          error: "Payment failed", 
+          details: stripeError.message 
+        });
+      }
+    } catch (error) {
+      console.error("Error charging cancellation fee:", error);
+      res.status(500).json({ error: "Failed to charge cancellation fee" });
     }
   });
 

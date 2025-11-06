@@ -33,12 +33,14 @@ import {
   UsersRound,
   MessageSquare,
   ClipboardList,
+  AlertTriangle,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/bookings", icon: Calendar, label: "Bookings" },
+  { href: "/admin/cancellations", icon: AlertTriangle, label: "Cancellations" },
   { href: "/admin/quotes", icon: FileText, label: "Quotes" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/customers", icon: Users, label: "Customers" },

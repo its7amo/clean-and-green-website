@@ -18,6 +18,7 @@ import Login from "@/pages/Login";
 import SetupAdmin from "@/pages/SetupAdmin";
 import Admin from "@/pages/Admin";
 import AdminBookings from "@/pages/AdminBookings";
+import AdminCancellations from "@/pages/AdminCancellations";
 import AdminQuotes from "@/pages/AdminQuotes";
 import AdminInvoices from "@/pages/AdminInvoices";
 import AdminCustomers from "@/pages/AdminCustomers";
@@ -150,6 +151,9 @@ function Router() {
       </Route>
       <Route path="/admin/bookings">
         <ProtectedRoute component={AdminBookings} />
+      </Route>
+      <Route path="/admin/cancellations">
+        <ProtectedRoute component={AdminCancellations} />
       </Route>
       <Route path="/admin/quotes">
         <ProtectedRoute component={AdminQuotes} />
