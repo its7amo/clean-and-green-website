@@ -97,6 +97,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertBookingSchema.parse(req.body);
       
+      // Handle promo code if provided
+      let promoCodeData: { promoCode?: string; discountAmount?: number } = {};
+      if (req.body.promoCodeId) {
+        const promoCode = await storage.getPromoCode(req.body.promoCodeId);
+        if (promoCode) {
+          promoCodeData = {
+            promoCode: promoCode.code,
+            discountAmount: promoCode.discountValue,
+          };
+          // Increment promo code usage
+          await storage.incrementPromoCodeUsage(promoCode.id);
+        }
+      }
+      
       // Find or create customer (deduplication)
       const customer = await storage.findOrCreateCustomer(
         validatedData.name,
@@ -108,6 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create booking with customer link and leadType
       const booking = await storage.createBooking({
         ...validatedData,
+        ...promoCodeData,
         customerId: customer.id,
         leadType: 'web', // Public endpoint = web lead
       });

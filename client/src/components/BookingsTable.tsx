@@ -356,6 +356,17 @@ export function BookingsTable() {
                       <p data-testid="view-booking-employees">{booking.assignedEmployeeIds.length} employee(s)</p>
                     </div>
                   )}
+                  {booking.promoCode && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Promo Code</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" data-testid="view-booking-promo-code">{booking.promoCode}</Badge>
+                        <span className="text-sm text-primary font-medium">
+                          Discount: ${((booking.discountAmount || 0) / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );

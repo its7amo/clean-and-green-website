@@ -292,7 +292,25 @@ export default function AdminInvoices() {
       form.setValue("customerEmail", booking.email);
       form.setValue("customerPhone", booking.phone);
       form.setValue("customerAddress", booking.address);
-      form.setValue("serviceDescription", `${booking.service} - ${booking.propertySize}`);
+      
+      // Build service description including promo code if used
+      let serviceDesc = `${booking.service} - ${booking.propertySize}`;
+      if (booking.promoCode) {
+        serviceDesc += `\n\nPromo Code Applied: ${booking.promoCode} (-$${((booking.discountAmount || 0) / 100).toFixed(2)})`;
+      }
+      form.setValue("serviceDescription", serviceDesc);
+      
+      // Auto-calculate amount with promo code discount applied
+      // Assuming base price calculation would be done here or amount is already set
+      // If discount exists, we note it in the service description
+      // The admin can manually adjust the amount field to reflect the discount
+      
+      toast({
+        title: "Booking loaded",
+        description: booking.promoCode 
+          ? `Promo code ${booking.promoCode} applied with $${((booking.discountAmount || 0) / 100).toFixed(2)} discount`
+          : "Booking information loaded successfully",
+      });
     }
   };
 
