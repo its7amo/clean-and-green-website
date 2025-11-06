@@ -60,6 +60,8 @@ export type Employee = typeof employees.$inferSelect;
 
 export const bookings = pgTable("bookings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+  leadType: text("lead_type").notNull().default("web"), // 'web' or 'phone'
   service: text("service").notNull(),
   propertySize: text("property_size").notNull(),
   date: text("date").notNull(),
@@ -87,6 +89,7 @@ export type Booking = typeof bookings.$inferSelect;
 
 export const quotes = pgTable("quotes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id),
   serviceType: text("service_type").notNull(),
   propertySize: text("property_size").notNull(),
   customSize: text("custom_size"),
@@ -125,6 +128,33 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
 
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+
+// Customers table for unified customer management
+export const customers = pgTable("customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address"),
+  notes: text("notes"),
+  totalBookings: integer("total_bookings").notNull().default(0),
+  totalQuotes: integer("total_quotes").notNull().default(0),
+  totalInvoices: integer("total_invoices").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertCustomerSchema = createInsertSchema(customers).omit({
+  id: true,
+  totalBookings: true,
+  totalQuotes: true,
+  totalInvoices: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type Customer = typeof customers.$inferSelect;
 
 // Services table for dynamic service management
 export const services = pgTable("services", {
@@ -221,6 +251,7 @@ export const invoices = pgTable("invoices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   invoiceNumber: text("invoice_number").notNull().unique(),
   bookingId: varchar("booking_id").references(() => bookings.id),
+  customerId: varchar("customer_id").references(() => customers.id),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
   customerPhone: text("customer_phone").notNull(),
@@ -309,3 +340,28 @@ export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
 
 export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 export type TeamMember = typeof teamMembers.$inferSelect;
+
+// Activity logs for audit trail
+export const activityLogs = pgTable("activity_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  userRole: text("user_role").notNull(), // 'owner', 'manager', 'employee'
+  userName: text("user_name").notNull(),
+  action: text("action").notNull(), // 'created', 'updated', 'deleted'
+  entityType: text("entity_type").notNull(), // 'booking', 'quote', 'invoice', 'customer', etc
+  entityId: varchar("entity_id").notNull(),
+  entityName: text("entity_name"), // Human-readable identifier
+  changes: jsonb("changes").$type<{
+    before?: Record<string, any>;
+    after?: Record<string, any>;
+  }>(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type ActivityLog = typeof activityLogs.$inferSelect;
