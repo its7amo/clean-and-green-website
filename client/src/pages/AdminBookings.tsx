@@ -30,11 +30,53 @@ export default function AdminBookings() {
     propertySize: "",
     date: "",
     timeSlot: "",
+    promoCode: "",
+    promoCodeId: null as string | null,
+    discountAmount: 0,
+  });
+
+  const validatePromoCodeMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/promo-codes/validate", { code });
+      return await res.json();
+    },
+    onSuccess: (data: any) => {
+      if (data.valid) {
+        setFormData(prev => ({
+          ...prev,
+          promoCodeId: data.promoCode.id,
+          discountAmount: data.promoCode.discountValue,
+        }));
+        toast({
+          title: "Promo code applied!",
+          description: `Discount: ${data.promoCode.discountType === "percentage" ? `${data.promoCode.discountValue}%` : `$${(data.promoCode.discountValue / 100).toFixed(2)}`}`,
+        });
+      } else {
+        setFormData(prev => ({ ...prev, promoCodeId: null, discountAmount: 0 }));
+        toast({
+          title: "Invalid promo code",
+          description: data.message || "This promo code is not valid",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      setFormData(prev => ({ ...prev, promoCodeId: null, discountAmount: 0 }));
+      toast({
+        title: "Error",
+        description: "Failed to validate promo code",
+        variant: "destructive",
+      });
+    },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const res = await apiRequest("POST", "/api/bookings/manual", data);
+      const payload = {
+        ...data,
+        promoCodeId: data.promoCodeId,
+      };
+      const res = await apiRequest("POST", "/api/bookings/manual", payload);
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to create booking");
@@ -53,6 +95,9 @@ export default function AdminBookings() {
         propertySize: "",
         date: "",
         timeSlot: "",
+        promoCode: "",
+        promoCodeId: null,
+        discountAmount: 0,
       });
       toast({
         title: "Booking created",
@@ -187,6 +232,32 @@ export default function AdminBookings() {
                     <SelectItem value="Evening (4pm-8pm)">Evening (4pm-8pm)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label htmlFor="promo-code">Promo Code (Optional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="promo-code"
+                    value={formData.promoCode}
+                    onChange={(e) => setFormData({ ...formData, promoCode: e.target.value.toUpperCase() })}
+                    placeholder="Enter promo code"
+                    data-testid="input-booking-promo-code"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => validatePromoCodeMutation.mutate(formData.promoCode)}
+                    disabled={!formData.promoCode || validatePromoCodeMutation.isPending}
+                    data-testid="button-apply-promo"
+                  >
+                    {validatePromoCodeMutation.isPending ? "Checking..." : "Apply"}
+                  </Button>
+                </div>
+                {formData.promoCodeId && (
+                  <p className="text-sm text-primary font-medium mt-2" data-testid="text-promo-applied">
+                    ✓ Promo code applied - Discount: ${(formData.discountAmount / 100).toFixed(2)}
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
