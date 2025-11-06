@@ -47,7 +47,16 @@ export function PhotoUpload({ bookingId, open, onOpenChange }: PhotoUploadProps)
 
   const uploadMutation = useMutation({
     mutationFn: async (data: { photoData: string; photoType: string; caption: string }) => {
-      await apiRequest("/api/job-photos", "POST", {
+      console.log("Starting photo upload...", {
+        bookingId,
+        photoType: data.photoType,
+        captionLength: data.caption.length,
+        photoDataLength: data.photoData.length,
+        employeeId: employee?.id,
+        employeeName: employee?.name
+      });
+      
+      const result = await apiRequest("/api/job-photos", "POST", {
         bookingId,
         photoData: data.photoData,
         photoType: data.photoType,
@@ -55,8 +64,12 @@ export function PhotoUpload({ bookingId, open, onOpenChange }: PhotoUploadProps)
         uploadedByName: employee?.name || "Employee",
         caption: data.caption,
       });
+      
+      console.log("Photo upload successful", result);
+      return result;
     },
     onSuccess: () => {
+      console.log("Upload mutation onSuccess triggered");
       queryClient.invalidateQueries({ queryKey: ["/api/job-photos", bookingId] });
       setPreviewImage(null);
       setCaption("");
@@ -64,9 +77,11 @@ export function PhotoUpload({ bookingId, open, onOpenChange }: PhotoUploadProps)
         title: "Photo uploaded successfully",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Upload mutation onError triggered", error);
       toast({
         title: "Failed to upload photo",
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     },
