@@ -1,5 +1,5 @@
 import { db } from './db';
-import { invoices } from '@shared/schema';
+import { invoices, bookings } from '@shared/schema';
 import { sql } from 'drizzle-orm';
 import { sendPaymentThankYouEmail } from './email';
 
@@ -11,6 +11,7 @@ export async function checkAndSendReviewEmails() {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+    // Check for paid invoices
     const eligibleInvoices = await db
       .select()
       .from(invoices)
@@ -43,6 +44,42 @@ export async function checkAndSendReviewEmails() {
       } catch (error) {
         console.error(`Failed to send review email for invoice ${invoice.invoiceNumber}:`, error);
         // Continue with other invoices even if one fails
+      }
+    }
+
+    // Check for completed bookings
+    const eligibleBookings = await db
+      .select()
+      .from(bookings)
+      .where(
+        sql`${bookings.completedDate} IS NOT NULL 
+            AND ${bookings.completedDate} <= ${twentyFourHoursAgo}
+            AND ${bookings.completedDate} >= ${sevenDaysAgo}
+            AND ${bookings.reviewEmailSent} = false`
+      );
+
+    console.log(`Found ${eligibleBookings.length} bookings eligible for review emails`);
+
+    for (const booking of eligibleBookings) {
+      try {
+        // Send the thank you email with review request
+        await sendPaymentThankYouEmail({
+          customerEmail: booking.email,
+          customerName: booking.name,
+          serviceDescription: booking.service,
+          invoiceNumber: `Booking #${booking.id.substring(0, 8)}`,
+        });
+
+        // Mark as sent
+        await db
+          .update(bookings)
+          .set({ reviewEmailSent: true })
+          .where(sql`${bookings.id} = ${booking.id}`);
+
+        console.log(`✓ Review email sent for booking ${booking.id.substring(0, 8)}`);
+      } catch (error) {
+        console.error(`Failed to send review email for booking ${booking.id}:`, error);
+        // Continue with other bookings even if one fails
       }
     }
   } catch (error) {

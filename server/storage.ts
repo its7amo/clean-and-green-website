@@ -204,7 +204,14 @@ export class DbStorage implements IStorage {
   }
 
   async updateBookingStatus(id: string, status: string): Promise<Booking | undefined> {
-    const result = await db.update(bookings).set({ status }).where(eq(bookings.id, id)).returning();
+    const updateData: any = { status };
+    
+    // Set completedDate when marking as completed
+    if (status === 'completed') {
+      updateData.completedDate = new Date();
+    }
+    
+    const result = await db.update(bookings).set(updateData).where(eq(bookings.id, id)).returning();
     return result[0];
   }
 

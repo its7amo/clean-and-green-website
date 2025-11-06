@@ -69,6 +69,8 @@ export const bookings = pgTable("bookings", {
   phone: text("phone").notNull(),
   address: text("address").notNull(),
   status: text("status").notNull().default("pending"),
+  completedDate: timestamp("completed_date"),
+  reviewEmailSent: boolean("review_email_sent").notNull().default(false),
   managementToken: varchar("management_token").notNull().default(sql`gen_random_uuid()`),
   assignedEmployeeIds: text("assigned_employee_ids").array(),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
