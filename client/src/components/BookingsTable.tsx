@@ -6,12 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, CheckCircle, XCircle, Users, Trash2, Camera, DollarSign } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye, CheckCircle, XCircle, Users, Trash2, Camera, DollarSign, Edit2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import type { Booking, Employee } from "@shared/schema";
+import type { Booking, Employee, PromoCode } from "@shared/schema";
 
 const statusColors = {
   pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
@@ -34,6 +35,7 @@ export function BookingsTable() {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [actualPriceInput, setActualPriceInput] = useState<string>("");
+  const [editingPromoCode, setEditingPromoCode] = useState<string | null>(null);
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
@@ -41,6 +43,11 @@ export function BookingsTable() {
 
   const { data: employees } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
+  });
+
+  const { data: promoCodes = [] } = useQuery<PromoCode[]>({
+    queryKey: ["/api/promo-codes"],
+    enabled: viewDialogOpen !== null,
   });
 
   const updateStatusMutation = useMutation({
@@ -124,6 +131,28 @@ export function BookingsTable() {
     onError: (error: Error) => {
       toast({
         title: "Failed to remove promo code",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const replacePromoCodeMutation = useMutation({
+    mutationFn: async ({ bookingId, promoCode }: { bookingId: string; promoCode: string }) => {
+      const res = await apiRequest("PATCH", `/api/bookings/${bookingId}/promo-code`, { promoCode });
+      return await res.json();
+    },
+    onSuccess: (updatedBooking) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      setEditingPromoCode(null);
+      toast({
+        title: "Promo code updated",
+        description: `New discount: $${((updatedBooking.discountAmount || 0) / 100).toFixed(2)}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update promo code",
         description: error.message || "Please try again later",
         variant: "destructive",
       });
@@ -406,25 +435,68 @@ export function BookingsTable() {
                     <>
                       <div className="col-span-2">
                         <p className="text-sm text-muted-foreground">Promo Code</p>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" data-testid="view-booking-promo-code">{booking.promoCode}</Badge>
-                          <span className="text-sm text-primary font-medium">
-                            Discount: ${((booking.discountAmount || 0) / 100).toFixed(2)}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (confirm("Remove promo code from this booking? This will also remove the actual price if set.")) {
-                                removePromoCodeMutation.mutate(booking.id);
-                              }
-                            }}
-                            disabled={removePromoCodeMutation.isPending}
-                            data-testid="button-remove-promo"
-                          >
-                            <XCircle className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                        {editingPromoCode === booking.id ? (
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value=""
+                              onValueChange={(newPromoCode) => {
+                                replacePromoCodeMutation.mutate({ bookingId: booking.id, promoCode: newPromoCode });
+                              }}
+                              disabled={replacePromoCodeMutation.isPending}
+                            >
+                              <SelectTrigger className="w-[200px]" data-testid="select-new-promo-code">
+                                <SelectValue placeholder="Select new promo code" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {promoCodes
+                                  .filter(pc => pc.isActive && pc.code !== booking.promoCode)
+                                  .map((pc) => (
+                                    <SelectItem key={pc.id} value={pc.code}>
+                                      {pc.code} ({pc.discountType === "percentage" ? `${pc.discountValue}%` : `$${pc.discountValue}`})
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingPromoCode(null)}
+                              disabled={replacePromoCodeMutation.isPending}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" data-testid="view-booking-promo-code">{booking.promoCode}</Badge>
+                            <span className="text-sm text-primary font-medium">
+                              Discount: ${((booking.discountAmount || 0) / 100).toFixed(2)}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingPromoCode(booking.id)}
+                              data-testid="button-edit-promo"
+                              title="Change promo code"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm("Remove promo code from this booking? This will also remove the actual price if set.")) {
+                                  removePromoCodeMutation.mutate(booking.id);
+                                }
+                              }}
+                              disabled={removePromoCodeMutation.isPending}
+                              data-testid="button-remove-promo"
+                              title="Remove promo code"
+                            >
+                              <XCircle className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div className="col-span-2 p-4 border rounded-md bg-muted/30">
                         <div className="space-y-3">
