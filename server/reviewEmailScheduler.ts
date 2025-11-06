@@ -5,18 +5,19 @@ import { sendPaymentThankYouEmail } from './email';
 
 export async function checkAndSendReviewEmails() {
   try {
-    // Find invoices that were paid exactly 24 hours ago (with 1 hour tolerance window)
+    // Find invoices that were paid at least 24 hours ago (but not more than 7 days ago)
     // and haven't had the review email sent yet
+    // The upper bound prevents sending very old invoices if the feature was just enabled
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     const eligibleInvoices = await db
       .select()
       .from(invoices)
       .where(
         sql`${invoices.paidDate} IS NOT NULL 
-            AND ${invoices.paidDate} >= ${twentyFiveHoursAgo} 
             AND ${invoices.paidDate} <= ${twentyFourHoursAgo}
+            AND ${invoices.paidDate} >= ${sevenDaysAgo}
             AND ${invoices.reviewEmailSent} = false`
       );
 
