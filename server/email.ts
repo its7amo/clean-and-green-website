@@ -620,7 +620,7 @@ export interface PaymentThankYouEmailData {
   customerEmail: string;
   customerName: string;
   serviceDescription: string;
-  invoiceNumber: string;
+  invoiceNumber?: string; // Optional - for context only (not shown in email)
 }
 
 export async function sendPaymentThankYouEmail(data: PaymentThankYouEmailData): Promise<void> {

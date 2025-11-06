@@ -42,7 +42,7 @@ import {
   teamMembers,
   contactMessages,
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Auth user operations
@@ -206,9 +206,9 @@ export class DbStorage implements IStorage {
   async updateBookingStatus(id: string, status: string): Promise<Booking | undefined> {
     const updateData: any = { status };
     
-    // Set completedDate when marking as completed
+    // Set completedDate when marking as completed (use SQL now() for UTC consistency)
     if (status === 'completed') {
-      updateData.completedDate = new Date();
+      updateData.completedDate = sql`now()`;
     }
     
     const result = await db.update(bookings).set(updateData).where(eq(bookings.id, id)).returning();
