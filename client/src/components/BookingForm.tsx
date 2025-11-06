@@ -87,6 +87,7 @@ export function BookingForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [bookingSubmitted, setBookingSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     service: "",
     propertySize: "",
@@ -118,13 +119,14 @@ export function BookingForm() {
       return await res.json();
     },
     onSuccess: () => {
+      setBookingSubmitted(true);
       toast({
         title: "Booking Confirmed!",
         description: "We've received your booking request. We'll contact you shortly to confirm.",
       });
       setTimeout(() => {
         setLocation("/");
-      }, 2000);
+      }, 3000);
     },
     onError: () => {
       toast({
@@ -168,6 +170,31 @@ export function BookingForm() {
     };
     createBookingMutation.mutate(bookingData);
   };
+
+  if (bookingSubmitted) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <Card className="p-8 text-center">
+          <div className="space-y-6">
+            <div className="flex justify-center">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Check className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
+              <p className="text-muted-foreground">
+                Thank you for your booking. We've received your request and will contact you shortly to confirm.
+              </p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Redirecting you to the homepage...
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
