@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -8,16 +8,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useEmployeePermissions } from "@/hooks/use-employee-permissions";
 import { EmployeeLayout } from "@/components/EmployeeLayout";
 import { format, parseISO } from "date-fns";
-import { Calendar } from "lucide-react";
+import { Calendar, Plus, UserPlus } from "lucide-react";
 
 export default function EmployeeBookings() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { canView, canEdit, canDelete, isLoading: permissionsLoading } = useEmployeePermissions();
+  const { canView, canCreate, canEdit, canDelete, hasPermission, isLoading: permissionsLoading } = useEmployeePermissions();
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
 
   const { data: employee, isLoading: employeeLoading } = useQuery<Employee>({
     queryKey: ["/api/employee/auth/user"],
@@ -26,6 +30,11 @@ export default function EmployeeBookings() {
   const { data: bookings, isLoading: bookingsLoading } = useQuery<Booking[]>({
     queryKey: ["/api/employee/all-bookings"],
     enabled: !!employee && !permissionsLoading && canView("bookings"),
+  });
+
+  const { data: allEmployees } = useQuery<Employee[]>({
+    queryKey: ["/api/employee/employees"],
+    enabled: !!employee && !permissionsLoading && hasPermission("bookings", "assign"),
   });
 
   useEffect(() => {
@@ -61,6 +70,23 @@ export default function EmployeeBookings() {
     },
   });
 
+  const assignEmployeesMutation = useMutation({
+    mutationFn: async ({ bookingId, employeeIds }: { bookingId: string; employeeIds: string[] }) => {
+      const res = await apiRequest("PATCH", `/api/employee/bookings/${bookingId}/assign`, { employeeIds });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/all-bookings"] });
+      setAssignDialogOpen(false);
+      setSelectedBookingId(null);
+      setSelectedEmployeeIds([]);
+      toast({ title: "Employees assigned successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to assign employees", variant: "destructive" });
+    },
+  });
+
   if (employeeLoading || permissionsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -92,9 +118,17 @@ export default function EmployeeBookings() {
   return (
     <EmployeeLayout>
       <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-6 w-6 text-green-600" />
-          <h1 className="text-2xl font-bold">Bookings Management</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-6 w-6 text-green-600" />
+            <h1 className="text-2xl font-bold">Bookings Management</h1>
+          </div>
+          {canCreate("bookings") && (
+            <Button onClick={() => setLocation("/book")} data-testid="button-create-booking">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Booking
+            </Button>
+          )}
         </div>
 
         <Card>
@@ -119,7 +153,7 @@ export default function EmployeeBookings() {
                     <TableHead>Customer</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Status</TableHead>
-                    {(canEdit("bookings") || canDelete("bookings")) && <TableHead>Actions</TableHead>}
+                    {(canEdit("bookings") || canDelete("bookings") || hasPermission("bookings", "assign")) && <TableHead>Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -141,7 +175,7 @@ export default function EmployeeBookings() {
                           {booking.status}
                         </Badge>
                       </TableCell>
-                      {(canEdit("bookings") || canDelete("bookings")) && (
+                      {(canEdit("bookings") || canDelete("bookings") || hasPermission("bookings", "assign")) && (
                         <TableCell>
                           <div className="flex gap-2">
                             {canEdit("bookings") && (
@@ -160,6 +194,21 @@ export default function EmployeeBookings() {
                                   <SelectItem value="cancelled">Cancelled</SelectItem>
                                 </SelectContent>
                               </Select>
+                            )}
+                            {hasPermission("bookings", "assign") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedBookingId(booking.id);
+                                  setSelectedEmployeeIds(booking.assignedEmployeeIds || []);
+                                  setAssignDialogOpen(true);
+                                }}
+                                data-testid={`button-assign-${booking.id}`}
+                              >
+                                <UserPlus className="h-4 w-4 mr-1" />
+                                Assign
+                              </Button>
                             )}
                             {canDelete("bookings") && (
                               <Button
@@ -186,6 +235,74 @@ export default function EmployeeBookings() {
             )}
           </CardContent>
         </Card>
+
+        {/* Assign Employees Dialog */}
+        <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+          <DialogContent data-testid="dialog-assign-employees">
+            <DialogHeader>
+              <DialogTitle>Assign Employees to Booking</DialogTitle>
+              <DialogDescription>
+                Select employees to assign to this booking
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {allEmployees && allEmployees.length > 0 ? (
+                allEmployees
+                  .filter((emp) => emp.active)
+                  .map((emp) => (
+                    <div key={emp.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`emp-${emp.id}`}
+                        checked={selectedEmployeeIds.includes(emp.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedEmployeeIds([...selectedEmployeeIds, emp.id]);
+                          } else {
+                            setSelectedEmployeeIds(selectedEmployeeIds.filter((id) => id !== emp.id));
+                          }
+                        }}
+                        className="h-4 w-4"
+                        data-testid={`checkbox-employee-${emp.id}`}
+                      />
+                      <label htmlFor={`emp-${emp.id}`} className="text-sm font-medium">
+                        {emp.name} ({emp.email})
+                      </label>
+                    </div>
+                  ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No active employees available</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAssignDialogOpen(false);
+                  setSelectedBookingId(null);
+                  setSelectedEmployeeIds([]);
+                }}
+                data-testid="button-cancel-assign"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedBookingId) {
+                    assignEmployeesMutation.mutate({
+                      bookingId: selectedBookingId,
+                      employeeIds: selectedEmployeeIds,
+                    });
+                  }
+                }}
+                disabled={assignEmployeesMutation.isPending || !selectedBookingId}
+                data-testid="button-confirm-assign"
+              >
+                Assign Employees
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </EmployeeLayout>
   );
