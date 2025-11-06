@@ -951,14 +951,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (invoice.status === "sent") {
         (async () => {
           try {
-            // Send email payment link
+            // Fetch booking and service data for promo code breakdown
+            let breakdown;
+            if (invoice.bookingId) {
+              const booking = await storage.getBooking(invoice.bookingId);
+              if (booking?.promoCode) {
+                const services = await storage.getServices();
+                const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
+                if (service) {
+                  breakdown = {
+                    basePrice: service.basePrice,
+                    promoCode: booking.promoCode,
+                    discountAmount: booking.discountAmount || 0,
+                    subtotal: invoice.amount,
+                    tax: invoice.tax,
+                  };
+                }
+              }
+            }
+            
+            // Send email payment link (total is in cents in DB, email formatter expects dollars)
             const { sendInvoicePaymentLinkEmail } = await import("./email");
             await sendInvoicePaymentLinkEmail(
               invoice.customerEmail,
               invoice.customerName,
               invoice.invoiceNumber,
               invoice.id,
-              invoice.total
+              invoice.total / 100, // Convert cents to dollars for display
+              breakdown
             );
             
             // Also send SMS if available (currently blocked on trial)
@@ -1992,13 +2012,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send payment link notifications (async, don't block response)
       (async () => {
         try {
+          // Fetch booking and service data for promo code breakdown
+          let breakdown;
+          if (invoice.bookingId) {
+            const booking = await storage.getBooking(invoice.bookingId);
+            if (booking?.promoCode) {
+              const services = await storage.getServices();
+              const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
+              if (service) {
+                breakdown = {
+                  basePrice: service.basePrice,
+                  promoCode: booking.promoCode,
+                  discountAmount: booking.discountAmount || 0,
+                  subtotal: invoice.amount,
+                  tax: invoice.tax,
+                };
+              }
+            }
+          }
+          
           const { sendInvoicePaymentLinkEmail } = await import("./email");
           await sendInvoicePaymentLinkEmail(
             invoice.customerEmail,
             invoice.customerName,
             invoice.invoiceNumber,
             invoice.id,
-            invoice.total
+            invoice.total / 100, // Convert cents to dollars for display
+            breakdown
           );
           
           await sendInvoicePaymentLinkSMS(

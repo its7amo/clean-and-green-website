@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Invoice, Booking, BusinessSettings } from "@shared/schema";
+import type { Invoice, Booking, BusinessSettings, Service } from "@shared/schema";
 import { Loader2, Plus, Pencil, Trash2, Download, Calculator } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
@@ -65,6 +65,11 @@ export default function AdminInvoices() {
 
   const { data: bookings = [] } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
+    enabled: isDialogOpen,
+  });
+
+  const { data: services = [] } = useQuery<Service[]>({
+    queryKey: ["/api/services"],
     enabled: isDialogOpen,
   });
 
@@ -293,28 +298,48 @@ export default function AdminInvoices() {
       form.setValue("customerPhone", booking.phone);
       form.setValue("customerAddress", booking.address);
       
-      // Build service description including promo code if used
+      // Find the service to get base price (both basePrice and discountAmount are in cents)
+      const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
+      const discountInCents = booking.discountAmount || 0;
+      
+      // Build service description
       let serviceDesc = `${booking.service} - ${booking.propertySize}`;
-      if (booking.promoCode) {
-        serviceDesc += `\n\nPromo Code Applied: ${booking.promoCode} (-$${((booking.discountAmount || 0) / 100).toFixed(2)})`;
-      }
       form.setValue("serviceDescription", serviceDesc);
       
-      // Auto-calculate amount with promo code discount applied
-      // Assuming base price calculation would be done here or amount is already set
-      // If discount exists, we note it in the service description
-      // The admin can manually adjust the amount field to reflect the discount
-      
-      toast({
-        title: "Booking loaded",
-        description: booking.promoCode 
-          ? `Promo code ${booking.promoCode} applied with $${((booking.discountAmount || 0) / 100).toFixed(2)} discount`
-          : "Booking information loaded successfully",
-      });
+      // Calculate and set amount if service was found
+      if (service && service.basePrice > 0) {
+        const basePriceInCents = service.basePrice;
+        const finalAmountInDollars = Math.max(0, (basePriceInCents - discountInCents) / 100);
+        form.setValue("amount", finalAmountInDollars);
+        
+        toast({
+          title: "Booking loaded",
+          description: booking.promoCode 
+            ? `Promo code ${booking.promoCode} applied with $${(discountInCents / 100).toFixed(2)} discount`
+            : "Booking information loaded successfully",
+        });
+      } else {
+        // Service not found - leave amount blank for manual entry
+        toast({
+          title: "Booking loaded",
+          description: `Service pricing not found for "${booking.service}". Please enter the amount manually.`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const generatePDF = (invoice: Invoice) => {
+  const generatePDF = async (invoice: Invoice) => {
+    // Fetch booking to get promo code info
+    let booking: Booking | null = null;
+    let service: Service | null = null;
+    if (invoice.bookingId) {
+      booking = bookings.find(b => b.id === invoice.bookingId) || null;
+      if (booking && booking.service) {
+        service = services.find(s => s.name.toLowerCase().includes(booking!.service.toLowerCase())) || null;
+      }
+    }
+
     const doc = new jsPDF();
     const businessName = settings?.businessName || "Clean and Green";
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -402,8 +427,28 @@ export default function AdminInvoices() {
 
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text("Subtotal:", labelX, yPos);
-    doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
+    
+    // Show base price and discount if promo code was used
+    if (booking?.promoCode && service) {
+      const basePrice = service.basePrice;
+      const discount = booking.discountAmount || 0;
+      
+      doc.text("Service Price:", labelX, yPos);
+      doc.text(formatCurrency(basePrice), rightAlign, yPos, { align: 'right' });
+      
+      yPos += 7;
+      doc.setTextColor(34, 139, 34); // Green for discount
+      doc.text(`Promo Code (${booking.promoCode}):`, labelX, yPos);
+      doc.text(`-${formatCurrency(discount)}`, rightAlign, yPos, { align: 'right' });
+      doc.setTextColor(0, 0, 0); // Reset to black
+      
+      yPos += 7;
+      doc.text("Subtotal:", labelX, yPos);
+      doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
+    } else {
+      doc.text("Subtotal:", labelX, yPos);
+      doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
+    }
     
     yPos += 7;
     doc.text("Tax:", labelX, yPos);

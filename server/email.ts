@@ -379,10 +379,56 @@ export async function sendInvoicePaymentLinkEmail(
   customerName: string,
   invoiceNumber: string,
   invoiceId: string,
-  totalAmount: number
+  totalAmount: number,
+  breakdown?: {
+    basePrice?: number;
+    promoCode?: string;
+    discountAmount?: number;
+    subtotal: number;
+    tax: number;
+  }
 ) {
   try {
     const paymentUrl = `https://clean-and-green-website.onrender.com/pay-invoice/${invoiceId}`;
+    
+    // Build price breakdown HTML if promo code was used
+    let breakdownHtml = '';
+    if (breakdown && breakdown.promoCode && breakdown.basePrice && breakdown.discountAmount) {
+      breakdownHtml = `
+        <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
+          <h3 style="margin-top: 0;">Price Breakdown:</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0;"><strong>Service Price:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">$${(breakdown.basePrice / 100).toFixed(2)}</td>
+            </tr>
+            <tr style="color: #22c55e;">
+              <td style="padding: 8px 0;"><strong>Promo Code (${escapeHtml(breakdown.promoCode)}):</strong></td>
+              <td style="padding: 8px 0; text-align: right;">-$${(breakdown.discountAmount / 100).toFixed(2)}</td>
+            </tr>
+            <tr style="border-top: 1px solid #e5e7eb;">
+              <td style="padding: 8px 0;"><strong>Subtotal:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">$${(breakdown.subtotal / 100).toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Tax:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">$${(breakdown.tax / 100).toFixed(2)}</td>
+            </tr>
+            <tr style="border-top: 2px solid #22c55e; font-size: 18px;">
+              <td style="padding: 12px 0;"><strong>Total:</strong></td>
+              <td style="padding: 12px 0; text-align: right;"><strong>$${totalAmount.toFixed(2)}</strong></td>
+            </tr>
+          </table>
+        </div>
+      `;
+    } else {
+      breakdownHtml = `
+        <ul>
+          <li><strong>Invoice Number:</strong> ${escapeHtml(invoiceNumber)}</li>
+          <li><strong>Total Amount:</strong> $${totalAmount.toFixed(2)}</li>
+        </ul>
+      `;
+    }
     
     await resend.emails.send({
       from: 'Clean & Green <noreply@voryn.store>',
@@ -393,10 +439,7 @@ export async function sendInvoicePaymentLinkEmail(
         <p>Hi ${escapeHtml(customerName)},</p>
         <p>Your invoice is ready for payment. Please review the details below:</p>
         
-        <ul>
-          <li><strong>Invoice Number:</strong> ${escapeHtml(invoiceNumber)}</li>
-          <li><strong>Total Amount:</strong> $${totalAmount.toFixed(2)}</li>
-        </ul>
+        ${breakdownHtml}
         
         <p><a href="${paymentUrl}" style="display: inline-block; padding: 12px 24px; background-color: #22c55e; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Pay Invoice Now</a></p>
         
