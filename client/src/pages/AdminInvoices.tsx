@@ -29,6 +29,8 @@ const invoiceFormSchema = z.object({
   customerAddress: z.string().min(1, "Address is required"),
   serviceDescription: z.string().min(1, "Service description is required"),
   amount: z.number().min(0.01, "Amount must be greater than zero"),
+  discount: z.number().min(0, "Discount must be positive").default(0),
+  discountDescription: z.string().optional().nullable(),
   taxPercentage: z.number().min(0).max(100, "Tax percentage must be between 0-100"),
   tax: z.number().min(0, "Tax must be positive"),
   total: z.number().positive("Total must be greater than zero"),
@@ -88,6 +90,8 @@ export default function AdminInvoices() {
       customerAddress: "",
       serviceDescription: "",
       amount: 0,
+      discount: 0,
+      discountDescription: null,
       taxPercentage: 8.5,
       tax: 0,
       total: 0,
@@ -98,21 +102,25 @@ export default function AdminInvoices() {
   });
 
   const watchAmount = form.watch("amount");
+  const watchDiscount = form.watch("discount");
   const watchTaxPercentage = form.watch("taxPercentage");
 
   // Auto-calculate tax and total
   useEffect(() => {
-    const taxAmount = (watchAmount * watchTaxPercentage) / 100;
+    const subtotal = watchAmount - watchDiscount;
+    const taxAmount = (subtotal * watchTaxPercentage) / 100;
     const roundedTax = Math.round(taxAmount * 100) / 100;
     form.setValue("tax", roundedTax);
-    form.setValue("total", watchAmount + roundedTax);
-  }, [watchAmount, watchTaxPercentage, form]);
+    form.setValue("total", subtotal + roundedTax);
+  }, [watchAmount, watchDiscount, watchTaxPercentage, form]);
 
   useEffect(() => {
     if (editingInvoice) {
       const amountInDollars = editingInvoice.amount / 100;
+      const discountInDollars = (editingInvoice.discountAmount || 0) / 100;
+      const subtotal = amountInDollars - discountInDollars;
       const taxInDollars = editingInvoice.tax / 100;
-      const taxPercentage = amountInDollars > 0 ? (taxInDollars / amountInDollars) * 100 : 8.5;
+      const taxPercentage = subtotal > 0 ? (taxInDollars / subtotal) * 100 : 8.5;
       
       form.reset({
         invoiceNumber: editingInvoice.invoiceNumber,
@@ -123,6 +131,8 @@ export default function AdminInvoices() {
         customerAddress: editingInvoice.customerAddress,
         serviceDescription: editingInvoice.serviceDescription,
         amount: amountInDollars,
+        discount: discountInDollars,
+        discountDescription: editingInvoice.discountDescription || null,
         taxPercentage: Math.round(taxPercentage * 10) / 10,
         tax: taxInDollars,
         total: (editingInvoice.total / 100),
@@ -140,6 +150,8 @@ export default function AdminInvoices() {
         customerAddress: "",
         serviceDescription: "",
         amount: 0,
+        discount: 0,
+        discountDescription: null,
         taxPercentage: 8.5,
         tax: 0,
         total: 0,
@@ -161,6 +173,8 @@ export default function AdminInvoices() {
         customerAddress: data.customerAddress,
         serviceDescription: data.serviceDescription,
         amount: Math.round(data.amount * 100),
+        discountAmount: Math.round(data.discount * 100),
+        discountDescription: data.discountDescription || null,
         tax: Math.round(data.tax * 100),
         total: Math.round(data.total * 100),
         status: data.status,
@@ -200,6 +214,8 @@ export default function AdminInvoices() {
         customerAddress: data.customerAddress,
         serviceDescription: data.serviceDescription,
         amount: Math.round(data.amount * 100),
+        discountAmount: Math.round(data.discount * 100),
+        discountDescription: data.discountDescription || null,
         tax: Math.round(data.tax * 100),
         total: Math.round(data.total * 100),
         status: data.status,
@@ -826,6 +842,51 @@ export default function AdminInvoices() {
                           )}
                         />
 
+                        <FormField
+                          control={form.control}
+                          name="discount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Discount (Optional)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  step="0.01"
+                                  data-testid="input-discount"
+                                  placeholder="0.00"
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                -${field.value.toFixed(2)}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="discountDescription"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Discount Reason/Description (Optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                data-testid="input-discount-description"
+                                placeholder="e.g., First-time customer discount, Loyalty reward, etc."
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="taxPercentage"
