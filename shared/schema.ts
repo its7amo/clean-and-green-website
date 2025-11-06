@@ -287,6 +287,8 @@ export const invoices = pgTable("invoices", {
   customerAddress: text("customer_address").notNull(),
   serviceDescription: text("service_description").notNull(),
   amount: integer("amount").notNull(),
+  discountAmount: integer("discount_amount").default(0),
+  discountDescription: text("discount_description"),
   tax: integer("tax").notNull().default(0),
   total: integer("total").notNull(),
   status: text("status").notNull().default("draft"),
