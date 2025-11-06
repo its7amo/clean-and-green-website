@@ -372,152 +372,236 @@ export default function AdminInvoices() {
     }
 
     const doc = new jsPDF();
-    const businessName = settings?.businessName || "Clean and Green";
+    const businessName = settings?.businessName || "Clean & Green";
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     
-    // Company green theme color
-    const primaryGreen = [34, 139, 34]; // Forest green
+    // Professional color palette
+    const primaryGreen = [39, 174, 96]; // Modern green
+    const darkGreen = [27, 120, 66]; // Darker green for accents
+    const lightGray = [248, 249, 250];
+    const mediumGray = [108, 117, 125];
+    const darkGray = [52, 58, 64];
 
-    // Header with business name
+    // ===== HEADER SECTION =====
+    // Top green bar
     doc.setFillColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
-    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    // Company name in header
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
+    doc.setFontSize(26);
     doc.setFont("helvetica", "bold");
-    doc.text(businessName, pageWidth / 2, 25, { align: 'center' });
+    doc.text(businessName, 20, 22);
+    
+    // Business tagline
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Eco-Friendly Cleaning Solutions", 20, 28);
 
-    // Reset text color
-    doc.setTextColor(0, 0, 0);
-
-    // Invoice title and number
-    let yPos = 55;
-    doc.setFontSize(20);
+    // ===== INVOICE TITLE & INFO (Two columns) =====
+    let yPos = 50;
+    
+    // Left column - INVOICE title
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.setFontSize(28);
     doc.setFont("helvetica", "bold");
     doc.text("INVOICE", 20, yPos);
     
-    doc.setFontSize(12);
+    // Right column - Invoice metadata
+    const rightColX = pageWidth - 70;
+    doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    yPos += 10;
-    doc.text(`Invoice #: ${invoice.invoiceNumber}`, 20, yPos);
+    doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
     
-    yPos += 7;
-    doc.text(`Date: ${format(new Date(invoice.createdAt), "MMM dd, yyyy")}`, 20, yPos);
+    let rightYPos = yPos - 12;
+    doc.text("Invoice Number", rightColX, rightYPos);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.text(invoice.invoiceNumber, rightColX, rightYPos + 5);
+    
+    rightYPos += 12;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+    doc.text("Invoice Date", rightColX, rightYPos);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.text(format(new Date(invoice.createdAt), "MMM dd, yyyy"), rightColX, rightYPos + 5);
     
     if (invoice.dueDate) {
-      yPos += 7;
-      doc.text(`Due Date: ${format(new Date(invoice.dueDate), "MMM dd, yyyy")}`, 20, yPos);
+      rightYPos += 12;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+      doc.text("Due Date", rightColX, rightYPos);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+      doc.text(format(new Date(invoice.dueDate), "MMM dd, yyyy"), rightColX, rightYPos + 5);
     }
-
-    // Status badge
-    yPos += 7;
-    doc.setFont("helvetica", "bold");
-    const statusText = `Status: ${invoice.status.toUpperCase()}`;
-    doc.text(statusText, 20, yPos);
-
-    // Bill To section
-    yPos += 15;
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("Bill To:", 20, yPos);
     
+    // Status badge
+    rightYPos += 12;
+    const statusColors: Record<string, number[]> = {
+      paid: [40, 167, 69],
+      sent: [0, 123, 255],
+      overdue: [220, 53, 69],
+      draft: [108, 117, 125]
+    };
+    const statusColor = statusColors[invoice.status] || statusColors.draft;
+    doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+    doc.roundedRect(rightColX - 2, rightYPos - 4, 42, 8, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(invoice.status.toUpperCase(), rightColX + 21, rightYPos + 1.5, { align: 'center' });
+
+    // ===== BILL TO SECTION =====
+    yPos = 85;
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("BILL TO", 20, yPos);
+    
+    yPos += 8;
     doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    yPos += 7;
+    doc.setFont("helvetica", "bold");
     doc.text(invoice.customerName, 20, yPos);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
     yPos += 6;
     doc.text(invoice.customerEmail, 20, yPos);
-    yPos += 6;
+    yPos += 5;
     doc.text(invoice.customerPhone, 20, yPos);
-    yPos += 6;
-    const addressLines = doc.splitTextToSize(invoice.customerAddress, 170);
+    yPos += 5;
+    const addressLines = doc.splitTextToSize(invoice.customerAddress, 160);
     doc.text(addressLines, 20, yPos);
-    yPos += addressLines.length * 6;
+    yPos += addressLines.length * 5 + 15;
 
-    // Service Description section
-    yPos += 10;
-    doc.setFontSize(14);
+    // ===== SERVICE DETAILS TABLE =====
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Service Description", 20, yPos);
+    doc.text("SERVICE DETAILS", 20, yPos);
+    yPos += 8;
     
-    yPos += 10;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, yPos - 5, pageWidth - 40, 8, 'F');
+    // Table header
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+    doc.rect(20, yPos - 5, pageWidth - 40, 10, 'F');
+    
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text("Description", 25, yPos);
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.text("Description", 25, yPos + 1);
+    doc.text("Amount", pageWidth - 25, yPos + 1, { align: 'right' });
     
     yPos += 10;
+    
+    // Service description
     doc.setFont("helvetica", "normal");
-    const serviceLines = doc.splitTextToSize(invoice.serviceDescription, pageWidth - 50);
+    doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+    const serviceLines = doc.splitTextToSize(invoice.serviceDescription, pageWidth - 100);
     doc.text(serviceLines, 25, yPos);
-    yPos += serviceLines.length * 6 + 10;
+    yPos += Math.max(serviceLines.length * 5, 5) + 5;
+    
+    // Divider line
+    doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
+    doc.setLineWidth(0.5);
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 10;
 
-    // Amount breakdown
-    const rightAlign = pageWidth - 20;
-    const labelX = pageWidth - 90;
+    // ===== PRICING BREAKDOWN =====
+    const rightAlign = pageWidth - 25;
+    const labelX = pageWidth - 80;
 
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
+    doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
     
     // Show base price and discount if promo code was used
     if (booking?.promoCode) {
-      // Use actualPrice if set, otherwise fall back to service basePrice
       const basePrice = booking.actualPrice || (service?.basePrice || 0);
       const discount = booking.discountAmount || 0;
       
-      doc.text("Service Price:", labelX, yPos);
+      doc.text("Service Price", labelX, yPos);
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
       doc.text(formatCurrency(basePrice), rightAlign, yPos, { align: 'right' });
       
-      yPos += 7;
-      doc.setTextColor(34, 139, 34); // Green for discount
-      doc.text(`Promo Code (${booking.promoCode}):`, labelX, yPos);
+      yPos += 6;
+      doc.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
+      doc.text(`Discount (${booking.promoCode})`, labelX, yPos);
       doc.text(`-${formatCurrency(discount)}`, rightAlign, yPos, { align: 'right' });
-      doc.setTextColor(0, 0, 0); // Reset to black
       
-      yPos += 7;
-      doc.text("Subtotal:", labelX, yPos);
+      yPos += 6;
+      doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+      doc.text("Subtotal", labelX, yPos);
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
       doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
     } else {
-      doc.text("Subtotal:", labelX, yPos);
+      doc.text("Subtotal", labelX, yPos);
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
       doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
     }
     
-    yPos += 7;
-    doc.text("Tax:", labelX, yPos);
+    yPos += 6;
+    doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+    doc.text("Tax", labelX, yPos);
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
     doc.text(formatCurrency(invoice.tax), rightAlign, yPos, { align: 'right' });
     
+    // Total line with background
     yPos += 10;
-    doc.setFontSize(14);
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+    doc.roundedRect(labelX - 5, yPos - 6, rightAlign - labelX + 10, 12, 2, 2, 'F');
+    
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.setDrawColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
-    doc.setLineWidth(0.5);
-    doc.line(labelX - 5, yPos - 3, rightAlign, yPos - 3);
-    doc.text("Total:", labelX, yPos);
+    doc.setTextColor(darkGreen[0], darkGreen[1], darkGreen[2]);
+    doc.text("TOTAL", labelX, yPos);
     doc.text(formatCurrency(invoice.total), rightAlign, yPos, { align: 'right' });
 
-    // Notes section if present
+    // ===== NOTES SECTION =====
     if (invoice.notes) {
       yPos += 20;
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("Notes:", 20, yPos);
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+      doc.text("NOTES", 20, yPos);
       
       yPos += 7;
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
+      doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
       const notesLines = doc.splitTextToSize(invoice.notes, pageWidth - 40);
       doc.text(notesLines, 20, yPos);
     }
 
-    // Footer
-    const footerY = doc.internal.pageSize.getHeight() - 20;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(128, 128, 128);
-    doc.text("Thank you for your business!", pageWidth / 2, footerY, { align: 'center' });
+    // ===== FOOTER =====
+    const footerY = pageHeight - 25;
+    
+    // Footer divider
+    doc.setDrawColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
+    doc.setLineWidth(1);
+    doc.line(20, footerY - 5, pageWidth - 20, footerY - 5);
+    
+    // Thank you message
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
+    doc.text("Thank you for choosing " + businessName + "!", pageWidth / 2, footerY, { align: 'center' });
+    
+    // Contact info
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+    const contactInfo = settings?.email || "info@cleanandgreen.com";
+    const phone = settings?.phone || "(555) 123-4567";
+    doc.text(`${phone} | ${contactInfo}`, pageWidth / 2, footerY + 6, { align: 'center' });
+    
+    doc.setFontSize(7);
+    doc.text("Eco-friendly cleaning services in Oklahoma", pageWidth / 2, footerY + 10, { align: 'center' });
 
     // Save the PDF
-    doc.save(`${invoice.invoiceNumber}.pdf`);
+    doc.save(`${invoice.invoiceNumber}_${Date.now()}.pdf`);
     
     toast({
       title: "PDF Generated",
