@@ -398,10 +398,14 @@ export function BookingsTable() {
                             <DollarSign className="h-4 w-4 text-primary" />
                             <h4 className="font-medium text-sm">Set Actual Quote Price</h4>
                           </div>
-                          {booking.actualPrice ? (
-                            <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            Since this booking has a promo code, enter the actual quoted price for this specific job. The discount will be recalculated automatically.
+                          </p>
+                          
+                          {booking.actualPrice && (
+                            <div className="space-y-2 p-3 bg-background/50 rounded-md border">
                               <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Actual Price:</span>
+                                <span className="text-sm text-muted-foreground">Current Actual Price:</span>
                                 <span className="font-semibold">${(booking.actualPrice / 100).toFixed(2)}</span>
                               </div>
                               <div className="flex items-center justify-between">
@@ -413,43 +417,40 @@ export function BookingsTable() {
                                 <span className="font-bold text-lg">${((booking.actualPrice - (booking.discountAmount || 0)) / 100).toFixed(2)}</span>
                               </div>
                             </div>
-                          ) : (
-                            <>
-                              <p className="text-xs text-muted-foreground">
-                                Since this booking has a promo code, enter the actual quoted price for this specific job. The discount will be recalculated automatically.
-                              </p>
-                              <div className="flex gap-2">
-                                <div className="flex-1">
-                                  <Label htmlFor="actual-price" className="text-xs">Actual Price ($)</Label>
-                                  <Input
-                                    id="actual-price"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="150.00"
-                                    value={actualPriceInput}
-                                    onChange={(e) => setActualPriceInput(e.target.value)}
-                                    data-testid="input-actual-price"
-                                  />
-                                </div>
-                                <div className="flex items-end">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      const price = parseFloat(actualPriceInput);
-                                      if (price && price > 0) {
-                                        updateActualPriceMutation.mutate({ bookingId: booking.id, actualPrice: price });
-                                      }
-                                    }}
-                                    disabled={updateActualPriceMutation.isPending || !actualPriceInput || parseFloat(actualPriceInput) <= 0}
-                                    data-testid="button-save-actual-price"
-                                  >
-                                    {updateActualPriceMutation.isPending ? "Saving..." : "Save"}
-                                  </Button>
-                                </div>
-                              </div>
-                            </>
                           )}
+
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Label htmlFor="actual-price" className="text-xs">
+                                {booking.actualPrice ? 'Update Actual Price ($)' : 'Actual Price ($)'}
+                              </Label>
+                              <Input
+                                id="actual-price"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder={booking.actualPrice ? (booking.actualPrice / 100).toFixed(2) : "150.00"}
+                                value={actualPriceInput}
+                                onChange={(e) => setActualPriceInput(e.target.value)}
+                                data-testid="input-actual-price"
+                              />
+                            </div>
+                            <div className="flex items-end">
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const price = parseFloat(actualPriceInput);
+                                  if (price && price > 0) {
+                                    updateActualPriceMutation.mutate({ bookingId: booking.id, actualPrice: price });
+                                  }
+                                }}
+                                disabled={updateActualPriceMutation.isPending || !actualPriceInput || parseFloat(actualPriceInput) <= 0}
+                                data-testid="button-save-actual-price"
+                              >
+                                {updateActualPriceMutation.isPending ? "Saving..." : "Save"}
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </>
