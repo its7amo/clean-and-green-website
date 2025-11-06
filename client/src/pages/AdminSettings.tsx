@@ -32,6 +32,7 @@ const settingsFormSchema = z.object({
   linkedin: z.string().optional(),
   privacyPolicy: z.string().optional(),
   termsOfService: z.string().optional(),
+  cancellationPolicy: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -63,6 +64,7 @@ export default function AdminSettings() {
       linkedin: "",
       privacyPolicy: "",
       termsOfService: "",
+      cancellationPolicy: "",
     },
   });
 
@@ -86,6 +88,7 @@ export default function AdminSettings() {
         linkedin: settings.socialLinks?.linkedin || "",
         privacyPolicy: settings.privacyPolicy || "",
         termsOfService: settings.termsOfService || "",
+        cancellationPolicy: settings.cancellationPolicy || "",
       });
     }
   }, [settings, form]);
@@ -468,6 +471,25 @@ export default function AdminSettings() {
                                 {...field}
                                 data-testid="input-terms-of-service"
                                 placeholder="Enter your terms of service content..."
+                                className="min-h-64"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="cancellationPolicy"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cancellation Policy</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                data-testid="input-cancellation-policy"
+                                placeholder="Enter your cancellation policy (e.g., Cancellations made less than 24 hours before the scheduled appointment time will incur a $35 cancellation fee.)"
                                 className="min-h-64"
                               />
                             </FormControl>
