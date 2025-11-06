@@ -1,18 +1,15 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import type { Booking, Employee } from "@shared/schema";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { Leaf, LogOut, Calendar, MapPin, Clock } from "lucide-react";
+import { Calendar, MapPin, Clock } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { EmployeeLayout } from "@/components/EmployeeLayout";
 
 export default function EmployeeDashboard() {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
 
   const { data: employee, isLoading: employeeLoading } = useQuery<Employee>({
     queryKey: ["/api/employee/auth/user"],
@@ -28,17 +25,6 @@ export default function EmployeeDashboard() {
       setLocation("/employee/login");
     }
   }, [employee, employeeLoading, setLocation]);
-
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/employee/logout", {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/employee/auth/user"] });
-      toast({ title: "Logged out successfully" });
-      setLocation("/employee/login");
-    },
-  });
 
   if (employeeLoading) {
     return (
@@ -56,35 +42,8 @@ export default function EmployeeDashboard() {
   const completedBookings = bookings?.filter(b => b.status === "completed") || [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Leaf className="h-8 w-8 text-green-600" />
-            <div>
-              <h1 className="text-xl font-bold">Clean & Green</h1>
-              <p className="text-sm text-muted-foreground">Employee Dashboard</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="font-medium">{employee.name}</p>
-              <p className="text-sm text-muted-foreground capitalize">{employee.role}</p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              data-testid="button-logout"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8 space-y-6">
+    <EmployeeLayout>
+      <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -169,7 +128,7 @@ export default function EmployeeDashboard() {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </EmployeeLayout>
   );
 }

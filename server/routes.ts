@@ -1047,6 +1047,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json((req.session as any).employee);
   });
 
+  // Employee permissions - get current employee's permissions
+  app.get("/api/employee/permissions", async (req, res) => {
+    try {
+      const employee = (req.session as any).employee;
+      if (!employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const permissions = await storage.getEmployeePermissions(employee.id);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching employee permissions:", error);
+      res.status(500).json({ error: "Failed to fetch permissions" });
+    }
+  });
+
   // Employee bookings - get assignments for logged in employee
   app.get("/api/employee/bookings", async (req, res) => {
     try {
