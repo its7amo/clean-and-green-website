@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Clock } from "lucide-react";
+import { Leaf, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -58,13 +58,9 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           <div>
-            <div className="mb-4">
-              <img 
-                src="/logo.png" 
-                alt="Clean & Green Logo" 
-                className="h-10 w-auto"
-                data-testid="img-footer-logo"
-              />
+            <div className="flex items-center gap-2 mb-4">
+              <Leaf className="h-6 w-6 text-primary" />
+              <span className="font-bold text-xl" data-testid="text-footer-business-name">{settings?.businessName || "Clean & Green"}</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               {settings?.aboutText || "Professional eco-friendly cleaning services across Oklahoma. Making homes and businesses sparkle while protecting our planet."}

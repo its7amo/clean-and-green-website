@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Leaf } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BusinessSettings } from "@shared/schema";
@@ -31,13 +31,9 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" data-testid="link-home">
-            <div className="flex items-center cursor-pointer hover-elevate px-3 py-2 rounded-md -ml-3">
-              <img 
-                src="/logo.png" 
-                alt="Clean & Green Logo" 
-                className="h-12 w-auto"
-                data-testid="img-logo"
-              />
+            <div className="flex items-center gap-2 cursor-pointer hover-elevate px-3 py-2 rounded-md -ml-3">
+              <Leaf className="h-6 w-6 text-primary" />
+              <span className="font-bold text-xl" data-testid="text-business-name">{settings?.businessName || "Clean & Green"}</span>
             </div>
           </Link>
 
