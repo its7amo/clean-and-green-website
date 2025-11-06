@@ -7,8 +7,9 @@ import { insertReviewSchema } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
@@ -23,6 +24,19 @@ type ReviewFormValues = z.infer<typeof insertReviewSchema>;
 export default function Reviews() {
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
+  const [location] = useLocation();
+  const formRef = useRef<HTMLDivElement>(null);
+
+  // Check for hash in URL to show and scroll to form
+  useEffect(() => {
+    if (window.location.hash === "#review-form") {
+      setShowForm(true);
+      // Small delay to let the form render before scrolling
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+  }, [location]);
 
   const form = useForm<ReviewFormValues>({
     resolver: zodResolver(insertReviewSchema),
@@ -103,7 +117,7 @@ export default function Reviews() {
             </div>
 
             {showForm && (
-              <Card className="max-w-2xl mx-auto p-6 mb-12" data-testid="card-review-form">
+              <Card ref={formRef} className="max-w-2xl mx-auto p-6 mb-12" data-testid="card-review-form" id="review-form">
                 <h2 className="text-2xl font-bold mb-6">Share Your Experience</h2>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

@@ -38,6 +38,19 @@ import PayInvoice from "@/pages/PayInvoice";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
+function ScrollToTop() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    // Don't scroll to top if there's a hash in the URL (for anchor links)
+    if (!window.location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [location]);
+
+  return null;
+}
+
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
   const [location, setLocation] = useLocation();
   const { data: user, isLoading } = useQuery({
@@ -90,8 +103,10 @@ function SetupChecker() {
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
+    <>
+      <ScrollToTop />
+      <Switch>
+        <Route path="/" component={Home} />
       <Route path="/services" component={ServicesPage} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
@@ -152,7 +167,8 @@ function Router() {
         <ProtectedRoute component={AdminSettings} />
       </Route>
       <Route component={NotFound} />
-    </Switch>
+      </Switch>
+    </>
   );
 }
 

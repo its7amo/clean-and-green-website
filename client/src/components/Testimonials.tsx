@@ -20,7 +20,7 @@ export function Testimonials() {
             Don't just take our word for it - hear from satisfied Oklahoma homeowners and businesses
           </p>
           <div className="mt-4">
-            <Link href="/reviews">
+            <Link href="/reviews#review-form">
               <Button variant="outline" data-testid="button-leave-review">
                 Leave a Review
               </Button>
