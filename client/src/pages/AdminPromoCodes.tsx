@@ -179,19 +179,21 @@ export default function AdminPromoCodes() {
     }
   };
 
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setEditingPromoCode(null);
-    form.reset();
+  const handleDialogChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingPromoCode(null);
+      form.reset();
+    }
   };
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Promo Codes</h1>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
           <DialogTrigger asChild>
-            <Button data-testid="button-create-promo" onClick={() => setIsDialogOpen(true)}>
+            <Button data-testid="button-create-promo">
               <Plus className="h-4 w-4 mr-2" />
               Create Promo Code
             </Button>

@@ -170,10 +170,12 @@ export default function AdminRecurringBookings() {
     }
   };
 
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setEditing(null);
-    form.reset();
+  const handleDialogChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditing(null);
+      form.reset();
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -198,9 +200,9 @@ export default function AdminRecurringBookings() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Recurring Bookings</h1>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
           <DialogTrigger asChild>
-            <Button data-testid="button-create-recurring" onClick={() => setIsDialogOpen(true)}>
+            <Button data-testid="button-create-recurring">
               <Plus className="h-4 w-4 mr-2" />
               Create Recurring Booking
             </Button>
