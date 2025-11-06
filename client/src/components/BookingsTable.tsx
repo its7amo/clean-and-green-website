@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, CheckCircle, XCircle, Users, Trash2, Camera } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Eye, CheckCircle, XCircle, Users, Trash2, Camera, DollarSign } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +33,7 @@ export function BookingsTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [actualPriceInput, setActualPriceInput] = useState<string>("");
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
@@ -78,6 +81,28 @@ export function BookingsTable() {
     onError: (error: Error) => {
       toast({
         title: "Failed to delete booking",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateActualPriceMutation = useMutation({
+    mutationFn: async ({ bookingId, actualPrice }: { bookingId: string; actualPrice: number }) => {
+      const res = await apiRequest("PATCH", `/api/bookings/${bookingId}/actual-price`, { actualPrice });
+      return await res.json();
+    },
+    onSuccess: (updatedBooking) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      setActualPriceInput("");
+      toast({
+        title: "Actual price updated",
+        description: `Promo discount recalculated: $${((updatedBooking.discountAmount || 0) / 100).toFixed(2)}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update actual price",
         description: error.message || "Please try again later",
         variant: "destructive",
       });
@@ -357,15 +382,77 @@ export function BookingsTable() {
                     </div>
                   )}
                   {booking.promoCode && (
-                    <div className="col-span-2">
-                      <p className="text-sm text-muted-foreground">Promo Code</p>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" data-testid="view-booking-promo-code">{booking.promoCode}</Badge>
-                        <span className="text-sm text-primary font-medium">
-                          Discount: ${((booking.discountAmount || 0) / 100).toFixed(2)}
-                        </span>
+                    <>
+                      <div className="col-span-2">
+                        <p className="text-sm text-muted-foreground">Promo Code</p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" data-testid="view-booking-promo-code">{booking.promoCode}</Badge>
+                          <span className="text-sm text-primary font-medium">
+                            Discount: ${((booking.discountAmount || 0) / 100).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                      <div className="col-span-2 p-4 border rounded-md bg-muted/30">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-primary" />
+                            <h4 className="font-medium text-sm">Set Actual Quote Price</h4>
+                          </div>
+                          {booking.actualPrice ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Actual Price:</span>
+                                <span className="font-semibold">${(booking.actualPrice / 100).toFixed(2)}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Promo Discount:</span>
+                                <span className="font-semibold text-primary">-${((booking.discountAmount || 0) / 100).toFixed(2)}</span>
+                              </div>
+                              <div className="flex items-center justify-between pt-2 border-t">
+                                <span className="text-sm font-medium">Final Price:</span>
+                                <span className="font-bold text-lg">${((booking.actualPrice - (booking.discountAmount || 0)) / 100).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-xs text-muted-foreground">
+                                Since this booking has a promo code, enter the actual quoted price for this specific job. The discount will be recalculated automatically.
+                              </p>
+                              <div className="flex gap-2">
+                                <div className="flex-1">
+                                  <Label htmlFor="actual-price" className="text-xs">Actual Price ($)</Label>
+                                  <Input
+                                    id="actual-price"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="150.00"
+                                    value={actualPriceInput}
+                                    onChange={(e) => setActualPriceInput(e.target.value)}
+                                    data-testid="input-actual-price"
+                                  />
+                                </div>
+                                <div className="flex items-end">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      const price = parseFloat(actualPriceInput);
+                                      if (price && price > 0) {
+                                        updateActualPriceMutation.mutate({ bookingId: booking.id, actualPrice: price });
+                                      }
+                                    }}
+                                    disabled={updateActualPriceMutation.isPending || !actualPriceInput || parseFloat(actualPriceInput) <= 0}
+                                    data-testid="button-save-actual-price"
+                                  >
+                                    {updateActualPriceMutation.isPending ? "Saving..." : "Save"}
+                                  </Button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

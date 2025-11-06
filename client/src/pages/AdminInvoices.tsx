@@ -28,10 +28,10 @@ const invoiceFormSchema = z.object({
   customerPhone: z.string().min(1, "Phone is required"),
   customerAddress: z.string().min(1, "Address is required"),
   serviceDescription: z.string().min(1, "Service description is required"),
-  amount: z.number().min(0, "Amount must be positive"),
+  amount: z.number().min(0.01, "Amount must be greater than zero"),
   taxPercentage: z.number().min(0).max(100, "Tax percentage must be between 0-100"),
   tax: z.number().min(0, "Tax must be positive"),
-  total: z.number().min(0, "Total must be positive"),
+  total: z.number().positive("Total must be greater than zero"),
   status: z.enum(["draft", "sent", "paid", "overdue"]),
   dueDate: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -250,6 +250,19 @@ export default function AdminInvoices() {
   });
 
   const onSubmit = (data: InvoiceFormValues) => {
+    // Validate that promo bookings have actual price set
+    if (data.bookingId) {
+      const booking = bookings?.find(b => b.id === data.bookingId);
+      if (booking?.promoCode && !booking.actualPrice) {
+        toast({
+          title: "Cannot create invoice",
+          description: `This booking has promo code "${booking.promoCode}" but no actual price set. Please set the actual quote price in the booking details first.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     if (editingInvoice) {
       updateMutation.mutate({ id: editingInvoice.id, data });
     } else {
@@ -298,33 +311,51 @@ export default function AdminInvoices() {
       form.setValue("customerPhone", booking.phone);
       form.setValue("customerAddress", booking.address);
       
-      // Find the service to get base price (both basePrice and discountAmount are in cents)
-      const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
-      const discountInCents = booking.discountAmount || 0;
-      
       // Build service description
       let serviceDesc = `${booking.service} - ${booking.propertySize}`;
       form.setValue("serviceDescription", serviceDesc);
       
-      // Calculate and set amount if service was found
-      if (service && service.basePrice > 0) {
-        const basePriceInCents = service.basePrice;
-        const finalAmountInDollars = Math.max(0, (basePriceInCents - discountInCents) / 100);
+      const discountInCents = booking.discountAmount || 0;
+      
+      // Use actualPrice if set (for promo code bookings), otherwise use service basePrice
+      if (booking.actualPrice) {
+        // Actual price already has discount recalculated - use it directly
+        const finalAmountInDollars = Math.max(0, (booking.actualPrice - discountInCents) / 100);
         form.setValue("amount", finalAmountInDollars);
         
         toast({
           title: "Booking loaded",
           description: booking.promoCode 
-            ? `Promo code ${booking.promoCode} applied with $${(discountInCents / 100).toFixed(2)} discount`
+            ? `Using actual price $${(booking.actualPrice / 100).toFixed(2)} with promo discount $${(discountInCents / 100).toFixed(2)}`
             : "Booking information loaded successfully",
         });
-      } else {
-        // Service not found - leave amount blank for manual entry
+      } else if (booking.promoCode && !booking.actualPrice) {
+        // Has promo code but no actual price set - clear amount and require admin to set actual price first
+        form.setValue("amount", 0);
         toast({
-          title: "Booking loaded",
-          description: `Service pricing not found for "${booking.service}". Please enter the amount manually.`,
+          title: "Action required",
+          description: `This booking has promo code "${booking.promoCode}". Please set the actual quote price in the booking details first, then reload this booking to create an invoice.`,
           variant: "destructive",
         });
+      } else {
+        // No promo code - use service base price if available
+        const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
+        if (service && service.basePrice > 0) {
+          const finalAmountInDollars = Math.max(0, (service.basePrice - discountInCents) / 100);
+          form.setValue("amount", finalAmountInDollars);
+          
+          toast({
+            title: "Booking loaded",
+            description: "Booking information loaded successfully",
+          });
+        } else {
+          // Service not found - leave amount blank for manual entry
+          toast({
+            title: "Booking loaded",
+            description: `Service pricing not found for "${booking.service}". Please enter the amount manually.`,
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -429,8 +460,9 @@ export default function AdminInvoices() {
     doc.setFont("helvetica", "normal");
     
     // Show base price and discount if promo code was used
-    if (booking?.promoCode && service) {
-      const basePrice = service.basePrice;
+    if (booking?.promoCode) {
+      // Use actualPrice if set, otherwise fall back to service basePrice
+      const basePrice = booking.actualPrice || (service?.basePrice || 0);
       const discount = booking.discountAmount || 0;
       
       doc.text("Service Price:", labelX, yPos);

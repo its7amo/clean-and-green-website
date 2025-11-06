@@ -99,6 +99,7 @@ export const bookings = pgTable("bookings", {
   cancelledAt: timestamp("cancelled_at"),
   promoCode: text("promo_code"),
   discountAmount: integer("discount_amount").default(0),
+  actualPrice: integer("actual_price"), // Admin-entered actual quoted price in cents (for variable pricing with promos)
   reminderSent: boolean("reminder_sent").notNull().default(false),
   reminderSentAt: timestamp("reminder_sent_at"),
   recurringBookingId: varchar("recurring_booking_id"),

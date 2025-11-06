@@ -482,6 +482,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update actual price and recalculate promo discount
+  app.patch("/api/bookings/:id/actual-price", isAuthenticated, async (req, res) => {
+    try {
+      const actualPriceSchema = z.object({
+        actualPrice: z.number().positive(),
+      });
+      const { actualPrice } = actualPriceSchema.parse(req.body);
+      
+      // Get existing booking to check for promo code
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Convert actual price to cents
+      const actualPriceInCents = Math.round(actualPrice * 100);
+      
+      // Recalculate discount if promo code exists
+      let discountAmount = booking.discountAmount || 0;
+      if (booking.promoCode) {
+        // Get the promo code to find discount type and value
+        const promoCodes = await storage.getPromoCodes();
+        const promoCode = promoCodes.find(p => p.code === booking.promoCode);
+        
+        if (promoCode) {
+          // Recalculate discount based on actual price
+          if (promoCode.discountType === 'percentage') {
+            discountAmount = Math.round((actualPriceInCents * promoCode.discountValue) / 100);
+          } else {
+            // Fixed discount - keep same amount
+            discountAmount = promoCode.discountValue;
+          }
+        }
+      }
+      
+      // Update booking with actual price and recalculated discount
+      const updatedBooking = await storage.updateBooking(req.params.id, {
+        actualPrice: actualPriceInCents,
+        discountAmount: discountAmount,
+      });
+      
+      if (!updatedBooking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      res.json(updatedBooking);
+    } catch (error) {
+      console.error("Error updating actual price:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid actual price", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update actual price" });
+    }
+  });
+
   // Public booking management (using token, no auth required)
   app.get("/api/bookings/manage/:token", async (req, res) => {
     try {
@@ -956,17 +1011,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (invoice.bookingId) {
               const booking = await storage.getBooking(invoice.bookingId);
               if (booking?.promoCode) {
-                const services = await storage.getServices();
-                const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
-                if (service) {
-                  breakdown = {
-                    basePrice: service.basePrice,
-                    promoCode: booking.promoCode,
-                    discountAmount: booking.discountAmount || 0,
-                    subtotal: invoice.amount,
-                    tax: invoice.tax,
-                  };
+                // Use actualPrice if set, otherwise fall back to service basePrice
+                let basePrice = booking.actualPrice;
+                if (!basePrice) {
+                  const services = await storage.getServices();
+                  const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
+                  basePrice = service?.basePrice || 0;
                 }
+                
+                breakdown = {
+                  basePrice: basePrice,
+                  promoCode: booking.promoCode,
+                  discountAmount: booking.discountAmount || 0,
+                  subtotal: invoice.amount,
+                  tax: invoice.tax,
+                };
               }
             }
             
@@ -2017,17 +2076,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (invoice.bookingId) {
             const booking = await storage.getBooking(invoice.bookingId);
             if (booking?.promoCode) {
-              const services = await storage.getServices();
-              const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
-              if (service) {
-                breakdown = {
-                  basePrice: service.basePrice,
-                  promoCode: booking.promoCode,
-                  discountAmount: booking.discountAmount || 0,
-                  subtotal: invoice.amount,
-                  tax: invoice.tax,
-                };
+              // Use actualPrice if set, otherwise fall back to service basePrice
+              let basePrice = booking.actualPrice;
+              if (!basePrice) {
+                const services = await storage.getServices();
+                const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
+                basePrice = service?.basePrice || 0;
               }
+              
+              breakdown = {
+                basePrice: basePrice,
+                promoCode: booking.promoCode,
+                discountAmount: booking.discountAmount || 0,
+                subtotal: invoice.amount,
+                tax: invoice.tax,
+              };
             }
           }
           
