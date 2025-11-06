@@ -536,47 +536,52 @@ export default function AdminInvoices() {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
     
-    // Show base price and discount if promo code was used
-    if (booking?.promoCode) {
-      const basePrice = booking.actualPrice || (service?.basePrice || 0);
-      const discount = booking.discountAmount || 0;
+    // Determine if we need to show discounts
+    const hasPromoDiscount = booking?.promoCode && booking.discountAmount;
+    const hasInvoiceDiscount = invoice.discountAmount && invoice.discountAmount > 0;
+    
+    if (hasPromoDiscount || hasInvoiceDiscount) {
+      // Calculate the original amount before any discounts
+      let originalAmount = invoice.amount;
+      if (hasPromoDiscount && booking) {
+        originalAmount = booking.actualPrice || (service?.basePrice || 0);
+      }
+      if (hasInvoiceDiscount && !hasPromoDiscount && invoice.discountAmount) {
+        originalAmount = invoice.amount + invoice.discountAmount;
+      }
       
-      doc.text("Service Price", labelX, yPos);
+      // Show original price
+      doc.text(hasPromoDiscount ? "Service Price" : "Amount", labelX, yPos);
       doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-      doc.text(formatCurrency(basePrice), rightAlign, yPos, { align: 'right' });
+      doc.text(formatCurrency(originalAmount), rightAlign, yPos, { align: 'right' });
       
-      yPos += 6;
-      doc.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
-      doc.text(`Discount (${booking.promoCode})`, labelX, yPos);
-      doc.text(`-${formatCurrency(discount)}`, rightAlign, yPos, { align: 'right' });
+      // Show promo code discount if exists
+      if (hasPromoDiscount && booking) {
+        yPos += 6;
+        doc.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
+        doc.text(`Promo (${booking.promoCode})`, labelX, yPos);
+        doc.text(`-${formatCurrency(booking.discountAmount || 0)}`, rightAlign, yPos, { align: 'right' });
+      }
       
-      yPos += 6;
-      doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
-      doc.text("Subtotal", labelX, yPos);
-      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-      doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
-    } else if (invoice.discountAmount && invoice.discountAmount > 0) {
-      // Show custom discount
-      const baseAmount = invoice.amount + invoice.discountAmount;
+      // Show invoice discount if exists
+      if (hasInvoiceDiscount && invoice.discountAmount) {
+        yPos += 6;
+        doc.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
+        const discountLabel = invoice.discountDescription 
+          ? `Discount (${invoice.discountDescription})` 
+          : "Discount";
+        doc.text(discountLabel, labelX, yPos);
+        doc.text(`-${formatCurrency(invoice.discountAmount)}`, rightAlign, yPos, { align: 'right' });
+      }
       
-      doc.text("Amount", labelX, yPos);
-      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-      doc.text(formatCurrency(baseAmount), rightAlign, yPos, { align: 'right' });
-      
-      yPos += 6;
-      doc.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
-      const discountLabel = invoice.discountDescription 
-        ? `Discount (${invoice.discountDescription})` 
-        : "Discount";
-      doc.text(discountLabel, labelX, yPos);
-      doc.text(`-${formatCurrency(invoice.discountAmount)}`, rightAlign, yPos, { align: 'right' });
-      
+      // Show subtotal after discounts
       yPos += 6;
       doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
       doc.text("Subtotal", labelX, yPos);
       doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
       doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
     } else {
+      // No discounts, just show subtotal
       doc.text("Subtotal", labelX, yPos);
       doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
       doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
