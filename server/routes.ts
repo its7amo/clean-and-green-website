@@ -3093,8 +3093,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/job-photos", isAuthenticated, async (req, res) => {
+  app.post("/api/job-photos", async (req, res) => {
     try {
+      // Check if user is authenticated (admin or employee)
+      const isAdmin = req.isAuthenticated();
+      const isEmployee = !!(req.session as any).employee;
+      
+      if (!isAdmin && !isEmployee) {
+        return res.status(401).json({ error: "Unauthorized - must be logged in as admin or employee" });
+      }
+
       const validatedData = insertJobPhotoSchema.parse(req.body);
       
       // Validate photo data size (limit to ~5MB base64)
