@@ -92,11 +92,11 @@ export default function EmployeeEmployees() {
                       <TableCell>{emp.email}</TableCell>
                       <TableCell>{emp.phone}</TableCell>
                       <TableCell>
-                        <Badge variant={emp.isManager ? "default" : "outline"}>
-                          {emp.isManager ? "Manager" : "Staff"}
+                        <Badge variant="outline" className="capitalize">
+                          {emp.role}
                         </Badge>
                       </TableCell>
-                      <TableCell>{emp.isActive ? "Active" : "Inactive"}</TableCell>
+                      <TableCell>{emp.active ? "Active" : "Inactive"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

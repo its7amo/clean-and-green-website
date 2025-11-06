@@ -16,7 +16,7 @@ import { FileText, Send } from "lucide-react";
 export default function EmployeeInvoices() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { canView, hasPermission, isLoading: permissionsLoading } = useEmployeePermissions();
+  const { canView, canEdit, hasPermission, isLoading: permissionsLoading } = useEmployeePermissions();
 
   const { data: employee, isLoading: employeeLoading } = useQuery<Employee>({
     queryKey: ["/api/employee/auth/user"],
@@ -75,7 +75,7 @@ export default function EmployeeInvoices() {
     );
   }
 
-  const canSendPaymentLink = hasPermission("invoices", "send_payment_link");
+  const canSendPaymentLink = canEdit("invoices");
 
   return (
     <EmployeeLayout>

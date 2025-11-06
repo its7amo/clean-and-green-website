@@ -87,8 +87,8 @@ export default function EmployeeNewsletter() {
                   {subscribers.map((subscriber) => (
                     <TableRow key={subscriber.id} data-testid={`row-subscriber-${subscriber.id}`}>
                       <TableCell className="font-medium">{subscriber.email}</TableCell>
-                      <TableCell>{format(subscriber.createdAt, "MMM d, yyyy")}</TableCell>
-                      <TableCell>{subscriber.subscribed ? "Active" : "Unsubscribed"}</TableCell>
+                      <TableCell>{format(subscriber.subscribedAt, "MMM d, yyyy")}</TableCell>
+                      <TableCell>{subscriber.active ? "Active" : "Unsubscribed"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

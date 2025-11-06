@@ -1269,7 +1269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Quote not found" });
       }
 
-      const updatedQuote = await storage.updateQuote(req.params.id, { status: validatedData.status });
+      const updatedQuote = await storage.updateQuoteStatus(req.params.id, validatedData.status);
 
       await logActivity({
         context: getUserContext(req),
@@ -1375,14 +1375,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Message not found" });
       }
 
-      const updatedMessage = await storage.updateContactMessage(req.params.id, { status: validatedData.status });
+      const updatedMessage = await storage.updateContactMessageStatus(req.params.id, validatedData.status);
 
       await logActivity({
         context: getUserContext(req),
         action: "updated",
         entityType: "contact_message",
         entityId: req.params.id,
-        entityName: `${messageBefore.subject} - ${messageBefore.name}`,
+        entityName: `Message from ${messageBefore.name}`,
         changes: {
           before: { status: messageBefore.status },
           after: { status: validatedData.status },
@@ -1423,7 +1423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: "deleted",
         entityType: "contact_message",
         entityId: req.params.id,
-        entityName: `${message.subject} - ${message.name}`,
+        entityName: `Message from ${message.name}`,
       });
 
       res.status(204).send();
@@ -1614,14 +1614,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Review not found" });
       }
 
-      const updatedReview = await storage.updateReview(req.params.id, { approved: true });
+      const updatedReview = await storage.updateReviewStatus(req.params.id, "approved");
 
       await logActivity({
         context: getUserContext(req),
-        action: "approved",
+        action: "updated",
         entityType: "review",
         entityId: req.params.id,
-        entityName: `Review by ${reviewBefore.name}`,
+        entityName: `Review by ${reviewBefore.customerName}`,
       });
 
       res.json(updatedReview);
@@ -1651,14 +1651,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Review not found" });
       }
 
-      const updatedReview = await storage.updateReview(req.params.id, { approved: false });
+      const updatedReview = await storage.updateReviewStatus(req.params.id, "denied");
 
       await logActivity({
         context: getUserContext(req),
-        action: "denied",
+        action: "updated",
         entityType: "review",
         entityId: req.params.id,
-        entityName: `Review by ${reviewBefore.name}`,
+        entityName: `Review by ${reviewBefore.customerName}`,
       });
 
       res.json(updatedReview);
@@ -1695,7 +1695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: "deleted",
         entityType: "review",
         entityId: req.params.id,
-        entityName: `Review by ${review.name}`,
+        entityName: `Review by ${review.customerName}`,
       });
 
       res.status(204).send();
@@ -1774,7 +1774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await logActivity({
         context: getUserContext(req),
-        action: "sent_payment_link",
+        action: "updated",
         entityType: "invoice",
         entityId: req.params.id,
         entityName: `Invoice #${invoice.invoiceNumber}`,
