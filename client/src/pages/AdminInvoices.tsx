@@ -37,6 +37,9 @@ const invoiceFormSchema = z.object({
   status: z.enum(["draft", "sent", "paid", "overdue"]),
   dueDate: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+}).refine((data) => data.discount <= data.amount, {
+  message: "Discount cannot exceed the amount",
+  path: ["discount"],
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
@@ -107,7 +110,7 @@ export default function AdminInvoices() {
 
   // Auto-calculate tax and total
   useEffect(() => {
-    const subtotal = watchAmount - watchDiscount;
+    const subtotal = Math.max(0, watchAmount - watchDiscount);
     const taxAmount = (subtotal * watchTaxPercentage) / 100;
     const roundedTax = Math.round(taxAmount * 100) / 100;
     form.setValue("tax", roundedTax);
@@ -546,6 +549,27 @@ export default function AdminInvoices() {
       doc.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
       doc.text(`Discount (${booking.promoCode})`, labelX, yPos);
       doc.text(`-${formatCurrency(discount)}`, rightAlign, yPos, { align: 'right' });
+      
+      yPos += 6;
+      doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+      doc.text("Subtotal", labelX, yPos);
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+      doc.text(formatCurrency(invoice.amount), rightAlign, yPos, { align: 'right' });
+    } else if (invoice.discountAmount && invoice.discountAmount > 0) {
+      // Show custom discount
+      const baseAmount = invoice.amount + invoice.discountAmount;
+      
+      doc.text("Amount", labelX, yPos);
+      doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+      doc.text(formatCurrency(baseAmount), rightAlign, yPos, { align: 'right' });
+      
+      yPos += 6;
+      doc.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
+      const discountLabel = invoice.discountDescription 
+        ? `Discount (${invoice.discountDescription})` 
+        : "Discount";
+      doc.text(discountLabel, labelX, yPos);
+      doc.text(`-${formatCurrency(invoice.discountAmount)}`, rightAlign, yPos, { align: 'right' });
       
       yPos += 6;
       doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2]);

@@ -1095,6 +1095,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/invoices", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertInvoiceSchema.parse(req.body);
+      
+      // Validate discount doesn't exceed amount
+      if (validatedData.discountAmount && validatedData.discountAmount > validatedData.amount) {
+        return res.status(400).json({ error: "Discount cannot exceed the invoice amount" });
+      }
+      
       const invoice = await storage.createInvoice(validatedData);
       
       // Send payment link notifications if status is "sent" (async, don't block response)
@@ -1190,6 +1196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/invoices/:id", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertInvoiceSchema.partial().parse(req.body);
+      
+      // Validate discount doesn't exceed amount (if both are being updated)
+      if (validatedData.discountAmount !== undefined && validatedData.amount !== undefined) {
+        if (validatedData.discountAmount > validatedData.amount) {
+          return res.status(400).json({ error: "Discount cannot exceed the invoice amount" });
+        }
+      }
+      
       const invoice = await storage.updateInvoice(req.params.id, validatedData);
       if (!invoice) {
         return res.status(404).json({ error: "Invoice not found" });
