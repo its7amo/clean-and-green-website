@@ -6,23 +6,38 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
+import { AlertTriangle } from "lucide-react";
 
 export default function ManageBooking() {
-  const [, params] = useRoute("/booking/:id");
+  const [, params] = useRoute("/manage-booking/:token");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [date, setDate] = useState<Date>();
   const [timeSlot, setTimeSlot] = useState("");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [acknowledgeFee, setAcknowledgeFee] = useState(false);
 
-  const token = new URLSearchParams(window.location.search).get("token");
+  const token = params?.token;
 
   const { data: booking, isLoading } = useQuery({
-    queryKey: ['/api/bookings', params?.id, 'manage', token],
-    enabled: !!params?.id && !!token,
+    queryKey: ['/api/bookings/manage', token],
+    enabled: !!token,
     queryFn: async () => {
-      const res = await fetch(`/api/bookings/${params?.id}/manage?token=${token}`);
+      const res = await fetch(`/api/bookings/manage/${token}`);
       if (!res.ok) throw new Error("Invalid booking link");
       return res.json();
     },
@@ -37,7 +52,7 @@ export default function ManageBooking() {
 
   const rescheduleMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("PATCH", `/api/bookings/${params?.id}/manage?token=${token}`, {
+      const res = await apiRequest("PATCH", `/api/bookings/manage/${token}`, {
         date: date ? format(date, "yyyy-MM-dd") : undefined,
         timeSlot,
       });
@@ -61,7 +76,7 @@ export default function ManageBooking() {
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("PATCH", `/api/bookings/${params?.id}/manage?token=${token}`, {
+      const res = await apiRequest("PATCH", `/api/bookings/manage/${token}`, {
         status: "cancelled",
       });
       return res.json();
@@ -184,26 +199,83 @@ export default function ManageBooking() {
 
             <div className="border-t pt-6">
               <h3 className="font-semibold mb-2 text-destructive">Cancel Booking</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                If you need to cancel this booking, click the button below. This action cannot be undone.
-              </p>
+              
+              <Alert className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Cancellation Policy</AlertTitle>
+                <AlertDescription>
+                  Cancellations made less than 24 hours before your scheduled appointment are subject to a $35 cancellation fee.
+                </AlertDescription>
+              </Alert>
+              
               <Button 
                 variant="destructive" 
                 onClick={() => {
-                  if (confirm("Are you sure you want to cancel this booking?")) {
-                    cancelMutation.mutate();
-                  }
+                  setShowCancelDialog(true);
+                  setAcknowledgeFee(false);
                 }}
                 disabled={cancelMutation.isPending}
                 className="w-full"
                 data-testid="button-cancel"
               >
-                {cancelMutation.isPending ? "Cancelling..." : "Cancel Booking"}
+                Cancel Booking
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Your Booking?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>Are you sure you want to cancel this booking? This action cannot be undone.</p>
+              
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Cancellation Fee Notice</AlertTitle>
+                <AlertDescription>
+                  If you cancel less than 24 hours before your scheduled appointment time, you may be charged a <strong>$35 cancellation fee</strong>.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex items-start space-x-2 pt-2">
+                <Checkbox 
+                  id="acknowledge-fee" 
+                  checked={acknowledgeFee}
+                  onCheckedChange={(checked) => setAcknowledgeFee(checked as boolean)}
+                  data-testid="checkbox-acknowledge-fee"
+                />
+                <label
+                  htmlFor="acknowledge-fee"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I understand that I may be charged a $35 cancellation fee if I cancel less than 24 hours before my appointment
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAcknowledgeFee(false)}>
+              Keep Booking
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!acknowledgeFee || cancelMutation.isPending}
+              onClick={() => {
+                if (acknowledgeFee) {
+                  cancelMutation.mutate();
+                  setShowCancelDialog(false);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-cancel"
+            >
+              {cancelMutation.isPending ? "Cancelling..." : "Yes, Cancel Booking"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

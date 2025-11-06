@@ -168,7 +168,7 @@ export interface CustomerBookingData extends BookingEmailData {
 export async function sendCustomerBookingConfirmation(
   bookingData: CustomerBookingData
 ): Promise<void> {
-  const manageUrl = `https://clean-and-green-website.onrender.com/booking/${bookingData.bookingId}?token=${bookingData.managementToken}`;
+  const manageUrl = `https://clean-and-green-website.onrender.com/manage-booking/${bookingData.managementToken}`;
   
   try {
     await resend.emails.send({
@@ -176,9 +176,9 @@ export async function sendCustomerBookingConfirmation(
       to: bookingData.email,
       subject: `Booking Confirmation - ${escapeHtml(bookingData.serviceType)}`,
       html: `
-        <h2>Thank You for Your Booking!</h2>
+        <h2>✅ Your Booking is Confirmed!</h2>
         <p>Hi ${escapeHtml(bookingData.name)},</p>
-        <p>We've received your booking request and we're excited to serve you!</p>
+        <p>Great news! Your cleaning service has been confirmed. We look forward to serving you!</p>
         
         <h3>Booking Details:</h3>
         <ul>
@@ -189,8 +189,10 @@ export async function sendCustomerBookingConfirmation(
           <li><strong>Address:</strong> ${escapeHtml(bookingData.address)}</li>
         </ul>
         
-        <h3>What's Next?</h3>
-        <p>Our team will review your booking and confirm within 24 hours. You'll receive a confirmation email once approved.</p>
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #92400e;">⚠️ Cancellation Policy</h3>
+          <p style="margin-bottom: 0; color: #92400e;"><strong>Important:</strong> Cancellations made less than 24 hours before your scheduled appointment are subject to a <strong>$35 cancellation fee</strong>. Please reschedule or cancel as early as possible to avoid this charge.</p>
+        </div>
         
         <h3>Need to Make Changes?</h3>
         <p style="margin: 20px 0;">
@@ -198,7 +200,11 @@ export async function sendCustomerBookingConfirmation(
           <a href="${manageUrl}" style="display: inline-block; padding: 12px 24px; background-color: #ef4444; color: white; text-decoration: none; border-radius: 6px;">Cancel Booking</a>
         </p>
         
+        <p>View your booking status anytime: <a href="https://clean-and-green-website.onrender.com/portal">Customer Portal</a></p>
+        
         <p>If you have any questions, feel free to reply to this email or call us.</p>
+        
+        <p>Thank you for choosing Clean & Green!</p>
         
         <p>Best regards,<br>Clean & Green Team</p>
       `,

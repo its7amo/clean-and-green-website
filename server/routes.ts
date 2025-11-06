@@ -365,14 +365,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Public booking management (using token, no auth required)
-  app.get("/api/bookings/:id/manage", async (req, res) => {
+  app.get("/api/bookings/manage/:token", async (req, res) => {
     try {
-      const { token } = req.query;
-      if (!token || typeof token !== 'string') {
+      const { token } = req.params;
+      if (!token) {
         return res.status(401).json({ error: "Token required" });
       }
       
-      const booking = await storage.getBookingByToken(req.params.id, token);
+      const booking = await storage.getBookingByManagementToken(token);
       if (!booking) {
         return res.status(404).json({ error: "Booking not found or invalid token" });
       }
@@ -384,15 +384,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/bookings/:id/manage", async (req, res) => {
+  app.patch("/api/bookings/manage/:token", async (req, res) => {
     try {
-      const { token } = req.query;
-      if (!token || typeof token !== 'string') {
+      const { token } = req.params;
+      if (!token) {
         return res.status(401).json({ error: "Token required" });
       }
       
       // Verify token first
-      const existing = await storage.getBookingByToken(req.params.id, token as string);
+      const existing = await storage.getBookingByManagementToken(token);
       if (!existing) {
         return res.status(404).json({ error: "Booking not found or invalid token" });
       }
@@ -418,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
       
-      const booking = await storage.updateBooking(req.params.id, { ...validatedData, ...additionalData });
+      const booking = await storage.updateBooking(existing.id, { ...validatedData, ...additionalData });
       
       // Notify business owner of changes
       (async () => {

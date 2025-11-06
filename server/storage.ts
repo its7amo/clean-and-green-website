@@ -65,6 +65,7 @@ export interface IStorage {
   getBookings(): Promise<Booking[]>;
   getBooking(id: string): Promise<Booking | undefined>;
   getBookingByToken(id: string, token: string): Promise<Booking | undefined>;
+  getBookingByManagementToken(token: string): Promise<Booking | undefined>;
   getBookingsByEmail(email: string): Promise<Booking[]>;
   updateBooking(id: string, booking: Partial<InsertBooking>): Promise<Booking | undefined>;
   updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
@@ -225,6 +226,11 @@ export class DbStorage implements IStorage {
       return booking;
     }
     return undefined;
+  }
+
+  async getBookingByManagementToken(token: string): Promise<Booking | undefined> {
+    const result = await db.select().from(bookings).where(eq(bookings.managementToken, token));
+    return result[0];
   }
 
   async getBookingsByEmail(email: string): Promise<Booking[]> {
