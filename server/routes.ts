@@ -2926,26 +2926,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { code, amount } = req.body;
 
       if (!code) {
-        return res.status(400).json({ error: "Promo code is required" });
+        return res.json({ 
+          valid: false, 
+          message: "Promo code is required" 
+        });
       }
 
       const promoCode = await storage.getPromoCodeByCode(code.toUpperCase());
 
       if (!promoCode) {
-        return res.status(404).json({ error: "Invalid promo code" });
+        return res.json({ 
+          valid: false, 
+          message: "Invalid promo code" 
+        });
       }
 
       if (promoCode.status !== 'active') {
-        return res.status(400).json({ error: "Promo code is not active" });
+        return res.json({ 
+          valid: false, 
+          message: "Promo code is not active" 
+        });
       }
 
       const now = new Date();
       if (now < new Date(promoCode.validFrom) || now > new Date(promoCode.validTo)) {
-        return res.status(400).json({ error: "Promo code has expired or is not yet valid" });
+        return res.json({ 
+          valid: false, 
+          message: "Promo code has expired or is not yet valid" 
+        });
       }
 
       if (promoCode.maxUses !== null && promoCode.currentUses >= promoCode.maxUses) {
-        return res.status(400).json({ error: "Promo code has reached maximum usage" });
+        return res.json({ 
+          valid: false, 
+          message: "Promo code has reached maximum usage" 
+        });
       }
 
       // Calculate discount
@@ -2958,11 +2973,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         valid: true,
-        code: promoCode.code,
-        discountType: promoCode.discountType,
-        discountValue: promoCode.discountValue,
+        promoCode: {
+          id: promoCode.id,
+          code: promoCode.code,
+          discountType: promoCode.discountType,
+          discountValue: promoCode.discountValue,
+          description: promoCode.description,
+        },
         discountAmount,
-        description: promoCode.description,
       });
     } catch (error) {
       console.error("Error validating promo code:", error);
