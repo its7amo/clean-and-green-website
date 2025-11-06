@@ -2970,6 +2970,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recurring booking routes
+  app.get("/api/recurring-bookings", isAuthenticated, async (_req, res) => {
+    try {
+      const recurringBookings = await storage.getRecurringBookings();
+      res.json(recurringBookings);
+    } catch (error) {
+      console.error("Error fetching recurring bookings:", error);
+      res.status(500).json({ error: "Failed to fetch recurring bookings" });
+    }
+  });
+
+  app.post("/api/recurring-bookings", async (req, res) => {
+    try {
+      const validatedData = insertRecurringBookingSchema.parse(req.body);
+      const recurringBooking = await storage.createRecurringBooking(validatedData);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'created',
+        entityType: 'recurring_booking',
+        entityId: recurringBooking.id,
+        entityName: `${recurringBooking.frequency} - ${recurringBooking.serviceType}`,
+      });
+
+      res.status(201).json(recurringBooking);
+    } catch (error) {
+      console.error("Error creating recurring booking:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create recurring booking" });
+    }
+  });
+
+  app.get("/api/recurring-bookings/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const recurringBooking = await storage.getRecurringBooking(id);
+      
+      if (!recurringBooking) {
+        return res.status(404).json({ error: "Recurring booking not found" });
+      }
+      
+      res.json(recurringBooking);
+    } catch (error) {
+      console.error("Error fetching recurring booking:", error);
+      res.status(500).json({ error: "Failed to fetch recurring booking" });
+    }
+  });
+
+  app.patch("/api/recurring-bookings/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = insertRecurringBookingSchema.partial().parse(req.body);
+      const recurringBooking = await storage.updateRecurringBooking(id, updates);
+
+      if (!recurringBooking) {
+        return res.status(404).json({ error: "Recurring booking not found" });
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'recurring_booking',
+        entityId: recurringBooking.id,
+        entityName: `${recurringBooking.frequency} - ${recurringBooking.serviceType}`,
+      });
+
+      res.json(recurringBooking);
+    } catch (error) {
+      console.error("Error updating recurring booking:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update recurring booking" });
+    }
+  });
+
+  app.delete("/api/recurring-bookings/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const recurringBooking = await storage.getRecurringBooking(id);
+      
+      if (!recurringBooking) {
+        return res.status(404).json({ error: "Recurring booking not found" });
+      }
+
+      await storage.deleteRecurringBooking(id);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'deleted',
+        entityType: 'recurring_booking',
+        entityId: id,
+        entityName: `${recurringBooking.frequency} - ${recurringBooking.serviceType}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting recurring booking:", error);
+      res.status(500).json({ error: "Failed to delete recurring booking" });
+    }
+  });
+
+  // Job photo routes
+  app.get("/api/job-photos/:bookingId", async (req, res) => {
+    try {
+      const { bookingId } = req.params;
+      const photos = await storage.getJobPhotosByBooking(bookingId);
+      res.json(photos);
+    } catch (error) {
+      console.error("Error fetching job photos:", error);
+      res.status(500).json({ error: "Failed to fetch job photos" });
+    }
+  });
+
+  app.post("/api/job-photos", async (req, res) => {
+    try {
+      const validatedData = insertJobPhotoSchema.parse(req.body);
+      const photo = await storage.createJobPhoto(validatedData);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'uploaded_photo',
+        entityType: 'booking',
+        entityId: photo.bookingId,
+        entityName: `Photo: ${photo.photoType}`,
+      });
+
+      res.status(201).json(photo);
+    } catch (error) {
+      console.error("Error creating job photo:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create job photo" });
+    }
+  });
+
+  app.delete("/api/job-photos/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const photo = await storage.getJobPhoto(id);
+      
+      if (!photo) {
+        return res.status(404).json({ error: "Photo not found" });
+      }
+
+      await storage.deleteJobPhoto(id);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'deleted',
+        entityType: 'job_photo',
+        entityId: id,
+        entityName: `Photo: ${photo.photoType}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting job photo:", error);
+      res.status(500).json({ error: "Failed to delete job photo" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

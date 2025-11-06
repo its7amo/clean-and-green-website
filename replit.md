@@ -2,11 +2,7 @@
 
 ## Overview
 
-Clean and Green is a professional cleaning service booking platform focused on eco-friendly cleaning solutions in Oklahoma. The application enables customers to book cleaning services online (residential, commercial, deep cleaning) or request custom quotes. An admin dashboard allows staff to manage bookings, quotes, track business metrics, manage customer reviews, send newsletters, and manage the team directory.
-
-**Core Purpose**: Streamline the booking process for eco-friendly cleaning services while providing trust-building features and efficient business management tools.
-
-**Tech Stack**: React + TypeScript (frontend), Express.js (backend), PostgreSQL with Drizzle ORM (database), TanStack Query (data fetching), shadcn/ui + Tailwind CSS (UI components)
+Clean and Green is a professional cleaning service booking platform focused on eco-friendly cleaning solutions in Oklahoma. It enables customers to book residential, commercial, and deep cleaning services online or request custom quotes. The platform also includes an admin dashboard for managing bookings, quotes, business metrics, customer reviews, newsletters, and team directories. The core purpose is to streamline the booking process for eco-friendly cleaning services, build customer trust, and provide efficient business management tools.
 
 ## User Preferences
 
@@ -14,273 +10,66 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
 
-**Framework & Routing**
-- React 18 with TypeScript in strict mode
-- Client-side routing using Wouter (lightweight alternative to React Router)
-- Single-page application (SPA) with Vite as the build tool and dev server
-- Component-based architecture with functional components and hooks
+The frontend uses React 18 with TypeScript, Wouter for client-side routing, and Vite for building. It follows a component-based architecture with functional components and hooks. State management is handled by TanStack Query for server state (data fetching, caching, synchronization) and React hooks for local UI state. The UI is built with shadcn/ui (based on Radix UI and Tailwind CSS), featuring a "New York" style variant, theme support (light/dark mode), and mobile responsiveness. The design prioritizes a trust-first approach, clean aesthetics, and an eco-friendly identity.
 
-**State Management Strategy**
-- TanStack Query (React Query) for server state management
-  - Handles API data fetching, caching, and synchronization
-  - Configured with `staleTime: Infinity` and disabled auto-refetch to reduce unnecessary requests
-  - Custom query client with error handling utilities
-- Local component state using React hooks (useState) for form inputs and UI state
-- No global state management library (Redux/Zustand) - server state handled by React Query, UI state kept local
+### Backend
 
-**UI Component System**
-- shadcn/ui component library (Radix UI primitives with Tailwind styling)
-- Design system based on "New York" style variant
-- Comprehensive component set: buttons, forms, cards, dialogs, tables, calendars, etc.
-- Theme support (light/dark mode) with CSS variables for customization
-- Mobile-responsive design with Tailwind's responsive utilities
-
-**Design Philosophy**
-- Trust-first approach inspired by TaskRabbit and Thumbtack
-- Clean, modern aesthetics using Inter font family
-- Green/eco-friendly identity with nature-inspired color palette
-- Oklahoma-local, approachable community focus
-- Minimal friction booking flow with clear progress indicators
-
-### Backend Architecture
-
-**Server Framework**
-- Express.js with TypeScript
-- ESM modules (type: "module" in package.json)
-- Middleware stack: JSON body parsing, raw body capture for webhooks, request logging
-
-**API Design Pattern**
-- RESTful API endpoints under `/api` namespace
-- CRUD operations for bookings and quotes
-- Status update endpoints using PATCH method
-- Standard HTTP status codes (404 for not found, 400 for validation errors, 500 for server errors)
-- JSON request/response format
-
-**Request/Response Flow**
-1. Client sends requests via custom `apiRequest` utility (includes credentials)
-2. Express middleware logs requests with duration tracking
-3. Route handlers validate input using Zod schemas
-4. Storage layer interacts with database via Drizzle ORM
-5. Responses returned as JSON with appropriate status codes
-
-**Error Handling**
-- Try-catch blocks in route handlers
-- Validation errors return 400 status with error messages
-- Database errors logged and return 500 status
-- Client-side error handling via React Query's onError callbacks
-
-**Email Notification System**
-- Service: Resend API for transactional email delivery
-- Triggers: Automatic notifications sent when customers submit quotes, bookings, or contact messages
-- Recipients: Business email from `business_settings` table (cleanandgreenok@gmail.com)
-- Security: All user-controlled data HTML-escaped to prevent injection attacks
-- Reply-To: Configured with customer email for easy responses
-- Error Handling: Email failures logged but don't break quote/booking/contact submissions
-- Implementation: `server/email.ts` module with `sendQuoteNotification()`, `sendBookingNotification()`, and `sendContactMessageNotification()` functions
-
-**SMS Notification System**
-- Service: Twilio API for SMS delivery
-- Triggers: Booking confirmations, employee assignments, invoice payment links
-- Security: Credentials stored as environment secrets (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)
-- Error Handling: SMS failures logged but never break core operations (resilient design)
-- Implementation: `server/sms.ts` module with three main functions:
-  - `sendBookingConfirmationSMS()` - Sent when customers create bookings
-  - `sendEmployeeAssignmentSMS()` - Sent when employees assigned to jobs
-  - `sendInvoicePaymentLinkSMS()` - Sent when invoices created with status "sent"
-
-**Payment Processing System**
-- Service: Stripe for secure credit card payments
-- Security: Server-side validation of all payment intents and amounts
-- Flow: Invoice creation → Payment intent → Customer pays → Stripe verification → Status update
-- Payment Intent Creation: Validates invoice exists, uses server-side amount (prevents tampering)
-- Payment Verification: Retrieves PaymentIntent from Stripe, confirms success and amount before marking paid
-- Implementation: Payment endpoints in `server/routes.ts`, customer payment page at `/pay-invoice/:id`
-- Frontend: Stripe Elements integration with react-stripe-js for PCI-compliant card entry
+The backend is built with Express.js and TypeScript, using ESM modules. It provides a RESTful API under the `/api` namespace for CRUD operations, status updates, and follows standard HTTP status codes. Request/response flow involves client-side `apiRequest` utility, Express middleware for logging, Zod for input validation, and Drizzle ORM for database interaction. Error handling includes try-catch blocks, specific status codes for validation and server errors, and client-side error callbacks.
 
 ### Data Storage & Schema
 
-**Database Solution**: PostgreSQL via Neon (serverless PostgreSQL)
-- Connection pooling using `@neondatabase/serverless`
-- WebSocket connections for serverless environments
-- Environment variable `DATABASE_URL` for connection string
-
-**ORM**: Drizzle ORM
-- Type-safe database queries
-- Schema-first approach with automatic TypeScript type inference
-- Migration support via `drizzle-kit`
-- Integration with Zod for runtime validation
-
-**Database Schema**:
-
-1. **Users Table**
-   - Purpose: Authentication and admin user management
-   - Fields: id (UUID), username (unique), password (hashed)
-   - Note: Basic auth structure, no session management implemented yet
-
-2. **Bookings Table**
-   - Purpose: Store customer cleaning service bookings
-   - Fields: id, service type, property size, date, time slot, customer contact info (name, email, phone, address), status, created timestamp
-   - Status workflow: pending → confirmed → completed
-   - Default status: "pending"
-
-3. **Quotes Table**
-   - Purpose: Store custom quote requests
-   - Fields: id, service type, property size, custom size, details, customer contact info, status, created timestamp
-   - Status workflow: pending → approved → completed
-   - Allows custom property sizes for non-standard requests
-
-4. **Contact Messages Table**
-   - Purpose: Store customer contact form submissions
-   - Fields: id, name, email, phone, subject, message, status, created timestamp
-   - Status workflow: unread → read → archived
-   - Default status: "unread"
-   - Integration: Sends email notification to business owner when message submitted
-
-**Schema Validation**: Zod schemas generated from Drizzle tables using `drizzle-zod`
-- Insert schemas omit auto-generated fields (id, timestamps)
-- Runtime validation before database operations
-- Type inference ensures frontend/backend type consistency
+PostgreSQL (via Neon for serverless deployment) is the database, with Drizzle ORM for type-safe queries and migrations. The database schema includes tables for:
+- **Users**: Authentication and admin management.
+- **Bookings**: Customer cleaning service bookings with status workflow.
+- **Quotes**: Custom quote requests with status workflow.
+- **Contact Messages**: Customer contact form submissions with status workflow.
+- **Promo Codes**: Management of discount codes with usage tracking.
+- **Recurring Bookings**: Automatic recurring service appointments.
+- **Job Photos**: Before/after photos for completed jobs.
+- Enhanced Bookings table with promo code integration and reminder tracking.
+Zod schemas are generated from Drizzle tables for runtime validation and type inference.
 
 ### Authentication & Authorization
 
-**Authentication System**: Passport.js with Local Strategy (username/password)
-- **Strategy**: passport-local for username/password authentication
-- **Session Management**: Express sessions stored in PostgreSQL via connect-pg-simple
-- **Password Security**: Bcrypt hashing (10 rounds)
-- **Session Duration**: 7 days
-
-**Database Tables**:
-1. **sessions** - Stores session data in PostgreSQL
-2. **users** - Admin users with username (unique), password (hashed), optional email
-
-**API Endpoints**:
-- GET `/api/setup/required` - Check if initial admin setup is needed
-- POST `/api/setup/admin` - Create initial admin account (only when no users exist)
-- POST `/api/login` - Authenticate with username/password
-- POST `/api/logout` - End current session
-- GET `/api/auth/user` - Get current authenticated user (returns 401 if not logged in)
-
-**Protected Routes**:
-- All `/admin/*` routes require authentication
-- Unauthenticated requests to admin routes redirect to `/login`
-
-**Setup Flow**:
-1. On first deployment, `/setup` page is accessible
-2. Admin creates username/password account
-3. After first admin is created, `/setup` redirects to `/login` (setup lockout)
-4. Admin logs in via `/login`
-
-**Frontend Auth Components**:
-- `/setup` - Initial admin account creation (only when no users exist)
-- `/login` - Login page
-- `ProtectedRoute` component - Wraps admin routes, redirects to `/login` if not authenticated
-- `SetupChecker` component - Redirects to `/setup` if no admin exists
-- `useAuth()` hook - Provides current user state and authentication status
+Authentication uses Passport.js with a Local Strategy (username/password) and Express sessions stored in PostgreSQL via `connect-pg-simple`. Passwords are secured with Bcrypt. The system includes endpoints for setup, login, logout, and fetching the current user. All admin routes are protected and require authentication, redirecting unauthenticated users to `/login`. A setup flow ensures initial admin account creation before locking access.
 
 ### Page Structure & Routing
 
-**Public Pages**:
-- `/` - Home page with hero, services overview, how it works, real customer reviews/testimonials, CTA
-- `/services` - Detailed services page with FAQ accordion
-- `/about` - Company information, values, active team members directory with photos and bios
-- `/contact` - Contact form and business information
-- `/book` - Multi-step booking form for scheduling cleaning services
-- `/quote` - Custom quote request form
-- `/portal` - Customer self-service portal to view bookings by email
-- `/pay-invoice/:id` - Customer payment page with Stripe Elements for secure invoice payments
-- `/reviews` - Customer reviews page (view all approved reviews and submit new reviews)
-- `/privacy-policy` - Privacy policy content from business_settings
-- `/terms-of-service` - Terms of service content from business_settings
+**Public Pages**: Include Home, Services, About, Contact, Booking, Quote, Customer Portal, Invoice Payment, Reviews, Privacy Policy, and Terms of Service.
 
-**Admin Pages** (authentication required):
-- `/admin` - Dashboard with statistics and recent bookings table
-- `/admin/bookings` - Full bookings management table with status updates and delete functionality
-- `/admin/quotes` - Quote requests management table with status updates and delete functionality
-- `/admin/invoices` - Invoice creation and management with PDF generation and payment tracking
-- `/admin/employees` - Employee management with work assignments
-- `/admin/messages` - Contact messages management (view submissions, update status, delete messages)
-- `/admin/reviews` - Review moderation (approve/deny customer reviews)
-- `/admin/newsletter` - Newsletter management (view subscribers, send email broadcasts)
-- `/admin/team` - Team member management (add/edit/delete team profiles)
-- `/admin/settings` - Business settings including contact info, privacy policy, terms, service areas, social links
+**Admin Pages** (authentication required): Dashboard, Bookings, Quotes, Invoices, Promo Codes, Employees, Messages, Reviews, Newsletter, Team Management, and Business Settings.
 
-**Employee Pages**:
-- `/employee/login` - Employee authentication
-- `/employee/dashboard` - Employee work assignments and schedule
+**Employee Pages**: Employee Login and Employee Dashboard for work assignments.
 
 ### Build & Deployment
 
-**Development Mode**:
-- Vite dev server with HMR (Hot Module Replacement)
-- Express server in middleware mode serving Vite assets
-- TSX for running TypeScript server code without compilation
-- Replit-specific plugins for runtime errors and dev banner
-
-**Production Build**:
-- Vite builds React app to `dist/public`
-- esbuild bundles server code to `dist` directory
-- Server serves pre-built static files
-- Environment variable `NODE_ENV` controls build behavior
-
-**Type Checking**: Separate `tsc --noEmit` for type validation without compilation
+Development uses Vite for the frontend and an Express server with HMR. Production builds involve Vite for the React app and esbuild for the server code, with static file serving. Type checking is handled separately by `tsc --noEmit`.
 
 ## External Dependencies
 
 ### Third-Party Services
 
-**Database**: Neon (Serverless PostgreSQL)
-- Managed PostgreSQL database with serverless architecture
-- Accessed via `DATABASE_URL` environment variable
-- WebSocket connections for compatibility with serverless/edge environments
+- **Database**: Neon (Serverless PostgreSQL)
+- **Email Notifications**: Resend API
+- **SMS Notifications**: Twilio API
+- **Payment Processing**: Stripe
 
 ### UI Libraries & Frameworks
 
-**Component Libraries**:
-- Radix UI - Unstyled, accessible component primitives (20+ components imported)
-- shadcn/ui - Pre-styled components built on Radix UI
-- Tailwind CSS - Utility-first CSS framework for styling
-
-**Icon Library**: Lucide React - Icon set for UI elements
-
-**Form Management**:
-- React Hook Form - Form state management and validation
-- @hookform/resolvers - Integration with Zod validation schemas
-
-**Date Handling**:
-- date-fns - Date formatting and manipulation
-- react-day-picker - Calendar component for date selection
-
-**Carousel**: embla-carousel-react - Touch-friendly carousel component
+- **Component Libraries**: Radix UI, shadcn/ui
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Form Management**: React Hook Form, @hookform/resolvers (with Zod)
+- **Date Handling**: date-fns, react-day-picker
+- **Carousel**: embla-carousel-react
 
 ### Development Tools
 
-**Build Tools**:
-- Vite - Frontend build tool and dev server
-- esbuild - Fast JavaScript bundler for server code
-- TypeScript - Type-safe JavaScript
-
-**Replit Integration**:
-- @replit/vite-plugin-runtime-error-modal - Runtime error overlay
-- @replit/vite-plugin-cartographer - Code navigation
-- @replit/vite-plugin-dev-banner - Development mode indicator
-
-### Asset Management
-
-**Images**: Static assets stored in `attached_assets/generated_images/` directory
-- Hero images, service showcases, customer testimonials
-- Team photos and before/after cleaning examples
-- Imported directly into components using Vite's asset handling
+- **Build Tools**: Vite, esbuild, TypeScript
+- **Replit Integration**: @replit/vite-plugin-runtime-error-modal, @replit/vite-plugin-cartographer, @replit/vite-plugin-dev-banner
 
 ### API Communication
 
-**Data Fetching**: TanStack Query (React Query)
-- Custom `apiRequest` utility for fetch wrapper
-- Automatic retry and caching strategies
-- Optimistic updates for status changes
-
-**Request Configuration**:
-- Credentials included in all requests (session cookies)
-- JSON content-type headers for POST/PATCH requests
-- Custom error handling for 401 unauthorized responses
+- **Data Fetching**: TanStack Query (React Query)

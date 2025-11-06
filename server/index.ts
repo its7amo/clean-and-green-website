@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./migrate";
 import { startReviewEmailScheduler } from "./reviewEmailScheduler";
+import { startReminderScheduler } from "./reminderScheduler";
 
 const app = express();
 
@@ -59,6 +60,9 @@ app.use((req, res, next) => {
 
   // Start review email scheduler (checks every hour for invoices paid 24h ago)
   startReviewEmailScheduler();
+
+  // Start appointment reminder scheduler (sends SMS/email 24h before booking)
+  startReminderScheduler();
 
   const server = await registerRoutes(app);
 
