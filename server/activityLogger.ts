@@ -41,11 +41,21 @@ export async function logActivity(params: {
 
 // Helper to extract user context from request
 export function getUserContext(req: any): LogContext {
+  // Check for admin user
   if (req.user) {
     return {
       userId: req.user.id,
-      userRole: 'owner', // Can be extended to support different roles
+      userRole: 'admin',
       userName: req.user.username,
+    };
+  }
+  
+  // Check for employee user
+  if (req.session?.employee) {
+    return {
+      userId: req.session.employee.id,
+      userRole: 'employee',
+      userName: req.session.employee.name,
     };
   }
   

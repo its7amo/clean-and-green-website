@@ -33,6 +33,8 @@ import AdminContactMessages from "@/pages/AdminContactMessages";
 import AdminActivityLogs from "@/pages/AdminActivityLogs";
 import EmployeeLogin from "@/pages/EmployeeLogin";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
+import EmployeeBookings from "@/pages/EmployeeBookings";
+import EmployeeCustomers from "@/pages/EmployeeCustomers";
 import ManageBooking from "@/pages/manage-booking";
 import CustomerPortal from "@/pages/CustomerPortal";
 import PayInvoice from "@/pages/PayInvoice";
@@ -123,6 +125,8 @@ function Router() {
       <Route path="/pay-invoice/:id" component={PayInvoice} />
       <Route path="/employee/login" component={EmployeeLogin} />
       <Route path="/employee/dashboard" component={EmployeeDashboard} />
+      <Route path="/employee/bookings" component={EmployeeBookings} />
+      <Route path="/employee/customers" component={EmployeeCustomers} />
       <Route path="/login" component={Login} />
       <Route path="/setup" component={SetupAdmin} />
       <Route path="/admin">
