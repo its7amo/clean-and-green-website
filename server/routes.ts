@@ -14,12 +14,14 @@ import {
   insertReviewSchema,
   insertNewsletterSubscriberSchema,
   insertTeamMemberSchema,
-  insertContactMessageSchema
+  insertContactMessageSchema,
+  insertCustomerSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendCustomerQuoteConfirmation, sendBookingChangeNotification, sendContactMessageNotification } from "./email";
 import { sendBookingConfirmationSMS, sendInvoicePaymentLinkSMS, sendEmployeeAssignmentSMS } from "./sms";
+import { logActivity, getUserContext } from "./activityLogger";
 import Stripe from "stripe";
 
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -91,7 +93,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/bookings", async (req, res) => {
     try {
       const validatedData = insertBookingSchema.parse(req.body);
-      const booking = await storage.createBooking(validatedData);
+      
+      // Find or create customer (deduplication)
+      const customer = await storage.findOrCreateCustomer(
+        validatedData.name,
+        validatedData.email,
+        validatedData.phone,
+        validatedData.address
+      );
+      
+      // Create booking with customer link and leadType
+      const booking = await storage.createBooking({
+        ...validatedData,
+        customerId: customer.id,
+        leadType: 'web', // Public endpoint = web lead
+      });
+      
+      // Increment customer booking count
+      await storage.incrementCustomerBookings(customer.id);
       
       // Send email notifications (async, don't block response)
       (async () => {
@@ -141,6 +160,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(booking);
     } catch (error) {
       console.error("Error creating booking:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid booking data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create booking" });
+    }
+  });
+
+  // Admin endpoint for manual booking creation (phone orders, walk-ins)
+  app.post("/api/bookings/manual", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertBookingSchema.parse(req.body);
+      
+      // Find or create customer
+      const customer = await storage.findOrCreateCustomer(
+        validatedData.name,
+        validatedData.email,
+        validatedData.phone,
+        validatedData.address
+      );
+      
+      // Create booking with customer link and leadType='phone'
+      const booking = await storage.createBooking({
+        ...validatedData,
+        customerId: customer.id,
+        leadType: 'phone', // Manual creation = phone lead
+      });
+      
+      // Increment customer booking count
+      await storage.incrementCustomerBookings(customer.id);
+      
+      // Log activity
+      await logActivity({
+        context: getUserContext(req),
+        action: 'created',
+        entityType: 'booking',
+        entityId: booking.id,
+        entityName: `${booking.service} for ${booking.name}`,
+      });
+      
+      res.status(201).json(booking);
+    } catch (error) {
+      console.error("Error creating manual booking:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid booking data", details: error.errors });
       }
@@ -1458,10 +1519,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/contact-messages/:id", isAuthenticated, async (req, res) => {
     try {
       await storage.deleteContactMessage(req.params.id);
+      await logActivity({
+        context: getUserContext(req),
+        action: 'deleted',
+        entityType: 'contact_message',
+        entityId: req.params.id,
+      });
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting contact message:", error);
       res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  // Customer routes
+  app.get("/api/customers", isAuthenticated, async (_req, res) => {
+    try {
+      const customers = await storage.getCustomers();
+      res.json(customers);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      res.status(500).json({ error: "Failed to fetch customers" });
+    }
+  });
+
+  app.get("/api/customers/:id", isAuthenticated, async (req, res) => {
+    try {
+      const customer = await storage.getCustomer(req.params.id);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      res.json(customer);
+    } catch (error) {
+      console.error("Error fetching customer:", error);
+      res.status(500).json({ error: "Failed to fetch customer" });
+    }
+  });
+
+  app.post("/api/customers", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertCustomerSchema.parse(req.body);
+      const customer = await storage.createCustomer(validatedData);
+      await logActivity({
+        context: getUserContext(req),
+        action: 'created',
+        entityType: 'customer',
+        entityId: customer.id,
+        entityName: customer.name,
+      });
+      res.status(201).json(customer);
+    } catch (error) {
+      console.error("Error creating customer:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid customer data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create customer" });
+    }
+  });
+
+  app.patch("/api/customers/:id", isAuthenticated, async (req, res) => {
+    try {
+      const before = await storage.getCustomer(req.params.id);
+      const customer = await storage.updateCustomer(req.params.id, req.body);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'customer',
+        entityId: customer.id,
+        entityName: customer.name,
+        changes: { before, after: customer },
+      });
+      res.json(customer);
+    } catch (error) {
+      console.error("Error updating customer:", error);
+      res.status(500).json({ error: "Failed to update customer" });
+    }
+  });
+
+  app.delete("/api/customers/:id", isAuthenticated, async (req, res) => {
+    try {
+      const customer = await storage.getCustomer(req.params.id);
+      await storage.deleteCustomer(req.params.id);
+      await logActivity({
+        context: getUserContext(req),
+        action: 'deleted',
+        entityType: 'customer',
+        entityId: req.params.id,
+        entityName: customer?.name,
+      });
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+      res.status(500).json({ error: "Failed to delete customer" });
+    }
+  });
+
+  // Activity log routes
+  app.get("/api/activity-logs", isAuthenticated, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const logs = await storage.getActivityLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching activity logs:", error);
+      res.status(500).json({ error: "Failed to fetch activity logs" });
+    }
+  });
+
+  // Lead statistics (web vs phone bookings)
+  app.get("/api/stats/leads", isAuthenticated, async (_req, res) => {
+    try {
+      const allBookings = await storage.getBookings();
+      const webLeads = allBookings.filter(b => b.leadType === 'web').length;
+      const phoneLeads = allBookings.filter(b => b.leadType === 'phone').length;
+      res.json({ webLeads, phoneLeads, total: allBookings.length });
+    } catch (error) {
+      console.error("Error fetching lead stats:", error);
+      res.status(500).json({ error: "Failed to fetch lead statistics" });
     }
   });
 

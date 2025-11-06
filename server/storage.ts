@@ -25,6 +25,10 @@ import {
   type InsertTeamMember,
   type ContactMessage,
   type InsertContactMessage,
+  type Customer,
+  type InsertCustomer,
+  type ActivityLog,
+  type InsertActivityLog,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -41,6 +45,8 @@ import {
   newsletterSubscribers,
   teamMembers,
   contactMessages,
+  customers,
+  activityLogs,
 } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -147,6 +153,25 @@ export interface IStorage {
   getTeamMember(id: string): Promise<TeamMember | undefined>;
   updateTeamMember(id: string, member: Partial<InsertTeamMember>): Promise<TeamMember | undefined>;
   deleteTeamMember(id: string): Promise<void>;
+
+  // Customer operations
+  createCustomer(customer: InsertCustomer): Promise<Customer>;
+  getCustomers(): Promise<Customer[]>;
+  getCustomer(id: string): Promise<Customer | undefined>;
+  getCustomerByEmail(email: string): Promise<Customer | undefined>;
+  getCustomerByPhone(phone: string): Promise<Customer | undefined>;
+  findOrCreateCustomer(name: string, email: string, phone: string, address?: string): Promise<Customer>;
+  updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
+  deleteCustomer(id: string): Promise<void>;
+  incrementCustomerBookings(id: string): Promise<void>;
+  incrementCustomerQuotes(id: string): Promise<void>;
+  incrementCustomerInvoices(id: string): Promise<void>;
+
+  // Activity log operations
+  createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
+  getActivityLogs(limit?: number): Promise<ActivityLog[]>;
+  getActivityLogsByEntity(entityType: string, entityId: string): Promise<ActivityLog[]>;
+  getActivityLogsByUser(userId: string): Promise<ActivityLog[]>;
 }
 
 export class DbStorage implements IStorage {
@@ -533,6 +558,97 @@ export class DbStorage implements IStorage {
 
   async deleteTeamMember(id: string): Promise<void> {
     await db.delete(teamMembers).where(eq(teamMembers.id, id));
+  }
+
+  // Customer operations
+  async createCustomer(customer: InsertCustomer): Promise<Customer> {
+    const result = await db.insert(customers).values(customer).returning();
+    return result[0];
+  }
+
+  async getCustomers(): Promise<Customer[]> {
+    return await db.select().from(customers).orderBy(desc(customers.createdAt));
+  }
+
+  async getCustomer(id: string): Promise<Customer | undefined> {
+    const result = await db.select().from(customers).where(eq(customers.id, id));
+    return result[0];
+  }
+
+  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
+    const result = await db.select().from(customers).where(eq(customers.email, email));
+    return result[0];
+  }
+
+  async getCustomerByPhone(phone: string): Promise<Customer | undefined> {
+    const result = await db.select().from(customers).where(eq(customers.phone, phone));
+    return result[0];
+  }
+
+  async findOrCreateCustomer(name: string, email: string, phone: string, address?: string): Promise<Customer> {
+    // Try to find existing customer by email first
+    let customer = await this.getCustomerByEmail(email);
+    
+    if (!customer) {
+      // Try by phone as fallback
+      customer = await this.getCustomerByPhone(phone);
+    }
+    
+    if (!customer) {
+      // Create new customer if not found
+      customer = await this.createCustomer({ name, email, phone, address: address || null, notes: null });
+    }
+    
+    return customer;
+  }
+
+  async updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined> {
+    const result = await db.update(customers).set({ ...customer, updatedAt: new Date() }).where(eq(customers.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteCustomer(id: string): Promise<void> {
+    await db.delete(customers).where(eq(customers.id, id));
+  }
+
+  async incrementCustomerBookings(id: string): Promise<void> {
+    await db.update(customers)
+      .set({ totalBookings: sql`${customers.totalBookings} + 1` })
+      .where(eq(customers.id, id));
+  }
+
+  async incrementCustomerQuotes(id: string): Promise<void> {
+    await db.update(customers)
+      .set({ totalQuotes: sql`${customers.totalQuotes} + 1` })
+      .where(eq(customers.id, id));
+  }
+
+  async incrementCustomerInvoices(id: string): Promise<void> {
+    await db.update(customers)
+      .set({ totalInvoices: sql`${customers.totalInvoices} + 1` })
+      .where(eq(customers.id, id));
+  }
+
+  // Activity log operations
+  async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
+    const result = await db.insert(activityLogs).values(log).returning();
+    return result[0];
+  }
+
+  async getActivityLogs(limit: number = 100): Promise<ActivityLog[]> {
+    return await db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt)).limit(limit);
+  }
+
+  async getActivityLogsByEntity(entityType: string, entityId: string): Promise<ActivityLog[]> {
+    return await db.select().from(activityLogs)
+      .where(sql`${activityLogs.entityType} = ${entityType} AND ${activityLogs.entityId} = ${entityId}`)
+      .orderBy(desc(activityLogs.createdAt));
+  }
+
+  async getActivityLogsByUser(userId: string): Promise<ActivityLog[]> {
+    return await db.select().from(activityLogs)
+      .where(eq(activityLogs.userId, userId))
+      .orderBy(desc(activityLogs.createdAt));
   }
 }
 
