@@ -3204,8 +3204,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityName: customer?.name,
       });
       res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting customer:", error);
+      
+      // Check for foreign key constraint violation
+      if (error.code === '23503') {
+        return res.status(400).json({ 
+          error: "Cannot delete this customer because they have existing bookings, quotes, or invoices. Please delete those first." 
+        });
+      }
+      
       res.status(500).json({ error: "Failed to delete customer" });
     }
   });

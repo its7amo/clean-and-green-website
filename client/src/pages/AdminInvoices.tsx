@@ -250,6 +250,13 @@ export default function AdminInvoices() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("DELETE", `/api/invoices/${id}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete invoice");
+      }
+      if (res.status === 204) {
+        return;
+      }
       return await res.json();
     },
     onSuccess: () => {
