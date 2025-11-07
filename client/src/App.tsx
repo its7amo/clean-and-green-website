@@ -4,6 +4,8 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { PWAModeSelector } from "@/components/PWAModeSelector";
+import { usePWARedirect } from "@/hooks/usePWARedirect";
 import { useEffect } from "react";
 import Home from "@/pages/Home";
 import ServicesPage from "@/pages/ServicesPage";
@@ -230,7 +232,13 @@ function Router() {
 }
 
 function AppContent() {
-  return <SetupChecker />;
+  usePWARedirect();
+  return (
+    <>
+      <PWAModeSelector />
+      <SetupChecker />
+    </>
+  );
 }
 
 function App() {
