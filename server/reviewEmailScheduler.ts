@@ -2,9 +2,16 @@ import { db } from './db';
 import { invoices, bookings } from '@shared/schema';
 import { sql } from 'drizzle-orm';
 import { sendPaymentThankYouEmail } from './email';
+import { storage } from './storage';
 
 export async function checkAndSendReviewEmails() {
   try {
+    // Check if review emails are enabled
+    const settings = await storage.getBusinessSettings();
+    if (!settings?.reviewEmailEnabled) {
+      return; // Skip if disabled
+    }
+
     // Find invoices that were paid at least 24 hours ago (but not more than 7 days ago)
     // and haven't had the review email sent yet
     // The upper bound prevents sending very old invoices if the feature was just enabled

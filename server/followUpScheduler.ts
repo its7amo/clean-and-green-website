@@ -14,6 +14,12 @@ export function startFollowUpScheduler() {
 
 async function checkAndSendFollowUps() {
   try {
+    // Check if follow-up emails are enabled
+    const settings = await storage.getBusinessSettings();
+    if (!settings?.followUpEmailEnabled) {
+      return; // Skip if disabled
+    }
+
     const bookings = await storage.getBookings();
     const now = new Date();
     

@@ -18,6 +18,12 @@ export function startReminderScheduler() {
 
 async function checkAndSendReminders() {
   try {
+    // Check if reminder emails are enabled
+    const settings = await storage.getBusinessSettings();
+    if (!settings?.reminderEmailEnabled) {
+      return; // Skip if disabled
+    }
+
     const bookings = await storage.getBookings();
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
