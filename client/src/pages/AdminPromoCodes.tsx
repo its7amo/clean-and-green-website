@@ -206,7 +206,7 @@ export default function AdminPromoCodes() {
               Create Promo Code
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingPromoCode ? "Edit Promo Code" : "Create New Promo Code"}

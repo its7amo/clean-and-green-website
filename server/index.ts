@@ -6,6 +6,7 @@ import { startReviewEmailScheduler } from "./reviewEmailScheduler";
 import { startReminderScheduler } from "./reminderScheduler";
 import { startRecurringBookingScheduler } from "./recurringBookingScheduler";
 import { startFollowUpScheduler } from "./followUpScheduler";
+import { startOverdueInvoiceReminder } from "./schedulers/overdueInvoiceReminder";
 
 const app = express();
 
@@ -101,6 +102,9 @@ app.use((req, res, next) => {
 
   // Start follow-up email scheduler (sends 30-day follow-up emails)
   startFollowUpScheduler();
+
+  // Start overdue invoice reminder scheduler (sends payment reminders at 3, 7, and 14 days overdue)
+  startOverdueInvoiceReminder();
 
   const server = await registerRoutes(app);
 

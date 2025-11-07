@@ -216,7 +216,7 @@ export function QuotesTable() {
 
       {/* View Quote Dialog */}
       <Dialog open={viewDialogOpen !== null} onOpenChange={(open) => !open && setViewDialogOpen(null)}>
-        <DialogContent data-testid="dialog-view-quote">
+        <DialogContent className="max-w-full sm:max-w-2xl" data-testid="dialog-view-quote">
           <DialogHeader>
             <DialogTitle>Quote Request Details</DialogTitle>
             <DialogDescription>
@@ -279,7 +279,7 @@ export function QuotesTable() {
 
       {/* Delete Quote Dialog */}
       <Dialog open={deleteDialogOpen !== null} onOpenChange={(open) => !open && setDeleteDialogOpen(null)}>
-        <DialogContent data-testid="dialog-delete-quote">
+        <DialogContent className="max-w-full sm:max-w-md" data-testid="dialog-delete-quote">
           <DialogHeader>
             <DialogTitle>Delete Quote</DialogTitle>
             <DialogDescription>

@@ -41,6 +41,8 @@ import {
   type InsertCustomerNote,
   type EmailTemplate,
   type InsertEmailTemplate,
+  type ServiceArea,
+  type InsertServiceArea,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -65,8 +67,9 @@ import {
   jobPhotos,
   customerNotes,
   emailTemplates,
+  serviceAreas,
 } from "@shared/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, or } from "drizzle-orm";
 
 export interface IStorage {
   // Auth user operations
@@ -239,6 +242,15 @@ export interface IStorage {
   getEmailTemplates(): Promise<EmailTemplate[]>;
   getEmailTemplate(id: string): Promise<EmailTemplate | undefined>;
   deleteEmailTemplate(id: string): Promise<void>;
+
+  // Service area operations
+  createServiceArea(area: InsertServiceArea): Promise<ServiceArea>;
+  getServiceAreas(): Promise<ServiceArea[]>;
+  getActiveServiceAreas(): Promise<ServiceArea[]>;
+  getServiceArea(id: string): Promise<ServiceArea | undefined>;
+  updateServiceArea(id: string, area: Partial<InsertServiceArea>): Promise<ServiceArea | undefined>;
+  deleteServiceArea(id: string): Promise<void>;
+  checkZipCodeInServiceArea(zipCode: string): Promise<boolean>;
 }
 
 export class DbStorage implements IStorage {
@@ -746,7 +758,7 @@ export class DbStorage implements IStorage {
 
   // Activity log operations
   async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
-    const result = await db.insert(activityLogs).values(log).returning();
+    const result = await db.insert(activityLogs).values([log]).returning();
     return result[0];
   }
 
@@ -914,6 +926,42 @@ export class DbStorage implements IStorage {
 
   async deleteEmailTemplate(id: string): Promise<void> {
     await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
+  }
+
+  // Service area operations
+  async createServiceArea(area: InsertServiceArea): Promise<ServiceArea> {
+    const [result] = await db.insert(serviceAreas).values(area).returning();
+    return result;
+  }
+
+  async getServiceAreas(): Promise<ServiceArea[]> {
+    return await db.select().from(serviceAreas).orderBy(serviceAreas.name);
+  }
+
+  async getActiveServiceAreas(): Promise<ServiceArea[]> {
+    return await db.select().from(serviceAreas)
+      .where(eq(serviceAreas.isActive, true))
+      .orderBy(serviceAreas.name);
+  }
+
+  async getServiceArea(id: string): Promise<ServiceArea | undefined> {
+    const result = await db.select().from(serviceAreas).where(eq(serviceAreas.id, id));
+    return result[0];
+  }
+
+  async updateServiceArea(id: string, area: Partial<InsertServiceArea>): Promise<ServiceArea | undefined> {
+    const result = await db.update(serviceAreas).set(area).where(eq(serviceAreas.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteServiceArea(id: string): Promise<void> {
+    await db.delete(serviceAreas).where(eq(serviceAreas.id, id));
+  }
+
+  async checkZipCodeInServiceArea(zipCode: string): Promise<boolean> {
+    const result = await db.select().from(serviceAreas)
+      .where(sql`${serviceAreas.isActive} = true AND ${zipCode} = ANY(${serviceAreas.zipCodes})`);
+    return result.length > 0;
   }
 }
 

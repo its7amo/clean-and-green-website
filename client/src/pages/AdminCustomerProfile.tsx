@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Mail, Phone, MapPin, DollarSign, Calendar, Trash2 } from "lucide-react";
+import { Loader2, Mail, Phone, MapPin, DollarSign, Calendar, Trash2, ShoppingCart, FileText, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -25,6 +25,18 @@ interface CustomerProfile {
     totalBookings: number;
     totalQuotes: number;
   };
+}
+
+interface CustomerMetrics {
+  totalLifetimeRevenue: number;
+  totalBookings: number;
+  totalQuotes: number;
+  avgBookingValue: number;
+  repeatRate: number;
+  firstBookingDate: string;
+  lastBookingDate: string;
+  daysAsCustomer: number;
+  customerStatus: "New" | "Active" | "Loyal";
 }
 
 export default function AdminCustomerProfile() {
@@ -50,6 +62,20 @@ export default function AdminCustomerProfile() {
     },
     staleTime: 0,
     gcTime: 0,
+  });
+
+  // Fetch CLV metrics for this customer
+  const { data: metrics, isLoading: metricsLoading } = useQuery<CustomerMetrics>({
+    queryKey: ['/api/customers/metrics', profile?.customer?.id],
+    queryFn: async () => {
+      if (!profile?.customer?.id) throw new Error('No customer ID');
+      const response = await fetch(`/api/customers/${profile.customer.id}/metrics`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch metrics');
+      return response.json();
+    },
+    enabled: !!profile?.customer?.id,
   });
 
   const addNoteMutation = useMutation({
@@ -129,7 +155,7 @@ export default function AdminCustomerProfile() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-muted/30 rounded-lg">
                 <DollarSign className="h-6 w-6 text-primary mx-auto mb-2" />
                 <p className="text-2xl font-bold">${(stats.totalSpent / 100).toFixed(0)}</p>
@@ -153,6 +179,93 @@ export default function AdminCustomerProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Customer Value Metrics Section */}
+        {metrics && !metricsLoading && (
+          <Card data-testid="card-customer-value-metrics">
+            <CardHeader>
+              <CardTitle>Customer Value Metrics</CardTitle>
+              <CardDescription>Lifetime value and engagement insights</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Lifetime Revenue */}
+                <div className="text-center p-4 bg-muted/30 rounded-lg" data-testid="metric-lifetime-revenue">
+                  <DollarSign className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold">
+                    ${(metrics.totalLifetimeRevenue / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Lifetime Revenue</p>
+                </div>
+
+                {/* Total Bookings */}
+                <div className="text-center p-4 bg-muted/30 rounded-lg" data-testid="metric-total-bookings">
+                  <ShoppingCart className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold">{metrics.totalBookings}</p>
+                  <p className="text-xs text-muted-foreground">Total Bookings</p>
+                </div>
+
+                {/* Total Quotes */}
+                <div className="text-center p-4 bg-muted/30 rounded-lg" data-testid="metric-total-quotes">
+                  <FileText className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold">{metrics.totalQuotes}</p>
+                  <p className="text-xs text-muted-foreground">Total Quotes</p>
+                </div>
+
+                {/* Average Booking Value */}
+                <div className="text-center p-4 bg-muted/30 rounded-lg" data-testid="metric-avg-booking-value">
+                  <TrendingUp className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold">
+                    ${(metrics.avgBookingValue / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Avg Booking Value</p>
+                </div>
+
+                {/* Repeat Customer Rate */}
+                <div className="text-center p-4 bg-muted/30 rounded-lg" data-testid="metric-repeat-rate">
+                  <TrendingUp className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold">{metrics.repeatRate}%</p>
+                  <p className="text-xs text-muted-foreground">Repeat Customer Rate</p>
+                </div>
+
+                {/* Customer Since */}
+                <div className="text-center p-4 bg-muted/30 rounded-lg" data-testid="metric-customer-since">
+                  <Calendar className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-xl font-bold">
+                    {format(new Date(metrics.firstBookingDate), "MMM d, yyyy")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Customer Since</p>
+                </div>
+
+                {/* Days as Customer */}
+                <div className="text-center p-4 bg-muted/30 rounded-lg" data-testid="metric-days-as-customer">
+                  <Calendar className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold">{metrics.daysAsCustomer}</p>
+                  <p className="text-xs text-muted-foreground">Days as Customer</p>
+                </div>
+
+                {/* Customer Status */}
+                <div className="text-center p-4 bg-muted/30 rounded-lg" data-testid="metric-customer-status">
+                  <Badge 
+                    variant={
+                      metrics.customerStatus === "New" ? "default" : 
+                      metrics.customerStatus === "Active" ? "default" : 
+                      "default"
+                    }
+                    className={`text-base px-4 py-2 ${
+                      metrics.customerStatus === "New" ? "bg-blue-500" :
+                      metrics.customerStatus === "Active" ? "bg-green-500" :
+                      "bg-yellow-600"
+                    }`}
+                  >
+                    {metrics.customerStatus}
+                  </Badge>
+                  <p className="text-xs text-muted-foreground mt-2">Customer Status</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6">
           <Card>

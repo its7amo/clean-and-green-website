@@ -22,7 +22,7 @@ export async function logActivity(params: {
   const { context, action, entityType, entityId, entityName, details, changes } = params;
 
   try {
-    const logData: InsertActivityLog = {
+    const logData = {
       userId: context.userId || null,
       userRole: context.userRole,
       userName: context.userName,
@@ -31,7 +31,7 @@ export async function logActivity(params: {
       entityId: entityId || 'N/A',
       entityName: entityName || details || null,
       changes: changes || null,
-    };
+    } as InsertActivityLog;
 
     await storage.createActivityLog(logData);
   } catch (error) {

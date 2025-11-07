@@ -7,16 +7,18 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check, AlertTriangle, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import type { Service, BusinessSettings } from "@shared/schema";
+import type { Service, BusinessSettings, ServiceArea } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const timeSlots = ["8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 const propertySizes = ["Small (< 1000 sq ft)", "Medium (1000-2000 sq ft)", "Large (2000-3000 sq ft)", "Extra Large (> 3000 sq ft)"];
@@ -88,6 +90,9 @@ export function BookingForm() {
   const { toast } = useToast();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
+  const [zipCodeValid, setZipCodeValid] = useState<boolean | null>(null);
+  const [extractedZipCode, setExtractedZipCode] = useState<string>("");
+  const [showServiceAreas, setShowServiceAreas] = useState(false);
   const [formData, setFormData] = useState({
     service: "",
     propertySize: "",
@@ -115,8 +120,27 @@ export function BookingForm() {
     queryKey: ["/api/settings"],
   });
 
+  const { data: serviceAreas = [] } = useQuery<ServiceArea[]>({
+    queryKey: ["/api/service-areas"],
+  });
+
+  const extractZipCode = (address: string): string => {
+    const zipMatch = address.match(/\b\d{5}\b/);
+    return zipMatch ? zipMatch[0] : "";
+  };
+
   const updateFormData = (field: string, value: any) => {
     setFormData({ ...formData, [field]: value });
+    
+    if (field === "address") {
+      const zip = extractZipCode(value);
+      setExtractedZipCode(zip);
+      if (zip && zip.length === 5) {
+        checkZipCodeMutation.mutate(zip);
+      } else {
+        setZipCodeValid(null);
+      }
+    }
   };
 
   const createBookingMutation = useMutation({
@@ -158,6 +182,19 @@ export function BookingForm() {
         variant: "destructive",
       });
       setStep(3);
+    },
+  });
+
+  const checkZipCodeMutation = useMutation({
+    mutationFn: async (zipCode: string) => {
+      const res = await fetch(`/api/service-areas/check/${zipCode}`);
+      return await res.json();
+    },
+    onSuccess: (data: { served: boolean }) => {
+      setZipCodeValid(data.served);
+    },
+    onError: () => {
+      setZipCodeValid(null);
     },
   });
 
@@ -243,27 +280,27 @@ export function BookingForm() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           {[1, 2, 3, 4].map((s) => (
             <div key={s} className="flex items-center flex-1">
               <div
-                className={`h-10 w-10 rounded-full flex items-center justify-center font-semibold ${
+                className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center text-sm sm:text-base font-semibold ${
                   step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                 }`}
                 data-testid={`step-indicator-${s}`}
               >
-                {step > s ? <Check className="h-5 w-5" /> : s}
+                {step > s ? <Check className="h-4 w-4 sm:h-5 sm:w-5" /> : s}
               </div>
               {s < 4 && (
                 <div
-                  className={`flex-1 h-1 mx-2 ${step > s ? "bg-primary" : "bg-muted"}`}
+                  className={`flex-1 h-0.5 sm:h-1 mx-1 sm:mx-2 ${step > s ? "bg-primary" : "bg-muted"}`}
                 />
               )}
             </div>
           ))}
         </div>
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-xs sm:text-sm px-1">
           <span className={step >= 1 ? "text-foreground font-medium" : "text-muted-foreground"}>Service</span>
           <span className={step >= 2 ? "text-foreground font-medium" : "text-muted-foreground"}>Details</span>
           <span className={step >= 3 ? "text-foreground font-medium" : "text-muted-foreground"}>Contact</span>
@@ -271,7 +308,7 @@ export function BookingForm() {
         </div>
       </div>
 
-      <Card className="p-8">
+      <Card className="p-4 sm:p-6 md:p-8">
         {step === 1 && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Select Service</h2>
@@ -452,6 +489,48 @@ export function BookingForm() {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Contact Information</h2>
             
+            {serviceAreas.length > 0 && (
+              <div className="bg-primary/5 rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm mb-1">We serve these areas:</p>
+                    <p className="text-sm text-muted-foreground">
+                      {serviceAreas.filter(area => area.isActive).map(area => area.name).join(", ")}
+                    </p>
+                    <Collapsible open={showServiceAreas} onOpenChange={setShowServiceAreas}>
+                      <CollapsibleTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="p-0 h-auto mt-2 text-primary hover:text-primary/80"
+                          data-testid="button-toggle-service-areas"
+                        >
+                          {showServiceAreas ? "Hide" : "View"} zip codes
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2">
+                        <div className="space-y-2">
+                          {serviceAreas.filter(area => area.isActive).map(area => (
+                            <div key={area.id} className="text-sm">
+                              <span className="font-medium">{area.name}:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {area.zipCodes.map((zip, idx) => (
+                                  <span key={idx} className="inline-block bg-background border rounded px-2 py-0.5 text-xs">
+                                    {zip}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -491,8 +570,24 @@ export function BookingForm() {
                   id="address"
                   value={formData.address}
                   onChange={(e) => updateFormData("address", e.target.value)}
+                  placeholder="123 Main St, City, State 73102"
+                  className={zipCodeValid === false ? "border-destructive" : ""}
                   data-testid="input-address"
                 />
+                {extractedZipCode && zipCodeValid === false && (
+                  <Alert variant="destructive" data-testid="alert-zip-not-served">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Zip code {extractedZipCode} is not in our service area. We may not be able to fulfill your booking request.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {extractedZipCode && zipCodeValid === true && (
+                  <p className="text-sm text-primary flex items-center gap-1" data-testid="text-zip-valid">
+                    <Check className="h-3 w-3" />
+                    We serve your area!
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">

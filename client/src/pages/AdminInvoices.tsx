@@ -759,7 +759,7 @@ export default function AdminInvoices() {
                       Create Invoice
                     </Button>
                   </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {editingInvoice ? "Edit Invoice" : "Create New Invoice"}
@@ -1184,7 +1184,8 @@ export default function AdminInvoices() {
                   {searchQuery ? "No invoices match your search." : "No invoices found. Create your first invoice to get started."}
                 </div>
               ) : (
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Invoice Number</TableHead>
@@ -1260,6 +1261,7 @@ export default function AdminInvoices() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>

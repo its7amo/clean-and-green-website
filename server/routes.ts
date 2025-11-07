@@ -20,8 +20,10 @@ import {
   insertRecurringBookingSchema,
   insertJobPhotoSchema,
   insertEmailTemplateSchema,
+  insertServiceAreaSchema,
   type JobPhoto,
   type EmailTemplate,
+  type User,
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
@@ -3560,6 +3562,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Service area routes (admin)
+  app.get("/api/service-areas", isAuthenticated, async (_req, res) => {
+    try {
+      const serviceAreas = await storage.getServiceAreas();
+      res.json(serviceAreas);
+    } catch (error) {
+      console.error("Error fetching service areas:", error);
+      res.status(500).json({ error: "Failed to fetch service areas" });
+    }
+  });
+
+  app.post("/api/service-areas", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertServiceAreaSchema.parse(req.body);
+      const serviceArea = await storage.createServiceArea(validatedData);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'created',
+        entityType: 'service_area',
+        entityId: serviceArea.id,
+        entityName: serviceArea.name,
+      });
+
+      res.status(201).json(serviceArea);
+    } catch (error) {
+      console.error("Error creating service area:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create service area" });
+    }
+  });
+
+  app.patch("/api/service-areas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = insertServiceAreaSchema.partial().parse(req.body);
+      const serviceArea = await storage.updateServiceArea(id, updates);
+
+      if (!serviceArea) {
+        return res.status(404).json({ error: "Service area not found" });
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'service_area',
+        entityId: serviceArea.id,
+        entityName: serviceArea.name,
+      });
+
+      res.json(serviceArea);
+    } catch (error) {
+      console.error("Error updating service area:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update service area" });
+    }
+  });
+
+  app.delete("/api/service-areas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const serviceArea = await storage.getServiceArea(id);
+      
+      if (!serviceArea) {
+        return res.status(404).json({ error: "Service area not found" });
+      }
+
+      await storage.deleteServiceArea(id);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'deleted',
+        entityType: 'service_area',
+        entityId: id,
+        entityName: serviceArea.name,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting service area:", error);
+      res.status(500).json({ error: "Failed to delete service area" });
+    }
+  });
+
+  // Public service area endpoints
+  app.get("/api/public/service-areas", async (_req, res) => {
+    try {
+      const serviceAreas = await storage.getActiveServiceAreas();
+      res.json(serviceAreas);
+    } catch (error) {
+      console.error("Error fetching active service areas:", error);
+      res.status(500).json({ error: "Failed to fetch service areas" });
+    }
+  });
+
+  app.get("/api/service-areas/check/:zipCode", async (req, res) => {
+    try {
+      const { zipCode } = req.params;
+      const isServed = await storage.checkZipCodeInServiceArea(zipCode);
+      res.json({ served: isServed });
+    } catch (error) {
+      console.error("Error checking zip code:", error);
+      res.status(500).json({ error: "Failed to check zip code" });
+    }
+  });
+
   // Public endpoint to get banner settings
   app.get("/api/public/banner-settings", async (_req, res) => {
     try {
@@ -3707,8 +3819,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Note is required" });
       }
       
-      const createdBy = req.user?.id || 'admin';
-      const createdByName = req.user?.username || 'Admin';
+      const createdBy = (req.user as User)?.id || 'admin';
+      const createdByName = (req.user as User)?.username || 'Admin';
       
       const newNote = await storage.createCustomerNote({
         customerEmail: email,
@@ -3732,6 +3844,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting customer note:", error);
       res.status(500).json({ error: "Failed to delete note" });
+    }
+  });
+
+  // Customer CLV metrics endpoint
+  app.get("/api/customers/:id/metrics", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get customer
+      const customer = await storage.getCustomer(id);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      
+      // Get all data for this customer
+      const [bookings, quotes, invoices] = await Promise.all([
+        storage.getBookingsByEmail(customer.email),
+        storage.getQuotes().then(all => all.filter(q => q.email === customer.email)),
+        storage.getInvoices().then(all => all.filter(i => i.customerEmail === customer.email)),
+      ]);
+      
+      // Calculate total lifetime revenue (sum of all paid invoices)
+      const totalLifetimeRevenue = invoices
+        .filter(inv => inv.status === "paid")
+        .reduce((sum, inv) => sum + inv.total, 0);
+      
+      // Total counts
+      const totalBookings = bookings.length;
+      const totalQuotes = quotes.length;
+      
+      // Calculate average booking value (from paid invoices)
+      const paidInvoices = invoices.filter(inv => inv.status === "paid");
+      const avgBookingValue = paidInvoices.length > 0 
+        ? Math.round(totalLifetimeRevenue / paidInvoices.length) 
+        : 0;
+      
+      // Repeat rate (percentage of customers with more than 1 booking)
+      const repeatRate = totalBookings > 1 ? 100 : 0;
+      
+      // First and last booking dates
+      const sortedBookings = [...bookings].sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      const firstBookingDate = sortedBookings.length > 0 
+        ? sortedBookings[0].createdAt 
+        : customer.createdAt;
+      const lastBookingDate = sortedBookings.length > 0 
+        ? sortedBookings[sortedBookings.length - 1].createdAt 
+        : customer.createdAt;
+      
+      // Calculate days as customer
+      const firstDate = new Date(firstBookingDate);
+      const now = new Date();
+      const daysAsCustomer = Math.floor((now.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Customer status classification
+      let customerStatus: "New" | "Active" | "Loyal";
+      if (daysAsCustomer < 30) {
+        customerStatus = "New";
+      } else if (daysAsCustomer < 180) {
+        customerStatus = "Active";
+      } else {
+        customerStatus = "Loyal";
+      }
+      
+      res.json({
+        totalLifetimeRevenue,
+        totalBookings,
+        totalQuotes,
+        avgBookingValue,
+        repeatRate,
+        firstBookingDate,
+        lastBookingDate,
+        daysAsCustomer,
+        customerStatus,
+      });
+    } catch (error) {
+      console.error("Error fetching customer metrics:", error);
+      res.status(500).json({ error: "Failed to fetch customer metrics" });
     }
   });
 
@@ -3930,6 +4121,232 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting job photo:", error);
       res.status(500).json({ error: "Failed to delete job photo" });
+    }
+  });
+
+  // Analytics endpoints
+  app.get("/api/analytics/metrics", isAuthenticated, async (_req, res) => {
+    try {
+      const [bookings, invoices, customers] = await Promise.all([
+        storage.getBookings(),
+        storage.getInvoices(),
+        storage.getCustomers(),
+      ]);
+
+      // Calculate total revenue from paid invoices
+      const totalRevenue = invoices
+        .filter(inv => inv.status === "paid")
+        .reduce((sum, inv) => sum + inv.total, 0);
+
+      // Calculate average booking value (from completed bookings with invoices)
+      const paidInvoiceCount = invoices.filter(inv => inv.status === "paid").length;
+      const avgBookingValue = paidInvoiceCount > 0 ? totalRevenue / paidInvoiceCount : 0;
+
+      res.json({
+        totalRevenue,
+        avgBookingValue: Math.round(avgBookingValue),
+        totalCustomers: customers.length,
+        totalBookings: bookings.length,
+      });
+    } catch (error) {
+      console.error("Error fetching analytics metrics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics metrics" });
+    }
+  });
+
+  app.get("/api/analytics/revenue-trends", isAuthenticated, async (req, res) => {
+    try {
+      const period = (req.query.period as string) || "30";
+      const days = parseInt(period);
+      const invoices = await storage.getInvoices();
+
+      const now = new Date();
+      const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+      // Group by date
+      const revenueByDate: Record<string, number> = {};
+      
+      invoices
+        .filter(inv => inv.status === "paid" && new Date(inv.createdAt) >= startDate)
+        .forEach(inv => {
+          const date = new Date(inv.createdAt).toISOString().split('T')[0];
+          revenueByDate[date] = (revenueByDate[date] || 0) + inv.total;
+        });
+
+      // Convert to array and sort by date
+      const trends = Object.entries(revenueByDate)
+        .map(([date, revenue]) => ({ date, revenue }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      res.json(trends);
+    } catch (error) {
+      console.error("Error fetching revenue trends:", error);
+      res.status(500).json({ error: "Failed to fetch revenue trends" });
+    }
+  });
+
+  app.get("/api/analytics/booking-stats", isAuthenticated, async (_req, res) => {
+    try {
+      const bookings = await storage.getBookings();
+
+      const stats = {
+        pending: bookings.filter(b => b.status === "pending").length,
+        confirmed: bookings.filter(b => b.status === "confirmed").length,
+        completed: bookings.filter(b => b.status === "completed").length,
+        cancelled: bookings.filter(b => b.status === "cancelled").length,
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching booking stats:", error);
+      res.status(500).json({ error: "Failed to fetch booking stats" });
+    }
+  });
+
+  app.get("/api/analytics/top-services", isAuthenticated, async (_req, res) => {
+    try {
+      const [bookings, invoices] = await Promise.all([
+        storage.getBookings(),
+        storage.getInvoices(),
+      ]);
+
+      // Map invoices by booking ID for quick lookup
+      const invoicesByBooking: Record<string, number> = {};
+      invoices
+        .filter(inv => inv.status === "paid" && inv.bookingId)
+        .forEach(inv => {
+          if (inv.bookingId) {
+            invoicesByBooking[inv.bookingId] = inv.total;
+          }
+        });
+
+      // Calculate revenue per service
+      const serviceRevenue: Record<string, { revenue: number; count: number }> = {};
+      
+      bookings.forEach(booking => {
+        const revenue = invoicesByBooking[booking.id] || 0;
+        if (!serviceRevenue[booking.service]) {
+          serviceRevenue[booking.service] = { revenue: 0, count: 0 };
+        }
+        serviceRevenue[booking.service].revenue += revenue;
+        serviceRevenue[booking.service].count += 1;
+      });
+
+      // Convert to array and sort by revenue
+      const topServices = Object.entries(serviceRevenue)
+        .map(([service, data]) => ({
+          service,
+          revenue: data.revenue,
+          count: data.count,
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+
+      res.json(topServices);
+    } catch (error) {
+      console.error("Error fetching top services:", error);
+      res.status(500).json({ error: "Failed to fetch top services" });
+    }
+  });
+
+  app.get("/api/analytics/customer-acquisition", isAuthenticated, async (_req, res) => {
+    try {
+      const customers = await storage.getCustomers();
+
+      // Group customers by month
+      const customersByMonth: Record<string, number> = {};
+      
+      customers.forEach(customer => {
+        const date = new Date(customer.createdAt);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        customersByMonth[monthKey] = (customersByMonth[monthKey] || 0) + 1;
+      });
+
+      // Get last 12 months
+      const now = new Date();
+      const monthsData = [];
+      
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        
+        monthsData.push({
+          month: monthName,
+          count: customersByMonth[monthKey] || 0,
+        });
+      }
+
+      res.json(monthsData);
+    } catch (error) {
+      console.error("Error fetching customer acquisition:", error);
+      res.status(500).json({ error: "Failed to fetch customer acquisition" });
+    }
+  });
+
+  app.get("/api/analytics/top-customers", isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const [customers, invoices, bookings] = await Promise.all([
+        storage.getCustomers(),
+        storage.getInvoices(),
+        storage.getBookings(),
+      ]);
+
+      // Calculate lifetime revenue per customer
+      const customerMetrics: Record<string, { 
+        id: string;
+        name: string;
+        email: string;
+        lifetimeRevenue: number;
+        totalBookings: number;
+      }> = {};
+
+      // Initialize with all customers
+      customers.forEach(customer => {
+        customerMetrics[customer.email] = {
+          id: customer.id,
+          name: customer.name,
+          email: customer.email,
+          lifetimeRevenue: 0,
+          totalBookings: 0,
+        };
+      });
+
+      // Add revenue from paid invoices
+      invoices
+        .filter(inv => inv.status === "paid")
+        .forEach(inv => {
+          if (customerMetrics[inv.customerEmail]) {
+            customerMetrics[inv.customerEmail].lifetimeRevenue += inv.total;
+          }
+        });
+
+      // Add booking counts
+      bookings.forEach(booking => {
+        if (customerMetrics[booking.email]) {
+          customerMetrics[booking.email].totalBookings += 1;
+        }
+      });
+
+      // Convert to array, sort by revenue, and limit results
+      const topCustomers = Object.values(customerMetrics)
+        .filter(customer => customer.lifetimeRevenue > 0) // Only customers with revenue
+        .sort((a, b) => b.lifetimeRevenue - a.lifetimeRevenue)
+        .slice(0, limit)
+        .map(customer => ({
+          id: customer.id,
+          name: customer.name,
+          email: customer.email,
+          lifetimeRevenue: customer.lifetimeRevenue,
+          totalBookings: customer.totalBookings,
+        }));
+
+      res.json(topCustomers);
+    } catch (error) {
+      console.error("Error fetching top customers:", error);
+      res.status(500).json({ error: "Failed to fetch top customers" });
     }
   });
 

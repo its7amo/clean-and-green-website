@@ -14,12 +14,14 @@ import {
   UserCircle,
   Star,
   Mail,
-  UsersRound
+  UsersRound,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/admin/bookings", icon: Calendar, label: "Bookings" },
   { href: "/admin/quotes", icon: FileText, label: "Quotes" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },

@@ -308,6 +308,8 @@ export const invoices = pgTable("invoices", {
   dueDate: timestamp("due_date"),
   paidDate: timestamp("paid_date"),
   reviewEmailSent: boolean("review_email_sent").notNull().default(false),
+  lastReminderSentAt: timestamp("last_reminder_sent_at"),
+  reminderCount: integer("reminder_count").notNull().default(0),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
@@ -530,3 +532,20 @@ export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit
 
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
+
+// Service areas for zip code validation
+export const serviceAreas = pgTable("service_areas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  zipCodes: text("zip_codes").array().notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertServiceAreaSchema = createInsertSchema(serviceAreas).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertServiceArea = z.infer<typeof insertServiceAreaSchema>;
+export type ServiceArea = typeof serviceAreas.$inferSelect;

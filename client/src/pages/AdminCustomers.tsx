@@ -407,6 +407,7 @@ export default function AdminCustomers() {
                 {searchQuery ? "No customers match your search." : "No customers found. Add your first customer to get started."}
               </div>
             ) : (
+              <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -428,7 +429,7 @@ export default function AdminCustomers() {
                     </TableHeader>
                     <TableBody>
                       {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id} data-testid={`row-customer-${customer.id}`}>
+                        <TableRow key={customer.id} data-testid={`row-customer-${customer.id}`}>
                       <TableCell>
                         <Checkbox
                           checked={selectedCustomers.has(customer.id)}
@@ -490,10 +491,11 @@ export default function AdminCustomers() {
                           </Button>
                         </div>
                       </TableCell>
-                      </TableRow>
-                    ))}
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
+              </div>
             )}
           </CardContent>
         </Card>

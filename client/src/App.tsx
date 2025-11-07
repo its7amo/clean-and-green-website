@@ -19,6 +19,7 @@ import Login from "@/pages/Login";
 import SetupAdmin from "@/pages/SetupAdmin";
 import Admin from "@/pages/Admin";
 import AdminBookings from "@/pages/AdminBookings";
+import AdminCalendar from "@/pages/AdminCalendar";
 import AdminCancellations from "@/pages/AdminCancellations";
 import AdminQuotes from "@/pages/AdminQuotes";
 import AdminInvoices from "@/pages/AdminInvoices";
@@ -36,6 +37,7 @@ import AdminTeam from "@/pages/AdminTeam";
 import AdminContactMessages from "@/pages/AdminContactMessages";
 import AdminActivityLogs from "@/pages/AdminActivityLogs";
 import AdminPromoCodes from "@/pages/AdminPromoCodes";
+import AdminServiceAreas from "@/pages/AdminServiceAreas";
 import AdminRecurringBookings from "@/pages/AdminRecurringBookings";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import EmployeeLogin from "@/pages/EmployeeLogin";
@@ -157,6 +159,9 @@ function Router() {
       <Route path="/admin/bookings">
         <ProtectedRoute component={AdminBookings} />
       </Route>
+      <Route path="/admin/calendar">
+        <ProtectedRoute component={AdminCalendar} />
+      </Route>
       <Route path="/admin/cancellations">
         <ProtectedRoute component={AdminCancellations} />
       </Route>
@@ -207,6 +212,9 @@ function Router() {
       </Route>
       <Route path="/admin/promo-codes">
         <ProtectedRoute component={AdminPromoCodes} />
+      </Route>
+      <Route path="/admin/service-areas">
+        <ProtectedRoute component={AdminServiceAreas} />
       </Route>
       <Route path="/admin/recurring-bookings">
         <ProtectedRoute component={AdminRecurringBookings} />

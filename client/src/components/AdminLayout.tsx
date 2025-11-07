@@ -18,6 +18,7 @@ import {
 import {
   LayoutDashboard,
   Calendar,
+  CalendarDays,
   FileText,
   Users,
   Settings,
@@ -36,17 +37,20 @@ import {
   AlertTriangle,
   Tag,
   Repeat,
+  MapPin,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/bookings", icon: Calendar, label: "Bookings" },
+  { href: "/admin/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/admin/recurring-bookings", icon: Repeat, label: "Recurring Bookings" },
   { href: "/admin/cancellations", icon: AlertTriangle, label: "Cancellations" },
   { href: "/admin/quotes", icon: FileText, label: "Quotes" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/promo-codes", icon: Tag, label: "Promo Codes" },
+  { href: "/admin/service-areas", icon: MapPin, label: "Service Areas" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
   { href: "/admin/employees", icon: UserCircle, label: "Employees" },
   { href: "/admin/reviews", icon: Star, label: "Reviews" },
