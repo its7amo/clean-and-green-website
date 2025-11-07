@@ -27,11 +27,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Eye, Edit, Trash2, UserPlus, Mail, Search } from "lucide-react";
+import { Loader2, Eye, Edit, Trash2, UserPlus, Mail, Search, Download } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Customer, EmailTemplate } from "@shared/schema";
+import { exportToCSV } from "@/lib/csvExport";
 import {
   Select,
   SelectContent,
@@ -313,6 +314,31 @@ export default function AdminCustomers() {
     });
   };
 
+  const handleExportCSV = () => {
+    exportToCSV({
+      filename: `customers-${format(new Date(), 'yyyy-MM-dd')}`,
+      data: filteredCustomers,
+      columns: [
+        { key: 'name', header: 'Name' },
+        { key: 'email', header: 'Email', format: (v) => v || '' },
+        { key: 'phone', header: 'Phone', format: (v) => v || '' },
+        { key: 'address', header: 'Address', format: (v) => v || '' },
+        { key: 'totalBookings', header: 'Total Bookings', format: (v) => v || '0' },
+        { key: 'totalQuotes', header: 'Total Quotes', format: (v) => v || '0' },
+        { key: 'totalInvoices', header: 'Total Invoices', format: (v) => v || '0' },
+        { 
+          key: 'createdAt', 
+          header: 'Created Date', 
+          format: (v) => v ? format(new Date(v), 'yyyy-MM-dd') : '' 
+        },
+      ],
+    });
+    toast({
+      title: "CSV Exported",
+      description: `Exported ${filteredCustomers.length} customer(s) to CSV.`,
+    });
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -320,10 +346,20 @@ export default function AdminCustomers() {
           <h1 className="text-3xl font-bold" data-testid="text-page-title">
             Customers
           </h1>
-          <Button onClick={handleCreate} data-testid="button-create-customer">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Customer
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleExportCSV} 
+              variant="outline"
+              data-testid="button-export-csv"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button onClick={handleCreate} data-testid="button-create-customer">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Customer
+            </Button>
+          </div>
         </div>
 
         {selectedCustomers.size > 0 && (

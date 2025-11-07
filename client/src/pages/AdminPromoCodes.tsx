@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Search } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +57,7 @@ export default function AdminPromoCodes() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPromoCode, setEditingPromoCode] = useState<PromoCode | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: promoCodes, isLoading } = useQuery<PromoCode[]>({
     queryKey: ["/api/promo-codes"],
@@ -187,6 +188,11 @@ export default function AdminPromoCodes() {
       form.reset();
     }
   };
+
+  const filteredPromoCodes = promoCodes?.filter(promoCode =>
+    promoCode.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    promoCode.description.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   return (
     <AdminLayout>
@@ -381,12 +387,24 @@ export default function AdminPromoCodes() {
         <CardHeader>
           <CardTitle>All Promo Codes</CardTitle>
         </CardHeader>
+        <div className="p-6 border-b">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by promo code or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+              data-testid="input-search-promos"
+            />
+          </div>
+        </div>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8">Loading...</div>
-          ) : !promoCodes || promoCodes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No promo codes yet. Create one to get started!
+          ) : filteredPromoCodes.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground" data-testid="text-no-promos">
+              {searchQuery ? "No promo codes match your search." : "No promo codes yet. Create one to get started!"}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -403,7 +421,7 @@ export default function AdminPromoCodes() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {promoCodes.map((promoCode) => (
+                  {filteredPromoCodes.map((promoCode) => (
                     <TableRow key={promoCode.id} data-testid={`row-promo-${promoCode.id}`}>
                       <TableCell className="font-mono font-bold" data-testid={`text-code-${promoCode.id}`}>
                         {promoCode.code}

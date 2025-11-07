@@ -6,13 +6,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, CheckCircle, XCircle, Users, Trash2, Camera, DollarSign, Edit2, Search } from "lucide-react";
+import { Eye, CheckCircle, XCircle, Users, Trash2, Camera, DollarSign, Edit2, Search, Mail, Download } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import type { Booking, Employee, PromoCode } from "@shared/schema";
+import { exportToCSV } from "@/lib/csvExport";
+import { format } from "date-fns";
 
 const statusColors = {
   pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
@@ -37,6 +40,10 @@ export function BookingsTable() {
   const [actualPriceInput, setActualPriceInput] = useState<string>("");
   const [editingPromoCode, setEditingPromoCode] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
@@ -124,6 +131,30 @@ export function BookingsTable() {
     },
   });
 
+  const sendBulkEmailMutation = useMutation({
+    mutationFn: async ({ bookingIds, subject, message }: { bookingIds: string[]; subject: string; message: string }) => {
+      const res = await apiRequest("POST", "/api/bookings/send-email", { bookingIds, subject, message });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setIsEmailDialogOpen(false);
+      setEmailSubject("");
+      setEmailMessage("");
+      setSelectedBookings([]);
+      toast({
+        title: "Emails sent successfully",
+        description: `Sent to ${data.sent} customer(s)${data.skipped > 0 ? `, skipped ${data.skipped} without email` : ''}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send emails",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
   const removePromoCodeMutation = useMutation({
     mutationFn: async (bookingId: string) => {
       const res = await apiRequest("DELETE", `/api/bookings/${bookingId}/promo-code`, {});
@@ -194,6 +225,87 @@ export function BookingsTable() {
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allBookingIds = filteredBookings.map(b => b.id);
+      setSelectedBookings(allBookingIds);
+    } else {
+      setSelectedBookings([]);
+    }
+  };
+
+  const handleSelectBooking = (bookingId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBookings(prev => [...prev, bookingId]);
+    } else {
+      setSelectedBookings(prev => prev.filter(id => id !== bookingId));
+    }
+  };
+
+  const handleSendBulkEmail = () => {
+    if (selectedBookings.length === 0) {
+      toast({ title: "Please select at least one booking", variant: "destructive" });
+      return;
+    }
+    if (!emailSubject.trim() || !emailMessage.trim()) {
+      toast({ title: "Please fill in subject and message", variant: "destructive" });
+      return;
+    }
+    sendBulkEmailMutation.mutate({
+      bookingIds: selectedBookings,
+      subject: emailSubject,
+      message: emailMessage,
+    });
+  };
+
+  const handleExportCSV = () => {
+    exportToCSV({
+      filename: `bookings-${format(new Date(), 'yyyy-MM-dd')}`,
+      data: filteredBookings,
+      columns: [
+        { key: 'name', header: 'Customer Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone', format: (v) => v || '' },
+        { key: 'address', header: 'Address', format: (v) => v || '' },
+        { 
+          key: 'service', 
+          header: 'Service', 
+          format: (v) => serviceNames[v] || v 
+        },
+        { key: 'propertySize', header: 'Property Size', format: (v) => v || '' },
+        { key: 'date', header: 'Date' },
+        { key: 'timeSlot', header: 'Time' },
+        { key: 'status', header: 'Status' },
+        { 
+          key: 'assignedEmployeeIds', 
+          header: 'Assigned Employees', 
+          format: (v) => {
+            if (!v || !Array.isArray(v) || v.length === 0) return '0';
+            const employeeNames = v.map(id => {
+              const emp = employees?.find(e => e.id === id);
+              return emp ? emp.name : id;
+            }).join(', ');
+            return employeeNames || v.length.toString();
+          }
+        },
+        { 
+          key: 'promoCode', 
+          header: 'Promo Code', 
+          format: (v) => v || '' 
+        },
+        { 
+          key: 'discountAmount', 
+          header: 'Discount', 
+          format: (v) => v ? `$${(v / 100).toFixed(2)}` : '' 
+        },
+      ],
+    });
+    toast({
+      title: "CSV Exported",
+      description: `Exported ${filteredBookings.length} booking(s) to CSV.`,
+    });
+  };
+
   if (isLoading) {
     return (
       <Card className="p-8 text-center">
@@ -221,8 +333,17 @@ export function BookingsTable() {
   return (
     <>
       <Card>
-        <div className="p-6 border-b">
+        <div className="p-6 border-b flex justify-between items-center">
           <h3 className="text-lg font-semibold">Recent Bookings</h3>
+          <Button 
+            onClick={handleExportCSV} 
+            variant="outline" 
+            size="sm"
+            data-testid="button-export-bookings-csv"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
         </div>
         <div className="p-6 border-b">
           <div className="relative">
@@ -236,6 +357,26 @@ export function BookingsTable() {
             />
           </div>
         </div>
+        {selectedBookings.length > 0 && (
+          <div className="p-6 border-b bg-muted/50">
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setIsEmailDialogOpen(true)}
+                data-testid="button-send-bulk-email"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Send Email ({selectedBookings.length} selected)
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setSelectedBookings([])}
+                data-testid="button-clear-selection"
+              >
+                Clear Selection
+              </Button>
+            </div>
+          </div>
+        )}
         {filteredBookings.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-muted-foreground" data-testid="text-no-bookings">
@@ -247,6 +388,13 @@ export function BookingsTable() {
             <table className="w-full">
               <thead className="bg-muted/50">
             <tr>
+              <th className="px-4 py-3">
+                <Checkbox
+                  checked={filteredBookings.length > 0 && selectedBookings.length === filteredBookings.length}
+                  onCheckedChange={handleSelectAll}
+                  data-testid="checkbox-select-all-bookings"
+                />
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Customer
               </th>
@@ -273,6 +421,13 @@ export function BookingsTable() {
           <tbody className="divide-y">
             {filteredBookings.map((booking) => (
               <tr key={booking.id} className="hover-elevate" data-testid={`booking-row-${booking.id}`}>
+                <td className="px-4 py-4">
+                  <Checkbox
+                    checked={selectedBookings.includes(booking.id)}
+                    onCheckedChange={(checked) => handleSelectBooking(booking.id, checked as boolean)}
+                    data-testid={`checkbox-booking-${booking.id}`}
+                  />
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium">{booking.name}</div>
                   <div className="text-xs text-muted-foreground">{booking.email}</div>
@@ -646,6 +801,56 @@ export function BookingsTable() {
           }}
         />
       )}
+
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent data-testid="dialog-bulk-email">
+          <DialogHeader>
+            <DialogTitle>Send Bulk Email</DialogTitle>
+            <DialogDescription>
+              Compose an email to send to {selectedBookings.length} selected booking{selectedBookings.length !== 1 ? 's' : ''} customer{selectedBookings.length !== 1 ? 's' : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="email-subject">Subject</Label>
+              <Input
+                id="email-subject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Email subject"
+                data-testid="input-email-subject"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email-message">Message</Label>
+              <Textarea
+                id="email-message"
+                value={emailMessage}
+                onChange={(e) => setEmailMessage(e.target.value)}
+                placeholder="Email message"
+                rows={6}
+                data-testid="input-email-message"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEmailDialogOpen(false)}
+              data-testid="button-cancel-email"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendBulkEmail}
+              disabled={sendBulkEmailMutation.isPending}
+              data-testid="button-send-email-confirm"
+            >
+              {sendBulkEmailMutation.isPending ? "Sending..." : "Send Email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

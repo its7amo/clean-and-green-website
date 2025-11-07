@@ -16,9 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Invoice, Booking, BusinessSettings, Service } from "@shared/schema";
-import { Loader2, Plus, Pencil, Trash2, Download, Calculator } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Download, Calculator, Search } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
+import { exportToCSV } from "@/lib/csvExport";
 
 const invoiceFormSchema = z.object({
   invoiceNumber: z.string().min(1, "Invoice number is required"),
@@ -63,6 +64,7 @@ export default function AdminInvoices() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
@@ -674,6 +676,64 @@ export default function AdminInvoices() {
     }
   };
 
+  const handleExportCSV = () => {
+    exportToCSV({
+      filename: `invoices-${format(new Date(), 'yyyy-MM-dd')}`,
+      data: filteredInvoices,
+      columns: [
+        { key: 'invoiceNumber', header: 'Invoice Number' },
+        { key: 'customerName', header: 'Customer Name' },
+        { key: 'customerEmail', header: 'Email' },
+        { key: 'customerPhone', header: 'Phone' },
+        { key: 'customerAddress', header: 'Address' },
+        { key: 'serviceDescription', header: 'Service' },
+        { 
+          key: 'amount', 
+          header: 'Amount', 
+          format: (v) => `$${(v / 100).toFixed(2)}` 
+        },
+        { 
+          key: 'discountAmount', 
+          header: 'Discount', 
+          format: (v) => v ? `$${(v / 100).toFixed(2)}` : '' 
+        },
+        { 
+          key: 'tax', 
+          header: 'Tax', 
+          format: (v) => `$${(v / 100).toFixed(2)}` 
+        },
+        { 
+          key: 'total', 
+          header: 'Total', 
+          format: (v) => `$${(v / 100).toFixed(2)}` 
+        },
+        { key: 'status', header: 'Status' },
+        { 
+          key: 'dueDate', 
+          header: 'Due Date', 
+          format: (v) => v ? format(new Date(v), 'yyyy-MM-dd') : '' 
+        },
+        { 
+          key: 'createdAt', 
+          header: 'Created Date', 
+          format: (v) => format(new Date(v), 'yyyy-MM-dd') 
+        },
+      ],
+    });
+    toast({
+      title: "CSV Exported",
+      description: `Exported ${filteredInvoices.length} invoice(s) to CSV.`,
+    });
+  };
+
+  const filteredInvoices = invoices?.filter(invoice =>
+    invoice.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invoice.customerEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invoice.customerPhone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invoice.customerAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -683,13 +743,22 @@ export default function AdminInvoices() {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4">
               <CardTitle>Manage Invoices</CardTitle>
-              <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
-                <DialogTrigger asChild>
-                  <Button data-testid="button-create-invoice">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Invoice
-                  </Button>
-                </DialogTrigger>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleExportCSV} 
+                  variant="outline"
+                  data-testid="button-export-invoices-csv"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export CSV
+                </Button>
+                <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
+                  <DialogTrigger asChild>
+                    <Button data-testid="button-create-invoice">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Invoice
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
@@ -1091,15 +1160,28 @@ export default function AdminInvoices() {
                   </Form>
                 </DialogContent>
               </Dialog>
+              </div>
             </CardHeader>
+            <div className="p-6 border-b">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by customer name, email, phone, address, or invoice number..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                  data-testid="input-search-invoices"
+                />
+              </div>
+            </div>
             <CardContent>
               {isLoading ? (
                 <div className="flex justify-center p-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : invoices.length === 0 ? (
+              ) : filteredInvoices.length === 0 ? (
                 <div className="text-center p-8 text-muted-foreground" data-testid="text-no-invoices">
-                  No invoices found. Create your first invoice to get started.
+                  {searchQuery ? "No invoices match your search." : "No invoices found. Create your first invoice to get started."}
                 </div>
               ) : (
                 <Table>
@@ -1117,7 +1199,7 @@ export default function AdminInvoices() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invoices.map((invoice) => (
+                    {filteredInvoices.map((invoice) => (
                       <TableRow key={invoice.id} data-testid={`row-invoice-${invoice.id}`}>
                         <TableCell className="font-medium" data-testid={`text-invoice-number-${invoice.id}`}>
                           {invoice.invoiceNumber}

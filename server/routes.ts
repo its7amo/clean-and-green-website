@@ -3292,6 +3292,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send bulk email to booking customers
+  app.post("/api/bookings/send-email", isAuthenticated, async (req, res) => {
+    try {
+      const { bookingIds, subject, message } = req.body;
+      
+      if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
+        return res.status(400).json({ error: "Booking IDs must be a non-empty array" });
+      }
+      
+      if (!subject || !message) {
+        return res.status(400).json({ error: "Subject and message are required" });
+      }
+
+      const allBookings = await storage.getBookings();
+      const selectedBookings = allBookings.filter(b => bookingIds.includes(b.id));
+
+      if (selectedBookings.length === 0) {
+        return res.status(404).json({ error: "No bookings found" });
+      }
+
+      // Filter bookings with valid email addresses
+      const bookingsWithEmail = selectedBookings.filter(b => b.email && b.email.trim() !== '');
+      const bookingsWithoutEmail = selectedBookings.filter(b => !b.email || b.email.trim() === '');
+
+      if (bookingsWithoutEmail.length > 0) {
+        console.warn(`Skipping ${bookingsWithoutEmail.length} booking(s) without email addresses:`, 
+          bookingsWithoutEmail.map(b => b.name).join(', '));
+      }
+
+      if (bookingsWithEmail.length === 0) {
+        return res.status(400).json({ error: "None of the selected bookings have email addresses" });
+      }
+
+      // Send emails to each customer
+      const emailPromises = bookingsWithEmail.map(async (booking) => {
+        try {
+          await resend.emails.send({
+            from: 'Clean & Green <noreply@voryn.store>',
+            to: booking.email!,
+            subject: subject,
+            html: `
+              <h2>Message from Clean & Green</h2>
+              <p>Hi ${escapeHtml(booking.name)},</p>
+              <div style="white-space: pre-wrap;">${escapeHtml(message)}</div>
+              <br>
+              <p>Best regards,<br>Clean & Green Team</p>
+            `,
+          });
+        } catch (error) {
+          console.error(`Failed to send email to ${booking.email}:`, error);
+        }
+      });
+
+      await Promise.all(emailPromises);
+
+      // Log activity
+      await logActivity({
+        context: getUserContext(req),
+        action: 'sent_bulk_email',
+        entityType: 'booking',
+        details: `Sent email to ${bookingsWithEmail.length} booking customer(s). Subject: "${subject}"`,
+      });
+
+      res.json({ 
+        success: true, 
+        sent: bookingsWithEmail.length,
+        skipped: bookingsWithoutEmail.length
+      });
+    } catch (error) {
+      console.error("Error sending emails to booking customers:", error);
+      res.status(500).json({ error: "Failed to send emails" });
+    }
+  });
+
   // Activity log routes
   app.get("/api/activity-logs", isAuthenticated, async (req, res) => {
     try {

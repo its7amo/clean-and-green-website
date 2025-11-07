@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Eye, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Eye, CheckCircle, XCircle, Trash2, Search } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,7 @@ export function QuotesTable() {
   const { toast } = useToast();
   const [viewDialogOpen, setViewDialogOpen] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: quotes, isLoading } = useQuery<Quote[]>({
     queryKey: ["/api/quotes"],
@@ -74,6 +76,14 @@ export function QuotesTable() {
     );
   }
 
+  const filteredQuotes = quotes?.filter(quote =>
+    quote.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    quote.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (quote.phone && quote.phone.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (quote.address && quote.address.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    quote.serviceType.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   if (!quotes || quotes.length === 0) {
     return (
       <Card className="p-8 text-center">
@@ -83,104 +93,126 @@ export function QuotesTable() {
   }
 
   return (
-    <Card>
-      <div className="p-6 border-b">
-        <h3 className="text-lg font-semibold">Quote Requests</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Customer
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Service Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Property Size
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Contact
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {quotes.map((quote) => (
-              <tr key={quote.id} className="hover-elevate" data-testid={`quote-row-${quote.id}`}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="font-medium">{quote.name}</div>
-                  <div className="text-xs text-muted-foreground">{quote.email}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm max-w-xs">{quote.serviceType}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm">{quote.propertySize}</div>
-                  {quote.customSize && (
-                    <div className="text-xs text-muted-foreground">{quote.customSize} sq ft</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Badge className={statusColors[quote.status as keyof typeof statusColors]}>
-                    {quote.status}
-                  </Badge>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm">{quote.phone}</div>
-                  <div className="text-xs text-muted-foreground">{quote.address}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex gap-2">
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      onClick={() => setViewDialogOpen(quote.id)}
-                      data-testid={`button-view-quote-${quote.id}`}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    {quote.status === "pending" && (
-                      <>
+    <>
+      <Card>
+        <div className="p-6 border-b">
+          <h3 className="text-lg font-semibold">Quote Requests</h3>
+        </div>
+        <div className="p-6 border-b">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by customer name, email, phone, address, or service type..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+              data-testid="input-search-quotes"
+            />
+          </div>
+        </div>
+        {filteredQuotes.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground" data-testid="text-no-quotes">
+              {searchQuery ? "No quotes match your search." : "No quote requests yet"}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Service Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Property Size
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {filteredQuotes.map((quote) => (
+                  <tr key={quote.id} className="hover-elevate" data-testid={`quote-row-${quote.id}`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium">{quote.name}</div>
+                      <div className="text-xs text-muted-foreground">{quote.email}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm max-w-xs">{quote.serviceType}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">{quote.propertySize}</div>
+                      {quote.customSize && (
+                        <div className="text-xs text-muted-foreground">{quote.customSize} sq ft</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Badge className={statusColors[quote.status as keyof typeof statusColors]}>
+                        {quote.status}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">{quote.phone}</div>
+                      <div className="text-xs text-muted-foreground">{quote.address}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-2">
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          onClick={() => handleStatusUpdate(quote.id, "approved")}
-                          data-testid={`button-approve-quote-${quote.id}`}
+                          onClick={() => setViewDialogOpen(quote.id)}
+                          data-testid={`button-view-quote-${quote.id}`}
                         >
-                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <Eye className="h-4 w-4" />
                         </Button>
+                        {quote.status === "pending" && (
+                          <>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              onClick={() => handleStatusUpdate(quote.id, "approved")}
+                              data-testid={`button-approve-quote-${quote.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              onClick={() => handleStatusUpdate(quote.id, "rejected")}
+                              data-testid={`button-reject-quote-${quote.id}`}
+                            >
+                              <XCircle className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </>
+                        )}
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          onClick={() => handleStatusUpdate(quote.id, "rejected")}
-                          data-testid={`button-reject-quote-${quote.id}`}
+                          onClick={() => setDeleteDialogOpen(quote.id)}
+                          data-testid={`button-delete-quote-${quote.id}`}
                         >
-                          <XCircle className="h-4 w-4 text-red-600" />
+                          <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
-                      </>
-                    )}
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      onClick={() => setDeleteDialogOpen(quote.id)}
-                      data-testid={`button-delete-quote-${quote.id}`}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
       {/* View Quote Dialog */}
       <Dialog open={viewDialogOpen !== null} onOpenChange={(open) => !open && setViewDialogOpen(null)}>
@@ -245,6 +277,7 @@ export function QuotesTable() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Quote Dialog */}
       <Dialog open={deleteDialogOpen !== null} onOpenChange={(open) => !open && setDeleteDialogOpen(null)}>
         <DialogContent data-testid="dialog-delete-quote">
           <DialogHeader>
@@ -272,6 +305,6 @@ export function QuotesTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 }
