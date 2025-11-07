@@ -23,7 +23,20 @@ Clean and Green is a professional cleaning service booking platform focused on e
 - **Search Functionality**: 
   - Customers table: Search by name, email, or phone number with instant filtering
   - Bookings table: Search by customer name, email, phone, address, or service type
+  - Quotes table: Search by customer name, email, phone, address, or service type
+  - Invoices table: Search by customer name, email, phone, address, or invoice number
+  - Promo Codes table: Search by code or description
   - "Select All" checkbox respects active search filters
+- **Bulk Actions**:
+  - Select All checkbox in Bookings table (respects search filters)
+  - Bulk email functionality for sending emails to multiple booking customers
+  - Clear selection functionality after bulk actions
+- **CSV Export**:
+  - Export Customers to CSV (all filtered customers with name, email, phone, address, created date)
+  - Export Bookings to CSV (filtered bookings with customer info, service, date, time, status, employees)
+  - Export Invoices to CSV (filtered invoices with invoice number, customer, service, amounts, status, due date)
+  - Currency values automatically converted from cents to dollars in exports
+  - All exports respect active search filters
 - **Chronological Ordering**: Both customers and bookings automatically display newest entries first (descending by creation date)
 
 ## User Preferences
