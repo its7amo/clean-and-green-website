@@ -10,6 +10,18 @@ Clean and Green is a professional cleaning service booking platform focused on e
 - **Promo Banner**: Automatically displays active promo codes on the homepage with dismissible functionality (7-day localStorage)
 - **Social Proof System**: Live recent bookings ticker, animated statistics counter, and featured before/after photo gallery
 - **30-Day Follow-Up Automation**: Automated email system that sends "Book Again" emails to customers 30 days after service completion
+- **Tiered Referral Program**: Complete customer referral system with automated rewards
+  - **Tiered Rewards Structure**: Progressive rewards for successful referrals
+    - 1st successful referral: $10 credit for both referrer and referee
+    - 2nd successful referral: $15 credit for both parties
+    - 3rd+ successful referrals: $20 credit for both parties
+  - **Auto-Generated Referral Codes**: Codes automatically created after customer's first completed booking (format: FIRSTNAME + 4 random digits, e.g., "JOHN1234")
+  - **Booking Form Integration**: Real-time referral code validation during booking with referrer name display and discount preview
+  - **Customer Portal Dashboard**: Comprehensive referral tracking with unique code display, tier progress visualization, available credits balance, social share buttons, and complete referral history
+  - **Automated Credit System**: Background scheduler (runs every 5 minutes) automatically generates codes and credits referrers when referrals complete bookings
+  - **Email Notifications**: Welcome email when code is generated, celebration email when credits are earned with tier milestone recognition, and confirmation email when credits are used
+  - **Manual Invoice Integration**: Designed to work with admin manual invoice workflow with referral discount and credit suggestions
+  - **Minimum Qualifying Service**: $50 minimum service price to qualify for referral program participation
 
 **Admin Tools:**
 - **Analytics Dashboard**: Comprehensive business intelligence with interactive charts and downloadable reports
@@ -115,7 +127,7 @@ The backend is built with Express.js and TypeScript, using ESM modules. It provi
 
 PostgreSQL (via Neon for serverless deployment) is the database, with Drizzle ORM for type-safe queries and migrations. The database schema includes tables for:
 - **Users**: Authentication and admin management.
-- **Bookings**: Customer cleaning service bookings with status workflow.
+- **Bookings**: Customer cleaning service bookings with status workflow, includes referralCode column for tracking referral source.
 - **Quotes**: Custom quote requests with status workflow.
 - **Contact Messages**: Customer contact form submissions with status workflow.
 - **Promo Codes**: Management of discount codes with usage tracking.
@@ -123,8 +135,11 @@ PostgreSQL (via Neon for serverless deployment) is the database, with Drizzle OR
 - **Job Photos**: Before/after photos for completed jobs.
 - **Email Templates**: Reusable email templates with name, category, subject, and body fields for bulk communications.
 - **Service Areas**: Geographic coverage with region names and zip code arrays for service area validation.
-- **Invoices**: Enhanced with lastReminderSentAt and reminderCount for automated payment reminders.
-- **Customers**: Comprehensive customer records with CLV tracking integration.
+- **Invoices**: Enhanced with lastReminderSentAt and reminderCount for automated payment reminders, plus referralDiscountApplied and creditsApplied for referral program integration.
+- **Customers**: Comprehensive customer records with CLV tracking integration, includes unique referralCode column for personal referral codes.
+- **Referrals**: Tracks all referral relationships with status (pending/completed/credited) and tier level for progressive rewards.
+- **Referral Credits**: Stores customer credit balances and transaction history for referral program.
+- **Referral Settings**: Global configuration for referral program (minimum service price, tier rewards).
 - **Business Settings**: Extended with payment reminder template fields (paymentReminderEnabled, paymentReminder3DaySubject/Body, paymentReminder7DaySubject/Body, paymentReminder14DaySubject/Body) for customizable automated email templates.
 Zod schemas are generated from Drizzle tables for runtime validation and type inference.
 
