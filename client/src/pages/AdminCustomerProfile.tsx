@@ -33,17 +33,19 @@ export default function AdminCustomerProfile() {
   const [newNote, setNewNote] = useState("");
   const { toast } = useToast();
 
+  const profileUrl = `/api/customers/${encodeURIComponent(email)}/profile`;
+
   const { data: profile, isLoading } = useQuery<CustomerProfile>({
-    queryKey: ["/api/customers", email, "/profile"],
+    queryKey: [profileUrl],
   });
 
   const addNoteMutation = useMutation({
     mutationFn: async (note: string) => {
-      const res = await apiRequest("POST", `/api/customers/${email}/notes`, { note });
+      const res = await apiRequest("POST", `/api/customers/${encodeURIComponent(email)}/notes`, { note });
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["/api/customers", email, "/profile"] });
+      queryClient.refetchQueries({ queryKey: [profileUrl] });
       setNewNote("");
       toast({ title: "Note added successfully" });
     },
@@ -54,7 +56,7 @@ export default function AdminCustomerProfile() {
       await apiRequest("DELETE", `/api/customers/notes/${noteId}`);
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["/api/customers", email, "/profile"] });
+      queryClient.refetchQueries({ queryKey: [profileUrl] });
       toast({ title: "Note deleted" });
     },
   });
