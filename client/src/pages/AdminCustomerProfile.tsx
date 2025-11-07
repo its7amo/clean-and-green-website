@@ -43,7 +43,7 @@ export default function AdminCustomerProfile() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", email, "/profile"] });
+      queryClient.refetchQueries({ queryKey: ["/api/customers", email, "/profile"] });
       setNewNote("");
       toast({ title: "Note added successfully" });
     },
@@ -54,7 +54,7 @@ export default function AdminCustomerProfile() {
       await apiRequest("DELETE", `/api/customers/notes/${noteId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", email, "/profile"] });
+      queryClient.refetchQueries({ queryKey: ["/api/customers", email, "/profile"] });
       toast({ title: "Note deleted" });
     },
   });
