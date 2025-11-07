@@ -4,6 +4,17 @@
 
 Clean and Green is a professional cleaning service booking platform focused on eco-friendly cleaning solutions in Oklahoma. It enables customers to book residential, commercial, and deep cleaning services online or request custom quotes. The platform also includes an admin dashboard for managing bookings, quotes, business metrics, customer reviews, newsletters, and team directories. The core purpose is to streamline the booking process for eco-friendly cleaning services, build customer trust, and provide efficient business management tools.
 
+### Recent Enhancements (November 2025)
+
+**Customer Engagement Features:**
+- **Promo Banner**: Automatically displays active promo codes on the homepage with dismissible functionality (7-day localStorage)
+- **Social Proof System**: Live recent bookings ticker, animated statistics counter, and featured before/after photo gallery
+- **30-Day Follow-Up Automation**: Automated email system that sends "Book Again" emails to customers 30 days after service completion
+
+**Admin Tools:**
+- **Customer Profile System**: Comprehensive customer history view with booking/quote/invoice tracking, custom notes, and customer lifetime value metrics
+- **Customer Notes**: Admins can add and manage notes about customer preferences, special requests, allergies, and gate codes
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -37,9 +48,9 @@ Authentication uses Passport.js with a Local Strategy (username/password) and Ex
 
 ### Page Structure & Routing
 
-**Public Pages**: Include Home, Services, About, Contact, Booking, Quote, Customer Portal, Invoice Payment, Reviews, Privacy Policy, and Terms of Service.
+**Public Pages**: Include Home (with promo banner, recent bookings ticker, stats counter, featured gallery), Services, About, Contact, Booking, Quote, Customer Portal, Invoice Payment, Reviews, Privacy Policy, and Terms of Service.
 
-**Admin Pages** (authentication required): Dashboard, Bookings, Quotes, Invoices, Promo Codes, Employees, Messages, Reviews, Newsletter, Team Management, and Business Settings.
+**Admin Pages** (authentication required): Dashboard, Bookings, Quotes, Invoices, Promo Codes, Employees, Customer Profiles (with notes and history), Messages, Reviews, Newsletter, Team Management, and Business Settings.
 
 **Employee Pages**: Employee Login and Employee Dashboard for work assignments.
 

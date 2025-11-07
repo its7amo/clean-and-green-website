@@ -19,6 +19,7 @@ import {
   insertPromoCodeSchema,
   insertRecurringBookingSchema,
   insertJobPhotoSchema,
+  type JobPhoto,
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
@@ -3313,6 +3314,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error validating promo code:", error);
       res.status(500).json({ error: "Failed to validate promo code" });
+    }
+  });
+
+  // Public endpoint to get active promo code for banner
+  app.get("/api/public/active-promo", async (_req, res) => {
+    try {
+      const promoCodes = await storage.getPromoCodes();
+      const now = new Date();
+      
+      const activePromo = promoCodes.find(promo => 
+        promo.status === 'active' &&
+        now >= new Date(promo.validFrom) &&
+        now <= new Date(promo.validTo) &&
+        (promo.maxUses === null || promo.currentUses < promo.maxUses)
+      );
+      
+      res.json(activePromo || null);
+    } catch (error) {
+      console.error("Error fetching active promo:", error);
+      res.status(500).json({ error: "Failed to fetch active promo" });
+    }
+  });
+
+  // Public endpoint for recent bookings ticker
+  app.get("/api/public/recent-bookings", async (_req, res) => {
+    try {
+      const bookings = await storage.getBookings();
+      const recentBookings = bookings
+        .filter(b => b.status !== 'cancelled' && b.leadType === 'web')
+        .slice(0, 10)
+        .map(b => ({
+          id: b.id,
+          service: b.service,
+          city: b.address.split(',').pop()?.trim() || 'Oklahoma',
+          firstName: b.name.split(' ')[0],
+          createdAt: b.createdAt,
+        }));
+      
+      res.json(recentBookings);
+    } catch (error) {
+      console.error("Error fetching recent bookings:", error);
+      res.status(500).json({ error: "Failed to fetch recent bookings" });
+    }
+  });
+
+  // Public endpoint for business stats
+  app.get("/api/public/stats", async (_req, res) => {
+    try {
+      const bookings = await storage.getBookings();
+      const completedBookings = bookings.filter(b => b.status === 'completed').length;
+      
+      // Get average rating from reviews
+      const reviews = await storage.getReviews();
+      const approvedReviews = reviews.filter(r => r.status === 'approved' && r.rating);
+      const avgRating = approvedReviews.length > 0
+        ? approvedReviews.reduce((sum, r) => sum + r.rating!, 0) / approvedReviews.length
+        : 5.0;
+      
+      res.json({
+        homesClean: completedBookings,
+        averageRating: Math.round(avgRating * 10) / 10,
+        ecoFriendly: 100,
+        reviewCount: approvedReviews.length,
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  // Public endpoint for featured photos
+  app.get("/api/public/featured-photos", async (_req, res) => {
+    try {
+      const photos = await storage.getJobPhotos();
+      const featured = photos
+        .filter((p: JobPhoto) => p.isFeatured)
+        .sort((a: JobPhoto, b: JobPhoto) => (b.displayOrder || 0) - (a.displayOrder || 0))
+        .slice(0, 6);
+      
+      res.json(featured);
+    } catch (error) {
+      console.error("Error fetching featured photos:", error);
+      res.status(500).json({ error: "Failed to fetch featured photos" });
+    }
+  });
+
+  // Customer profile routes (admin only)
+  app.get("/api/customers/:email/profile", isAuthenticated, async (req, res) => {
+    try {
+      const { email } = req.params;
+      
+      // Get customer details
+      const customer = await storage.getCustomerByEmail(email);
+      
+      // Get all bookings for this customer
+      const bookings = await storage.getBookingsByEmail(email);
+      
+      // Get all quotes for this customer
+      const quotes = await storage.getQuotes();
+      const customerQuotes = quotes.filter(q => q.email === email);
+      
+      // Get all invoices for this customer
+      const invoices = await storage.getInvoices();
+      const customerInvoices = invoices.filter(i => i.customerEmail === email);
+      
+      // Get all notes for this customer
+      const notes = await storage.getCustomerNotesByEmail(email);
+      
+      // Calculate customer stats
+      const totalSpent = customerInvoices
+        .filter(i => i.status === 'paid')
+        .reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+      
+      const completedBookings = bookings.filter(b => b.status === 'completed').length;
+      
+      res.json({
+        customer,
+        bookings,
+        quotes: customerQuotes,
+        invoices: customerInvoices,
+        notes,
+        stats: {
+          totalSpent,
+          completedBookings,
+          totalBookings: bookings.length,
+          totalQuotes: customerQuotes.length,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching customer profile:", error);
+      res.status(500).json({ error: "Failed to fetch customer profile" });
+    }
+  });
+
+  app.post("/api/customers/:email/notes", isAuthenticated, async (req, res) => {
+    try {
+      const { email } = req.params;
+      const { note } = req.body;
+      
+      if (!note) {
+        return res.status(400).json({ error: "Note is required" });
+      }
+      
+      const createdBy = req.user?.id || 'admin';
+      const createdByName = req.user?.username || 'Admin';
+      
+      const newNote = await storage.createCustomerNote({
+        customerEmail: email,
+        note,
+        createdBy,
+        createdByName,
+      });
+      
+      res.status(201).json(newNote);
+    } catch (error) {
+      console.error("Error creating customer note:", error);
+      res.status(500).json({ error: "Failed to create note" });
+    }
+  });
+
+  app.delete("/api/customers/notes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteCustomerNote(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting customer note:", error);
+      res.status(500).json({ error: "Failed to delete note" });
     }
   });
 

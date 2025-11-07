@@ -188,6 +188,9 @@ function Router() {
       <Route path="/admin/team">
         <ProtectedRoute component={AdminTeam} />
       </Route>
+      <Route path="/admin/customers/:email">
+        <ProtectedRoute component={lazy(() => import("@/pages/AdminCustomerProfile"))} />
+      </Route>
       <Route path="/admin/messages">
         <ProtectedRoute component={AdminContactMessages} />
       </Route>

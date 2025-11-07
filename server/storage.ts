@@ -37,6 +37,8 @@ import {
   type InsertRecurringBooking,
   type JobPhoto,
   type InsertJobPhoto,
+  type CustomerNote,
+  type InsertCustomerNote,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -59,6 +61,7 @@ import {
   promoCodes,
   recurringBookings,
   jobPhotos,
+  customerNotes,
 } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -214,9 +217,16 @@ export interface IStorage {
 
   // Job photo operations
   createJobPhoto(photo: InsertJobPhoto): Promise<JobPhoto>;
+  getJobPhotos(): Promise<JobPhoto[]>;
   getJobPhotosByBooking(bookingId: string): Promise<JobPhoto[]>;
   getJobPhoto(id: string): Promise<JobPhoto | undefined>;
+  updateJobPhoto(id: string, photo: Partial<InsertJobPhoto>): Promise<JobPhoto | undefined>;
   deleteJobPhoto(id: string): Promise<void>;
+
+  // Customer notes operations
+  createCustomerNote(note: InsertCustomerNote): Promise<CustomerNote>;
+  getCustomerNotesByEmail(email: string): Promise<CustomerNote[]>;
+  deleteCustomerNote(id: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -819,6 +829,10 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
+  async getJobPhotos(): Promise<JobPhoto[]> {
+    return await db.select().from(jobPhotos).orderBy(desc(jobPhotos.createdAt));
+  }
+
   async getJobPhotosByBooking(bookingId: string): Promise<JobPhoto[]> {
     return await db.select().from(jobPhotos).where(eq(jobPhotos.bookingId, bookingId)).orderBy(desc(jobPhotos.createdAt));
   }
@@ -828,8 +842,29 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
+  async updateJobPhoto(id: string, photo: Partial<InsertJobPhoto>): Promise<JobPhoto | undefined> {
+    const result = await db.update(jobPhotos).set(photo).where(eq(jobPhotos.id, id)).returning();
+    return result[0];
+  }
+
   async deleteJobPhoto(id: string): Promise<void> {
     await db.delete(jobPhotos).where(eq(jobPhotos.id, id));
+  }
+
+  // Customer notes operations
+  async createCustomerNote(note: InsertCustomerNote): Promise<CustomerNote> {
+    const result = await db.insert(customerNotes).values(note).returning();
+    return result[0];
+  }
+
+  async getCustomerNotesByEmail(email: string): Promise<CustomerNote[]> {
+    return await db.select().from(customerNotes)
+      .where(eq(customerNotes.customerEmail, email))
+      .orderBy(desc(customerNotes.createdAt));
+  }
+
+  async deleteCustomerNote(id: string): Promise<void> {
+    await db.delete(customerNotes).where(eq(customerNotes.id, id));
   }
 }
 

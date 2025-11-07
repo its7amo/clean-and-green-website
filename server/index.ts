@@ -5,6 +5,7 @@ import { runMigrations } from "./migrate";
 import { startReviewEmailScheduler } from "./reviewEmailScheduler";
 import { startReminderScheduler } from "./reminderScheduler";
 import { startRecurringBookingScheduler } from "./recurringBookingScheduler";
+import { startFollowUpScheduler } from "./followUpScheduler";
 
 const app = express();
 
@@ -97,6 +98,9 @@ app.use((req, res, next) => {
 
   // Start recurring booking scheduler (auto-creates bookings from recurring schedules)
   startRecurringBookingScheduler();
+
+  // Start follow-up email scheduler (sends 30-day follow-up emails)
+  startFollowUpScheduler();
 
   const server = await registerRoutes(app);
 

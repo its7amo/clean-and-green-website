@@ -102,6 +102,7 @@ export const bookings = pgTable("bookings", {
   actualPrice: integer("actual_price"), // Admin-entered actual quoted price in cents (for variable pricing with promos)
   reminderSent: boolean("reminder_sent").notNull().default(false),
   reminderSentAt: timestamp("reminder_sent_at"),
+  followUpSent: boolean("follow_up_sent").notNull().default(false),
   recurringBookingId: varchar("recurring_booking_id"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
@@ -466,6 +467,8 @@ export const jobPhotos = pgTable("job_photos", {
   uploadedByEmployeeId: varchar("uploaded_by_employee_id").references(() => employees.id),
   uploadedByName: text("uploaded_by_name").notNull(),
   caption: text("caption"),
+  isFeatured: boolean("is_featured").notNull().default(false),
+  displayOrder: integer("display_order").default(0),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -476,3 +479,21 @@ export const insertJobPhotoSchema = createInsertSchema(jobPhotos).omit({
 
 export type InsertJobPhoto = z.infer<typeof insertJobPhotoSchema>;
 export type JobPhoto = typeof jobPhotos.$inferSelect;
+
+// Customer notes for tracking special requirements and preferences
+export const customerNotes = pgTable("customer_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerEmail: text("customer_email").notNull(),
+  note: text("note").notNull(),
+  createdBy: varchar("created_by").notNull(), // Admin/employee ID who created the note
+  createdByName: text("created_by_name").notNull(), // Name for display
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertCustomerNoteSchema = createInsertSchema(customerNotes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCustomerNote = z.infer<typeof insertCustomerNoteSchema>;
+export type CustomerNote = typeof customerNotes.$inferSelect;
