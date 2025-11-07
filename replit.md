@@ -19,6 +19,12 @@ Clean and Green is a professional cleaning service booking platform focused on e
   - Template categories: promotion, announcement, thank_you, seasonal, follow_up
   - Quick template selection in both Newsletter and Customer bulk email features
   - Templates can be edited before sending for customization
+- **Customer Autocomplete**: Manual booking form includes searchable dropdown to select existing customers, automatically filling email, phone, and address to prevent duplicate customer records
+- **Search Functionality**: 
+  - Customers table: Search by name, email, or phone number with instant filtering
+  - Bookings table: Search by customer name, email, phone, address, or service type
+  - "Select All" checkbox respects active search filters
+- **Chronological Ordering**: Both customers and bookings automatically display newest entries first (descending by creation date)
 
 ## User Preferences
 

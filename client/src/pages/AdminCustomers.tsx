@@ -268,11 +268,17 @@ export default function AdminCustomers() {
     });
   };
 
+  const filteredCustomers = customers.filter(customer =>
+    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (customer.phone && customer.phone.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   const toggleSelectAll = () => {
-    if (selectedCustomers.size === customers.length) {
+    if (selectedCustomers.size === filteredCustomers.length && filteredCustomers.length > 0) {
       setSelectedCustomers(new Set());
     } else {
-      setSelectedCustomers(new Set(customers.map(c => c.id)));
+      setSelectedCustomers(new Set(filteredCustomers.map(c => c.id)));
     }
   };
 
@@ -360,18 +366,11 @@ export default function AdminCustomers() {
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : (() => {
-                const filteredCustomers = customers.filter(customer =>
-                  customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (customer.phone && customer.phone.toLowerCase().includes(searchQuery.toLowerCase()))
-                );
-                
-                return filteredCustomers.length === 0 ? (
-                  <div className="text-center p-8 text-muted-foreground" data-testid="text-no-customers">
-                    {searchQuery ? "No customers match your search." : "No customers found. Add your first customer to get started."}
-                  </div>
-                ) : (
+            ) : filteredCustomers.length === 0 ? (
+              <div className="text-center p-8 text-muted-foreground" data-testid="text-no-customers">
+                {searchQuery ? "No customers match your search." : "No customers found. Add your first customer to get started."}
+              </div>
+            ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -459,8 +458,7 @@ export default function AdminCustomers() {
                     ))}
                     </TableBody>
                   </Table>
-                );
-              })()}
+            )}
           </CardContent>
         </Card>
       </div>
