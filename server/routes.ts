@@ -5111,6 +5111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/referral-settings", isAuthenticated, async (req, res) => {
     try {
       const updateSchema = z.object({
+        enabled: z.boolean().optional(),
         minimumServicePrice: z.number().int().positive().optional(),
         tier1Reward: z.number().int().positive().optional(),
         tier2Reward: z.number().int().positive().optional(),
@@ -5126,6 +5127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedSettings = await storage.upsertReferralSettings({
         ...currentSettings,
+        enabled: validatedData.enabled ?? currentSettings.enabled,
         minimumServicePrice: validatedData.minimumServicePrice ?? currentSettings.minimumServicePrice,
         tier1Amount: validatedData.tier1Reward ?? currentSettings.tier1Amount,
         tier2Amount: validatedData.tier2Reward ?? currentSettings.tier2Amount,

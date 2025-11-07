@@ -50,6 +50,7 @@ type Referral = {
 
 type ReferralSettings = {
   id: string;
+  enabled: boolean;
   minimumServicePrice: number;
   tier1Reward: number;
   tier2Reward: number;
@@ -71,6 +72,7 @@ export default function AdminReferrals() {
   const [isCreditAdjustmentOpen, setIsCreditAdjustmentOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerCredit | null>(null);
   const [creditAdjustment, setCreditAdjustment] = useState(0);
+  const [programEnabled, setProgramEnabled] = useState(true);
 
   // Fetch referral stats
   const { data: stats } = useQuery<ReferralStats>({
@@ -90,6 +92,11 @@ export default function AdminReferrals() {
   // Fetch referral settings
   const { data: settings } = useQuery<ReferralSettings>({
     queryKey: ["/api/admin/referral-settings"],
+    onSuccess: (data) => {
+      if (data) {
+        setProgramEnabled(data.enabled);
+      }
+    },
   });
 
   // Fetch customer credits
@@ -175,6 +182,7 @@ export default function AdminReferrals() {
     const formData = new FormData(e.currentTarget);
     
     updateSettingsMutation.mutate({
+      enabled: programEnabled,
       minimumServicePrice: Math.round(Number(formData.get("minimumServicePrice")) * 100),
       tier1Reward: Math.round(Number(formData.get("tier1Reward")) * 100),
       tier2Reward: Math.round(Number(formData.get("tier2Reward")) * 100),
@@ -534,6 +542,21 @@ export default function AdminReferrals() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSettingsSave} className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label htmlFor="program-enabled" className="text-base">Enable Referral Program</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Turn the entire referral program on or off
+                  </p>
+                </div>
+                <Switch
+                  id="program-enabled"
+                  checked={programEnabled}
+                  onCheckedChange={setProgramEnabled}
+                  data-testid="switch-program-enabled"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="minimumServicePrice">Minimum Service Price</Label>
                 <Input
