@@ -29,7 +29,8 @@ interface CustomerProfile {
 
 export default function AdminCustomerProfile() {
   const params = useParams();
-  const email = params.email as string;
+  // Email comes URL-decoded from Wouter, so decode it properly
+  const email = decodeURIComponent(params.email as string);
   const [newNote, setNewNote] = useState("");
   const { toast } = useToast();
 
