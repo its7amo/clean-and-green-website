@@ -33,12 +33,22 @@ export default function AdminCustomerProfile() {
   const [newNote, setNewNote] = useState("");
   const { toast } = useToast();
 
-  const profileUrl = `/api/customers/${encodeURIComponent(email)}/profile`;
-
   const { data: profile, isLoading } = useQuery<CustomerProfile>({
-    queryKey: [profileUrl],
+    queryKey: ['/api/customers/profile', email],
+    queryFn: async () => {
+      const url = `/api/customers/${encodeURIComponent(email)}/profile`;
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch profile');
+      return response.json();
+    },
     staleTime: 0,
-    refetchOnMount: 'always',
+    gcTime: 0,
   });
 
   const addNoteMutation = useMutation({
@@ -47,7 +57,7 @@ export default function AdminCustomerProfile() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: [profileUrl] });
+      queryClient.refetchQueries({ queryKey: ['/api/customers/profile', email] });
       setNewNote("");
       toast({ title: "Note added successfully" });
     },
@@ -58,7 +68,7 @@ export default function AdminCustomerProfile() {
       await apiRequest("DELETE", `/api/customers/notes/${noteId}`);
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: [profileUrl] });
+      queryClient.refetchQueries({ queryKey: ['/api/customers/profile', email] });
       toast({ title: "Note deleted" });
     },
   });
