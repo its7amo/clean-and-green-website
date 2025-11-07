@@ -16,7 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Invoice, Booking, BusinessSettings, Service } from "@shared/schema";
-import { Loader2, Plus, Pencil, Trash2, Download, Calculator, Search } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Download, Calculator, Search, Gift, DollarSign } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import { exportToCSV } from "@/lib/csvExport";
@@ -332,9 +333,10 @@ export default function AdminInvoices() {
     });
   };
 
-  const handleBookingSelect = (bookingId: string) => {
+  const handleBookingSelect = async (bookingId: string) => {
     if (!bookingId || bookingId === "none") {
       form.setValue("bookingId", null);
+      setReferralInfo(null);
       return;
     }
 
@@ -389,6 +391,19 @@ export default function AdminInvoices() {
             description: `Service pricing not found for "${booking.service}". Please enter the amount manually.`,
             variant: "destructive",
           });
+        }
+      }
+
+      // Fetch referral info for this customer
+      if (booking.customerId) {
+        try {
+          const response = await fetch(`/api/invoices/referral-info/${booking.customerId}`);
+          if (response.ok) {
+            const referralData = await response.json();
+            setReferralInfo(referralData);
+          }
+        } catch (error) {
+          console.error("Error fetching referral info:", error);
         }
       }
     }
@@ -831,6 +846,33 @@ export default function AdminInvoices() {
                           </FormItem>
                         )}
                       />
+
+                      {/* Referral Alerts */}
+                      {referralInfo && (
+                        <div className="space-y-3">
+                          {referralInfo.hasReferralDiscount && (
+                            <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
+                              <Gift className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              <AlertTitle className="text-green-900 dark:text-green-100">Customer Was Referred!</AlertTitle>
+                              <AlertDescription className="text-green-800 dark:text-green-200">
+                                This customer was referred by another customer. Consider applying a referral discount of{" "}
+                                <span className="font-semibold">${(referralInfo.referralAmount / 100).toFixed(2)}</span>{" "}
+                                (Tier {referralInfo.tierLevel} reward).
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          {referralInfo.availableCredits > 0 && (
+                            <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+                              <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              <AlertTitle className="text-blue-900 dark:text-blue-100">Credits Available!</AlertTitle>
+                              <AlertDescription className="text-blue-800 dark:text-blue-200">
+                                This customer has <span className="font-semibold">${(referralInfo.availableCredits / 100).toFixed(2)}</span>{" "}
+                                in referral credits available. You can apply these credits to reduce the invoice total.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-4">
                         <FormField

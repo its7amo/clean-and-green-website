@@ -5215,6 +5215,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get referral info for invoice creation (check if customer was referred and has credits)
+  app.get("/api/invoices/referral-info/:customerId", isAuthenticated, async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      
+      const customer = await storage.getCustomer(customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+
+      // Check if customer was referred (has a booking with referralCode)
+      const bookings = await storage.getBookingsByCustomerId(customerId);
+      const referredBooking = bookings.find(b => b.referralCode);
+      
+      // Get customer's referral credits
+      const credits = await storage.getReferralCredit(customerId);
+      const availableCredits = credits?.availableBalance || 0;
+
+      // Get referral settings for tier calculation
+      const settings = await storage.getReferralSettings();
+      
+      let hasReferralDiscount = false;
+      let referralAmount = 0;
+      let tierLevel = 0;
+
+      if (referredBooking) {
+        hasReferralDiscount = true;
+        // Determine tier based on first booking
+        tierLevel = 1;
+        // Use settings if available (handle both potential field names), otherwise use default $10 (1000 cents)
+        referralAmount = settings ? ((settings as any).tier1Reward || settings.tier1Amount || 1000) : 1000;
+        
+        console.log(`Referral info for customer ${customerId}:`, {
+          hasReferralDiscount,
+          referralAmount,
+          tierLevel,
+          settingsFound: !!settings,
+          tier1Reward: (settings as any)?.tier1Reward,
+          tier1Amount: settings?.tier1Amount,
+        });
+      }
+
+      res.json({
+        hasReferralDiscount,
+        referralAmount,
+        tierLevel,
+        availableCredits,
+      });
+    } catch (error) {
+      console.error("Error fetching referral info:", error);
+      res.status(500).json({ error: "Failed to fetch referral info" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

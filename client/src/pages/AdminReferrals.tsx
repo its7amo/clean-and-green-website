@@ -52,9 +52,12 @@ type ReferralSettings = {
   id: string;
   enabled: boolean;
   minimumServicePrice: number;
-  tier1Reward: number;
-  tier2Reward: number;
-  tier3Reward: number;
+  tier1Amount?: number;
+  tier2Amount?: number;
+  tier3Amount?: number;
+  tier1Reward?: number;
+  tier2Reward?: number;
+  tier3Reward?: number;
 };
 
 type CustomerCredit = {
@@ -581,7 +584,7 @@ export default function AdminReferrals() {
                     name="tier1Reward"
                     type="number"
                     step="0.01"
-                    defaultValue={settings ? (settings.tier1Reward / 100).toFixed(2) : "10.00"}
+                    defaultValue={settings ? ((settings.tier1Reward || settings.tier1Amount || 1000) / 100).toFixed(2) : "10.00"}
                     data-testid="input-tier1-reward"
                     required
                   />
@@ -595,7 +598,7 @@ export default function AdminReferrals() {
                     name="tier2Reward"
                     type="number"
                     step="0.01"
-                    defaultValue={settings ? (settings.tier2Reward / 100).toFixed(2) : "15.00"}
+                    defaultValue={settings ? ((settings.tier2Reward || settings.tier2Amount || 1500) / 100).toFixed(2) : "15.00"}
                     data-testid="input-tier2-reward"
                     required
                   />
@@ -609,7 +612,7 @@ export default function AdminReferrals() {
                     name="tier3Reward"
                     type="number"
                     step="0.01"
-                    defaultValue={settings ? (settings.tier3Reward / 100).toFixed(2) : "20.00"}
+                    defaultValue={settings ? ((settings.tier3Reward || settings.tier3Amount || 2000) / 100).toFixed(2) : "20.00"}
                     data-testid="input-tier3-reward"
                     required
                   />
