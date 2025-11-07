@@ -6,9 +6,10 @@ import { z } from "zod";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { BusinessSettings } from "@shared/schema";
@@ -33,6 +34,8 @@ const settingsFormSchema = z.object({
   privacyPolicy: z.string().optional(),
   termsOfService: z.string().optional(),
   cancellationPolicy: z.string().optional(),
+  promoBannerEnabled: z.boolean(),
+  promoBannerMessage: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -65,6 +68,8 @@ export default function AdminSettings() {
       privacyPolicy: "",
       termsOfService: "",
       cancellationPolicy: "",
+      promoBannerEnabled: true,
+      promoBannerMessage: "",
     },
   });
 
@@ -89,6 +94,8 @@ export default function AdminSettings() {
         privacyPolicy: settings.privacyPolicy || "",
         termsOfService: settings.termsOfService || "",
         cancellationPolicy: settings.cancellationPolicy || "",
+        promoBannerEnabled: settings.promoBannerEnabled ?? true,
+        promoBannerMessage: settings.promoBannerMessage || "",
       });
     }
   }, [settings, form]);
@@ -437,6 +444,54 @@ export default function AdminSettings() {
                           )}
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Promo Banner Settings</h3>
+                      <FormField
+                        control={form.control}
+                        name="promoBannerEnabled"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                Enable Promo Banner
+                              </FormLabel>
+                              <FormDescription>
+                                Show active promo codes on the homepage
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-promo-banner"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="promoBannerMessage"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Custom Banner Message (Optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                data-testid="input-banner-message"
+                                placeholder="Leave empty to use auto-generated message from promo code"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Override the default banner text. Leave blank to show promo code details automatically.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
 
                     <div className="space-y-4">

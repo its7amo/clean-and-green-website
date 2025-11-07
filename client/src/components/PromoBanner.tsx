@@ -3,11 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import type { PromoCode } from "@shared/schema";
 
+interface BannerSettings {
+  enabled: boolean;
+  customMessage?: string;
+}
+
 export function PromoBanner() {
   const [isDismissed, setIsDismissed] = useState(false);
 
   const { data: activePromo } = useQuery<PromoCode | null>({
     queryKey: ["/api/public/active-promo"],
+  });
+
+  const { data: settings } = useQuery<BannerSettings>({
+    queryKey: ["/api/public/banner-settings"],
   });
 
   useEffect(() => {
@@ -29,7 +38,7 @@ export function PromoBanner() {
     setIsDismissed(true);
   };
 
-  if (!activePromo || isDismissed) {
+  if (!activePromo || isDismissed || settings?.enabled === false) {
     return null;
   }
 

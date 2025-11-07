@@ -3337,6 +3337,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint to get banner settings
+  app.get("/api/public/banner-settings", async (_req, res) => {
+    try {
+      const settings = await storage.getBusinessSettings();
+      res.json({
+        enabled: settings?.promoBannerEnabled ?? true,
+        customMessage: settings?.promoBannerMessage,
+      });
+    } catch (error) {
+      console.error("Error fetching banner settings:", error);
+      res.status(500).json({ error: "Failed to fetch banner settings" });
+    }
+  });
+
   // Public endpoint for recent bookings ticker
   app.get("/api/public/recent-bookings", async (_req, res) => {
     try {

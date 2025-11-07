@@ -229,6 +229,8 @@ export const businessSettings = pgTable("business_settings", {
   privacyPolicy: text("privacy_policy"),
   termsOfService: text("terms_of_service"),
   cancellationPolicy: text("cancellation_policy"),
+  promoBannerEnabled: boolean("promo_banner_enabled").notNull().default(true),
+  promoBannerMessage: text("promo_banner_message"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
