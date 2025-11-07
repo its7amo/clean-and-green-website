@@ -86,6 +86,15 @@ Clean and Green is a professional cleaning service booking platform focused on e
   - Touch-friendly UI with proper touch target sizing (44x44px minimum)
   - Responsive grid layouts adapt to screen size
   - Charts resize dynamically for mobile screens
+- **Progressive Web App (PWA)**: Installable mobile app experience
+  - Install on phone/tablet home screen (iOS, Android, desktop)
+  - App-like experience with standalone display mode
+  - Offline support with service worker caching
+  - Quick access shortcuts for "Book Cleaning" and "Admin Dashboard"
+  - Smart install prompt with 7-day cooldown on dismissal
+  - Professional branded app icon (green leaf design)
+  - Works for customers, admins, and employees
+  - No app store download required
 - **Chronological Ordering**: Both customers and bookings automatically display newest entries first (descending by creation date)
 
 ## User Preferences
