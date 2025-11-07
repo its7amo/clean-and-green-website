@@ -36,6 +36,9 @@ Clean and Green is a professional cleaning service booking platform focused on e
   - Real-time zip code validation during booking
   - User-facing alerts for unsupported service areas
   - Collapsible display of all active service areas and zip codes
+  - **Pre-populated Oklahoma City Regions**: 8 service areas with 32 total zip codes
+    - Downtown OKC (12 zips), Edmond (5 zips), Norman (5 zips), Moore (3 zips)
+    - Yukon (1 zip), Midwest City (4 zips), Bethany (1 zip), Mustang (1 zip)
 - **Customer Profile System**: Comprehensive customer history view with booking/quote/invoice tracking, custom notes, and customer lifetime value metrics
 - **Customer Notes**: Admins can add and manage notes about customer preferences, special requests, allergies, and gate codes
 - **Email Template System**: Pre-made reusable email templates for bulk emails and newsletters
@@ -50,6 +53,11 @@ Clean and Green is a professional cleaning service booking platform focused on e
   - Direct payment links included in all reminders
   - Tracking of reminder count and last sent date to prevent duplicates
   - Hourly scheduler checks for eligible invoices
+  - **Customizable Email Templates**: Admins can customize subject and body for all 3 reminder levels
+    - Editable templates for 3-day, 7-day, and 14-day overdue reminders
+    - Support for placeholders: {{customerName}}, {{invoiceNumber}}, {{amountDue}}, {{daysOverdue}}, {{paymentLink}}
+    - Falls back to professional default templates if left blank
+    - On/off toggle to enable/disable payment reminders globally
 - **Customer Autocomplete**: Manual booking form includes searchable dropdown to select existing customers, automatically filling email, phone, and address to prevent duplicate customer records
 - **Search Functionality**: 
   - Customers table: Search by name, email, or phone number with instant filtering
@@ -105,6 +113,7 @@ PostgreSQL (via Neon for serverless deployment) is the database, with Drizzle OR
 - **Service Areas**: Geographic coverage with region names and zip code arrays for service area validation.
 - **Invoices**: Enhanced with lastReminderSentAt and reminderCount for automated payment reminders.
 - **Customers**: Comprehensive customer records with CLV tracking integration.
+- **Business Settings**: Extended with payment reminder template fields (paymentReminderEnabled, paymentReminder3DaySubject/Body, paymentReminder7DaySubject/Body, paymentReminder14DaySubject/Body) for customizable automated email templates.
 Zod schemas are generated from Drizzle tables for runtime validation and type inference.
 
 ### Authentication & Authorization
