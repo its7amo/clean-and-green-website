@@ -265,7 +265,7 @@ export default function AdminCustomers() {
 
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
-    if (templateId === "") {
+    if (templateId === "none") {
       setEmailSubject("");
       setEmailMessage("");
       return;
@@ -599,7 +599,7 @@ export default function AdminCustomers() {
                   <SelectValue placeholder="Start from scratch or choose a template" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No template - Start from scratch</SelectItem>
+                  <SelectItem value="none">No template - Start from scratch</SelectItem>
                   {emailTemplates.length === 0 && (
                     <div className="p-2 text-sm text-muted-foreground">
                       <Button
