@@ -241,6 +241,13 @@ export const businessSettings = pgTable("business_settings", {
   followUpEmailBody: text("follow_up_email_body"),
   reminderEmailSubject: text("reminder_email_subject"),
   reminderEmailBody: text("reminder_email_body"),
+  paymentReminderEnabled: boolean("payment_reminder_enabled").notNull().default(true),
+  paymentReminder3DaySubject: text("payment_reminder_3day_subject"),
+  paymentReminder3DayBody: text("payment_reminder_3day_body"),
+  paymentReminder7DaySubject: text("payment_reminder_7day_subject"),
+  paymentReminder7DayBody: text("payment_reminder_7day_body"),
+  paymentReminder14DaySubject: text("payment_reminder_14day_subject"),
+  paymentReminder14DayBody: text("payment_reminder_14day_body"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 

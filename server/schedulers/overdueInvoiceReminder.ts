@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { invoices } from '@shared/schema';
+import { invoices, businessSettings } from '@shared/schema';
 import { sql } from 'drizzle-orm';
 import { sendPaymentReminderEmail } from '../paymentReminder';
 import { logActivity } from '../activityLogger';
@@ -8,6 +8,13 @@ import { differenceInDays } from 'date-fns';
 export async function checkAndSendOverdueReminders() {
   try {
     const now = new Date();
+    
+    // Check if payment reminders are enabled
+    const settings = await db.select().from(businessSettings).limit(1);
+    if (settings.length > 0 && !settings[0].paymentReminderEnabled) {
+      console.log('Payment reminders are disabled in settings');
+      return;
+    }
     
     // Query for unpaid/partially_paid invoices with a due date in the past
     const overdueInvoices = await db
@@ -53,6 +60,7 @@ export async function checkAndSendOverdueReminders() {
             invoice,
             daysOverdue,
             reminderNumber,
+            settings: settings[0],
           });
           
           // Update the invoice record

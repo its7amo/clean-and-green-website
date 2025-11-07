@@ -20,12 +20,19 @@ const emailSettingsSchema = z.object({
   reviewEmailEnabled: z.boolean(),
   followUpEmailEnabled: z.boolean(),
   reminderEmailEnabled: z.boolean(),
+  paymentReminderEnabled: z.boolean(),
   reviewEmailSubject: z.string().optional(),
   reviewEmailBody: z.string().optional(),
   followUpEmailSubject: z.string().optional(),
   followUpEmailBody: z.string().optional(),
   reminderEmailSubject: z.string().optional(),
   reminderEmailBody: z.string().optional(),
+  paymentReminder3DaySubject: z.string().optional(),
+  paymentReminder3DayBody: z.string().optional(),
+  paymentReminder7DaySubject: z.string().optional(),
+  paymentReminder7DayBody: z.string().optional(),
+  paymentReminder14DaySubject: z.string().optional(),
+  paymentReminder14DayBody: z.string().optional(),
 });
 
 type EmailSettingsFormValues = z.infer<typeof emailSettingsSchema>;
@@ -79,6 +86,37 @@ Looking forward to seeing you tomorrow!
 Best regards,
 Clean & Green Team`;
 
+const DEFAULT_PAYMENT_3DAY_SUBJECT = "Friendly Reminder: Invoice {{invoiceNumber}} is overdue";
+const DEFAULT_PAYMENT_3DAY_BODY = 'Hi {{customerName}},\n\n' +
+  'We hope you\'re enjoying your freshly cleaned space!\n\n' +
+  'This is a friendly reminder that invoice {{invoiceNumber}} for ${{amountDue}} is now {{daysOverdue}} days overdue.\n\n' +
+  'We understand that things can slip through the cracks. If you\'ve already sent payment, please disregard this message.\n\n' +
+  'You can easily pay your invoice online here: {{paymentLink}}\n\n' +
+  'If you have any questions about your invoice or need to discuss payment options, please don\'t hesitate to reach out.\n\n' +
+  'Thank you for choosing Clean & Green!\n\n' +
+  'Best regards,\n' +
+  'Clean & Green Team';
+
+const DEFAULT_PAYMENT_7DAY_SUBJECT = "Important: Invoice {{invoiceNumber}} - Payment Required";
+const DEFAULT_PAYMENT_7DAY_BODY = 'Hi {{customerName}},\n\n' +
+  'This is an important notice regarding invoice {{invoiceNumber}} for ${{amountDue}}, which is now {{daysOverdue}} days overdue.\n\n' +
+  'We value your business and want to help resolve this matter quickly.\n\n' +
+  'Please submit payment at your earliest convenience: {{paymentLink}}\n\n' +
+  'If you\'re experiencing any issues or need to arrange a payment plan, please contact us immediately. We\'re here to work with you.\n\n' +
+  'Thank you for your prompt attention to this matter.\n\n' +
+  'Best regards,\n' +
+  'Clean & Green Team';
+
+const DEFAULT_PAYMENT_14DAY_SUBJECT = "URGENT: Invoice {{invoiceNumber}} - Immediate Payment Required";
+const DEFAULT_PAYMENT_14DAY_BODY = 'Hi {{customerName}},\n\n' +
+  'This is an urgent notice regarding invoice {{invoiceNumber}} for ${{amountDue}}, which is now {{daysOverdue}} days overdue.\n\n' +
+  'We have made several attempts to reach you regarding this outstanding balance. Immediate payment is required to avoid further action.\n\n' +
+  'Pay now: {{paymentLink}}\n\n' +
+  'If payment is not received within the next 48 hours, we may need to suspend services and take additional collection measures.\n\n' +
+  'Please contact us immediately if there are extenuating circumstances we should be aware of. We prefer to resolve this amicably.\n\n' +
+  'Best regards,\n' +
+  'Clean & Green Team';
+
 export default function AdminAutomatedEmails() {
   const { toast } = useToast();
 
@@ -92,12 +130,19 @@ export default function AdminAutomatedEmails() {
       reviewEmailEnabled: true,
       followUpEmailEnabled: true,
       reminderEmailEnabled: true,
+      paymentReminderEnabled: true,
       reviewEmailSubject: "",
       reviewEmailBody: "",
       followUpEmailSubject: "",
       followUpEmailBody: "",
       reminderEmailSubject: "",
       reminderEmailBody: "",
+      paymentReminder3DaySubject: "",
+      paymentReminder3DayBody: "",
+      paymentReminder7DaySubject: "",
+      paymentReminder7DayBody: "",
+      paymentReminder14DaySubject: "",
+      paymentReminder14DayBody: "",
     },
   });
 
@@ -107,12 +152,19 @@ export default function AdminAutomatedEmails() {
         reviewEmailEnabled: settings.reviewEmailEnabled ?? true,
         followUpEmailEnabled: settings.followUpEmailEnabled ?? true,
         reminderEmailEnabled: settings.reminderEmailEnabled ?? true,
+        paymentReminderEnabled: settings.paymentReminderEnabled ?? true,
         reviewEmailSubject: settings.reviewEmailSubject || "",
         reviewEmailBody: settings.reviewEmailBody || "",
         followUpEmailSubject: settings.followUpEmailSubject || "",
         followUpEmailBody: settings.followUpEmailBody || "",
         reminderEmailSubject: settings.reminderEmailSubject || "",
         reminderEmailBody: settings.reminderEmailBody || "",
+        paymentReminder3DaySubject: settings.paymentReminder3DaySubject || "",
+        paymentReminder3DayBody: settings.paymentReminder3DayBody || "",
+        paymentReminder7DaySubject: settings.paymentReminder7DaySubject || "",
+        paymentReminder7DayBody: settings.paymentReminder7DayBody || "",
+        paymentReminder14DaySubject: settings.paymentReminder14DaySubject || "",
+        paymentReminder14DayBody: settings.paymentReminder14DayBody || "",
       });
     }
   }, [settings, form]);
@@ -264,27 +316,32 @@ export default function AdminAutomatedEmails() {
                         )}
                       />
 
-                      <div className="rounded-lg border p-4 bg-muted/50">
-                        <div className="space-y-0.5 flex-1">
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-5 w-5 text-primary" />
-                            <div className="text-base font-medium">
-                              Payment Reminders
+                      <FormField
+                        control={form.control}
+                        name="paymentReminderEnabled"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5 flex-1">
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="h-5 w-5 text-primary" />
+                                <FormLabel className="text-base">
+                                  Payment Reminders
+                                </FormLabel>
+                              </div>
+                              <FormDescription>
+                                Automatically sends escalating reminders for overdue invoices at 3, 7, and 14 days
+                              </FormDescription>
                             </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Automatically sends escalating payment reminders for overdue invoices:
-                          </p>
-                          <ul className="text-sm text-muted-foreground mt-2 space-y-1 ml-7 list-disc">
-                            <li><strong>3 days overdue:</strong> Friendly payment reminder</li>
-                            <li><strong>7 days overdue:</strong> Important notice with payment link</li>
-                            <li><strong>14 days overdue:</strong> Urgent payment request</li>
-                          </ul>
-                          <p className="text-sm text-muted-foreground mt-3">
-                            <strong>Status:</strong> <span className="text-green-600 dark:text-green-400">✓ Active</span> - Automated reminders run every hour
-                          </p>
-                        </div>
-                      </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-payment-reminder"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
 
                       <div className="flex justify-end">
                         <Button
@@ -474,6 +531,171 @@ export default function AdminAutomatedEmails() {
                             </FormControl>
                             <FormDescription>
                               Leave empty to use default template. Also sent as SMS.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-primary" />
+                        <CardTitle>3-Day Overdue Reminder</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Sent when invoice is 3 days overdue. Use {`{{customerName}}`}, {`{{invoiceNumber}}`}, {`{{amountDue}}`}, {`{{daysOverdue}}`}, {`{{paymentLink}}`} as placeholders.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="paymentReminder3DaySubject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Subject Line</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={DEFAULT_PAYMENT_3DAY_SUBJECT}
+                                data-testid="input-payment-3day-subject"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="paymentReminder3DayBody"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Body</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder={DEFAULT_PAYMENT_3DAY_BODY}
+                                className="min-h-64 font-mono text-sm"
+                                data-testid="input-payment-3day-body"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-primary" />
+                        <CardTitle>7-Day Overdue Reminder</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Sent when invoice is 7 days overdue. Use {`{{customerName}}`}, {`{{invoiceNumber}}`}, {`{{amountDue}}`}, {`{{daysOverdue}}`}, {`{{paymentLink}}`} as placeholders.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="paymentReminder7DaySubject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Subject Line</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={DEFAULT_PAYMENT_7DAY_SUBJECT}
+                                data-testid="input-payment-7day-subject"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="paymentReminder7DayBody"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Body</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder={DEFAULT_PAYMENT_7DAY_BODY}
+                                className="min-h-64 font-mono text-sm"
+                                data-testid="input-payment-7day-body"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-primary" />
+                        <CardTitle>14-Day Overdue Reminder</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Sent when invoice is 14 days overdue. Use {`{{customerName}}`}, {`{{invoiceNumber}}`}, {`{{amountDue}}`}, {`{{daysOverdue}}`}, {`{{paymentLink}}`} as placeholders.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="paymentReminder14DaySubject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Subject Line</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={DEFAULT_PAYMENT_14DAY_SUBJECT}
+                                data-testid="input-payment-14day-subject"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="paymentReminder14DayBody"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Body</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder={DEFAULT_PAYMENT_14DAY_BODY}
+                                className="min-h-64 font-mono text-sm"
+                                data-testid="input-payment-14day-body"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

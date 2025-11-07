@@ -1,34 +1,101 @@
 import { resend, escapeHtml } from './email';
-import type { Invoice } from '@shared/schema';
+import type { Invoice, BusinessSettings } from '@shared/schema';
 
 export interface PaymentReminderData {
   invoice: Invoice;
   daysOverdue: number;
   reminderNumber: number;
+  settings?: BusinessSettings;
+}
+
+// Default templates
+const DEFAULT_3DAY_SUBJECT = 'Payment Reminder - Invoice {{invoiceNumber}}';
+const DEFAULT_3DAY_BODY = 'Hi {{customerName}},\n\n' +
+  'This is a friendly reminder that payment for Invoice {{invoiceNumber}} is now {{daysOverdue}} days overdue.\n\n' +
+  'Amount Due: ${{amountDue}}\n\n' +
+  'Please click the link below to make your payment:\n' +
+  '{{paymentLink}}\n\n' +
+  'If you\'ve already made this payment, please disregard this email. Thank you for your business!\n\n' +
+  'Best regards,\n' +
+  'Clean & Green Team';
+
+const DEFAULT_7DAY_SUBJECT = 'Important: Payment Reminder - Invoice {{invoiceNumber}}';
+const DEFAULT_7DAY_BODY = 'Hi {{customerName}},\n\n' +
+  'We wanted to follow up regarding your overdue invoice.\n\n' +
+  'Invoice {{invoiceNumber}} is now {{daysOverdue}} days overdue.\n' +
+  'Amount Due: ${{amountDue}}\n\n' +
+  'Please make your payment as soon as possible:\n' +
+  '{{paymentLink}}\n\n' +
+  'If you have any questions or concerns about this invoice, please don\'t hesitate to reach out. We\'re here to help!\n\n' +
+  'Best regards,\n' +
+  'Clean & Green Team';
+
+const DEFAULT_14DAY_SUBJECT = 'URGENT: Payment Required - Invoice {{invoiceNumber}}';
+const DEFAULT_14DAY_BODY = 'Hi {{customerName}},\n\n' +
+  '⚠️ URGENT - This is a final reminder regarding your significantly overdue invoice.\n\n' +
+  'Invoice {{invoiceNumber}} is now {{daysOverdue}} days overdue.\n' +
+  'Amount Due: ${{amountDue}}\n\n' +
+  'Please submit payment immediately:\n' +
+  '{{paymentLink}}\n\n' +
+  'If there\'s an issue with this invoice or you need to discuss payment arrangements, please contact us immediately. We value your business and want to work with you.\n\n' +
+  'Best regards,\n' +
+  'Clean & Green Team';
+
+function replacePlaceholders(template: string, data: {
+  customerName: string;
+  invoiceNumber: string;
+  amountDue: string;
+  daysOverdue: number;
+  paymentLink: string;
+}): string {
+  return template
+    .replace(/\{\{customerName\}\}/g, data.customerName)
+    .replace(/\{\{invoiceNumber\}\}/g, data.invoiceNumber)
+    .replace(/\{\{amountDue\}\}/g, data.amountDue)
+    .replace(/\{\{daysOverdue\}\}/g, data.daysOverdue.toString())
+    .replace(/\{\{paymentLink\}\}/g, data.paymentLink);
 }
 
 export async function sendPaymentReminderEmail(data: PaymentReminderData): Promise<void> {
-  const { invoice, daysOverdue, reminderNumber } = data;
+  const { invoice, daysOverdue, reminderNumber, settings } = data;
   
   const amountDue = (invoice.total / 100).toFixed(2);
   const paymentLink = `${process.env.REPLIT_DOMAINS}/invoice/${invoice.id}/pay`;
   
-  const urgencyLevel = reminderNumber === 3 ? 'URGENT' : reminderNumber === 2 ? 'Important' : '';
-  const subject = urgencyLevel 
-    ? `${urgencyLevel}: Payment Reminder - Invoice ${escapeHtml(invoice.invoiceNumber)}`
-    : `Payment Reminder - Invoice ${escapeHtml(invoice.invoiceNumber)}`;
+  // Get custom or default templates based on reminder number
+  let subjectTemplate: string;
+  let bodyTemplate: string;
   
-  const greetingTone = reminderNumber === 1 
-    ? 'This is a friendly reminder'
-    : reminderNumber === 2
-    ? 'We wanted to follow up'
-    : 'This is an urgent reminder';
+  if (reminderNumber === 1) {
+    subjectTemplate = settings?.paymentReminder3DaySubject || DEFAULT_3DAY_SUBJECT;
+    bodyTemplate = settings?.paymentReminder3DayBody || DEFAULT_3DAY_BODY;
+  } else if (reminderNumber === 2) {
+    subjectTemplate = settings?.paymentReminder7DaySubject || DEFAULT_7DAY_SUBJECT;
+    bodyTemplate = settings?.paymentReminder7DayBody || DEFAULT_7DAY_BODY;
+  } else {
+    subjectTemplate = settings?.paymentReminder14DaySubject || DEFAULT_14DAY_SUBJECT;
+    bodyTemplate = settings?.paymentReminder14DayBody || DEFAULT_14DAY_BODY;
+  }
   
-  const closingMessage = reminderNumber === 1
-    ? 'If you\'ve already made this payment, please disregard this email. Thank you for your business!'
-    : reminderNumber === 2
-    ? 'If you have any questions or concerns about this invoice, please don\'t hesitate to reach out. We\'re here to help!'
-    : 'If there\'s an issue with this invoice or you need to discuss payment arrangements, please contact us immediately. We value your business and want to work with you.';
+  // Replace placeholders
+  const placeholderData = {
+    customerName: invoice.customerName,
+    invoiceNumber: invoice.invoiceNumber,
+    amountDue,
+    daysOverdue,
+    paymentLink,
+  };
+  
+  const subject = replacePlaceholders(subjectTemplate, placeholderData);
+  const body = replacePlaceholders(bodyTemplate, placeholderData);
+  
+  // Convert plain text body to HTML
+  const htmlBody = body
+    .split('\n')
+    .map(line => line.trim() ? `<p>${escapeHtml(line)}</p>` : '<br/>')
+    .join('');
+  
+  const urgencyColor = reminderNumber === 3 ? '#ef4444' : reminderNumber === 2 ? '#f59e0b' : '#22c55e';
   
   try {
     await resend.emails.send({
@@ -38,49 +105,20 @@ export async function sendPaymentReminderEmail(data: PaymentReminderData): Promi
       html: `
         <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px; background-color: #ffffff;">
           ${reminderNumber === 3 ? `
-            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin-bottom: 20px;">
+            <div style="background-color: #fef2f2; border-left: 4px solid ${urgencyColor}; padding: 15px; margin-bottom: 20px;">
               <h3 style="margin-top: 0; color: #991b1b;">⚠️ URGENT - Action Required</h3>
-              <p style="margin-bottom: 0; color: #991b1b;">This invoice is significantly overdue. Please review and submit payment as soon as possible.</p>
             </div>
           ` : ''}
           
-          <h2 style="color: #22c55e; margin-bottom: 10px;">Payment Reminder</h2>
+          <h2 style="color: ${urgencyColor}; margin-bottom: 20px;">Payment Reminder</h2>
           
-          <p>Hi ${escapeHtml(invoice.customerName)},</p>
-          
-          <p>${greetingTone} that payment for the following invoice is now <strong>${daysOverdue} days overdue</strong>.</p>
-          
-          <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #374151;">Invoice Details:</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 0; color: #6b7280;"><strong>Invoice Number:</strong></td>
-                <td style="padding: 8px 0; text-align: right;">${escapeHtml(invoice.invoiceNumber)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #6b7280;"><strong>Service:</strong></td>
-                <td style="padding: 8px 0; text-align: right;">${escapeHtml(invoice.serviceDescription)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #6b7280;"><strong>Amount Due:</strong></td>
-                <td style="padding: 8px 0; text-align: right; font-size: 18px; font-weight: bold; color: #22c55e;">$${amountDue}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #6b7280;"><strong>Days Overdue:</strong></td>
-                <td style="padding: 8px 0; text-align: right; color: #ef4444; font-weight: bold;">${daysOverdue} days</td>
-              </tr>
-            </table>
-          </div>
+          ${htmlBody}
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${paymentLink}" style="display: inline-block; padding: 14px 32px; background-color: #22c55e; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+            <a href="${paymentLink}" style="display: inline-block; padding: 14px 32px; background-color: ${urgencyColor}; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
               Pay Invoice Now
             </a>
           </div>
-          
-          <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
-            ${closingMessage}
-          </p>
           
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
           
