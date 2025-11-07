@@ -98,6 +98,7 @@ export const bookings = pgTable("bookings", {
   cancellationFeeStatus: text("cancellation_fee_status").notNull().default("not_applicable"),
   cancelledAt: timestamp("cancelled_at"),
   promoCode: text("promo_code"),
+  referralCode: text("referral_code"),
   discountAmount: integer("discount_amount").default(0),
   actualPrice: integer("actual_price"), // Admin-entered actual quoted price in cents (for variable pricing with promos)
   reminderSent: boolean("reminder_sent").notNull().default(false),
@@ -166,6 +167,7 @@ export const customers = pgTable("customers", {
   phone: text("phone").notNull(),
   address: text("address"),
   notes: text("notes"),
+  referralCode: varchar("referral_code").unique(),
   totalBookings: integer("total_bookings").notNull().default(0),
   totalQuotes: integer("total_quotes").notNull().default(0),
   totalInvoices: integer("total_invoices").notNull().default(0),
@@ -309,6 +311,8 @@ export const invoices = pgTable("invoices", {
   amount: integer("amount").notNull(),
   discountAmount: integer("discount_amount").default(0),
   discountDescription: text("discount_description"),
+  referralDiscountApplied: integer("referral_discount_applied").default(0),
+  referralCreditApplied: integer("referral_credit_applied").default(0),
   tax: integer("tax").notNull().default(0),
   total: integer("total").notNull(),
   status: text("status").notNull().default("draft"),
@@ -556,3 +560,64 @@ export const insertServiceAreaSchema = createInsertSchema(serviceAreas).omit({
 
 export type InsertServiceArea = z.infer<typeof insertServiceAreaSchema>;
 export type ServiceArea = typeof serviceAreas.$inferSelect;
+
+// Referrals - Track who referred who
+export const referrals = pgTable("referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referralCode: text("referral_code").notNull(),
+  referrerId: varchar("referrer_id").notNull().references(() => customers.id),
+  referredCustomerId: varchar("referred_customer_id").references(() => customers.id),
+  referredBookingId: varchar("referred_booking_id").references(() => bookings.id),
+  status: text("status").notNull().default("pending"), // pending, completed, credited
+  creditAmount: integer("credit_amount").notNull(), // Amount in cents (e.g., 1000 = $10)
+  tier: integer("tier").notNull(), // 1, 2, or 3+ for tiered rewards
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  creditedAt: timestamp("credited_at"),
+});
+
+export const insertReferralSchema = createInsertSchema(referrals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertReferral = z.infer<typeof insertReferralSchema>;
+export type Referral = typeof referrals.$inferSelect;
+
+// Referral Credits - Track customer credit balances
+export const referralCredits = pgTable("referral_credits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").notNull().unique().references(() => customers.id),
+  totalEarned: integer("total_earned").notNull().default(0), // Total earned in cents
+  totalUsed: integer("total_used").notNull().default(0), // Total used in cents
+  availableBalance: integer("available_balance").notNull().default(0), // Current balance in cents
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertReferralCreditSchema = createInsertSchema(referralCredits).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertReferralCredit = z.infer<typeof insertReferralCreditSchema>;
+export type ReferralCredit = typeof referralCredits.$inferSelect;
+
+// Business settings for referral program control
+export const referralSettings = pgTable("referral_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  enabled: boolean("enabled").notNull().default(true),
+  tier1Amount: integer("tier1_amount").notNull().default(1000), // $10 in cents
+  tier2Amount: integer("tier2_amount").notNull().default(1500), // $15 in cents
+  tier3Amount: integer("tier3_amount").notNull().default(2000), // $20 in cents
+  minimumServicePrice: integer("minimum_service_price").notNull().default(5000), // $50 minimum
+  welcomeEmailEnabled: boolean("welcome_email_enabled").notNull().default(true),
+  creditEarnedEmailEnabled: boolean("credit_earned_email_enabled").notNull().default(true),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertReferralSettingsSchema = createInsertSchema(referralSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertReferralSettings = z.infer<typeof insertReferralSettingsSchema>;
+export type ReferralSettings = typeof referralSettings.$inferSelect;
