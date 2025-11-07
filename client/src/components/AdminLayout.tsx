@@ -39,6 +39,7 @@ import {
   Repeat,
   MapPin,
   BarChart3,
+  Gift,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -53,6 +54,7 @@ const menuItems = [
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/promo-codes", icon: Tag, label: "Promo Codes" },
   { href: "/admin/service-areas", icon: MapPin, label: "Service Areas" },
+  { href: "/admin/referrals", icon: Gift, label: "Referral Program" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
   { href: "/admin/employees", icon: UserCircle, label: "Employees" },
   { href: "/admin/reviews", icon: Star, label: "Reviews" },

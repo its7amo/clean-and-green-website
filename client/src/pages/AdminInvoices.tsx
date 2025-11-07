@@ -65,6 +65,12 @@ export default function AdminInvoices() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [referralInfo, setReferralInfo] = useState<{
+    hasReferralDiscount: boolean;
+    referralAmount: number;
+    tierLevel: number;
+    availableCredits: number;
+  } | null>(null);
 
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],

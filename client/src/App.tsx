@@ -28,6 +28,7 @@ import AdminQuotes from "@/pages/AdminQuotes";
 import AdminInvoices from "@/pages/AdminInvoices";
 import AdminCustomers from "@/pages/AdminCustomers";
 import AdminCustomerProfile from "@/pages/AdminCustomerProfile";
+import AdminReferrals from "@/pages/AdminReferrals";
 import AdminServices from "@/pages/AdminServices";
 import AdminGallery from "@/pages/AdminGallery";
 import AdminFaq from "@/pages/AdminFaq";
@@ -173,6 +174,9 @@ function Router() {
       </Route>
       <Route path="/admin/invoices">
         <ProtectedRoute component={AdminInvoices} />
+      </Route>
+      <Route path="/admin/referrals">
+        <ProtectedRoute component={AdminReferrals} />
       </Route>
       <Route path="/admin/customers">
         <ProtectedRoute component={AdminCustomers} />
