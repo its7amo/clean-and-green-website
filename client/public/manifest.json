@@ -2,7 +2,6 @@
   "name": "Clean & Green - Eco-Friendly Cleaning",
   "short_name": "Clean & Green",
   "description": "Professional eco-friendly cleaning services in Oklahoma. Book cleaning, manage appointments, and track your service history.",
-  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
