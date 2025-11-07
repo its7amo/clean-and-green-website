@@ -231,6 +231,7 @@ export const businessSettings = pgTable("business_settings", {
   cancellationPolicy: text("cancellation_policy"),
   promoBannerEnabled: boolean("promo_banner_enabled").notNull().default(true),
   promoBannerMessage: text("promo_banner_message"),
+  statsCounterEnabled: boolean("stats_counter_enabled").notNull().default(true),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 

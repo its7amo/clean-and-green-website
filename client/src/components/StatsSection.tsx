@@ -39,13 +39,21 @@ function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: str
   );
 }
 
+interface StatsSettings {
+  enabled: boolean;
+}
+
 export function StatsSection() {
   const { data: stats } = useQuery<Stats>({
     queryKey: ["/api/public/stats"],
     refetchInterval: 60000, // Refresh every minute
   });
 
-  if (!stats) return null;
+  const { data: settings } = useQuery<StatsSettings>({
+    queryKey: ["/api/public/stats-settings"],
+  });
+
+  if (!stats || settings?.enabled === false) return null;
 
   return (
     <section className="py-16 bg-muted/30">

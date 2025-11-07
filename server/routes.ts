@@ -3351,6 +3351,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint to get stats counter settings
+  app.get("/api/public/stats-settings", async (_req, res) => {
+    try {
+      const settings = await storage.getBusinessSettings();
+      res.json({
+        enabled: settings?.statsCounterEnabled ?? true,
+      });
+    } catch (error) {
+      console.error("Error fetching stats settings:", error);
+      res.status(500).json({ error: "Failed to fetch stats settings" });
+    }
+  });
+
   // Public endpoint for recent bookings ticker
   app.get("/api/public/recent-bookings", async (_req, res) => {
     try {

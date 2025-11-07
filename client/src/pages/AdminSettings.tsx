@@ -36,6 +36,7 @@ const settingsFormSchema = z.object({
   cancellationPolicy: z.string().optional(),
   promoBannerEnabled: z.boolean(),
   promoBannerMessage: z.string().optional(),
+  statsCounterEnabled: z.boolean(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -70,6 +71,7 @@ export default function AdminSettings() {
       cancellationPolicy: "",
       promoBannerEnabled: true,
       promoBannerMessage: "",
+      statsCounterEnabled: true,
     },
   });
 
@@ -96,6 +98,7 @@ export default function AdminSettings() {
         cancellationPolicy: settings.cancellationPolicy || "",
         promoBannerEnabled: settings.promoBannerEnabled ?? true,
         promoBannerMessage: settings.promoBannerMessage || "",
+        statsCounterEnabled: settings.statsCounterEnabled ?? true,
       });
     }
   }, [settings, form]);
@@ -489,6 +492,30 @@ export default function AdminSettings() {
                               Override the default banner text. Leave blank to show promo code details automatically.
                             </FormDescription>
                             <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="statsCounterEnabled"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                Enable Stats Counter
+                              </FormLabel>
+                              <FormDescription>
+                                Show animated stats on homepage (homes cleaned, ratings). Turn off when starting out.
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-stats-counter"
+                              />
+                            </FormControl>
                           </FormItem>
                         )}
                       />
