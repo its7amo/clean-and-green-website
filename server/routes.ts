@@ -4125,28 +4125,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analytics endpoints
-  app.get("/api/analytics/metrics", isAuthenticated, async (_req, res) => {
+  app.get("/api/analytics/metrics", isAuthenticated, async (req, res) => {
     try {
+      const fromDate = req.query.fromDate ? new Date(req.query.fromDate as string) : null;
+      const toDate = req.query.toDate ? new Date(req.query.toDate as string) : null;
+      
+      const isInDateRange = (date: Date | null) => {
+        if (!date) return true;
+        if (!fromDate && !toDate) return true;
+        if (fromDate && toDate) {
+          return date >= fromDate && date <= toDate;
+        }
+        if (fromDate) return date >= fromDate;
+        if (toDate) return date <= toDate;
+        return true;
+      };
+      
       const [bookings, invoices, customers] = await Promise.all([
         storage.getBookings(),
         storage.getInvoices(),
         storage.getCustomers(),
       ]);
+      
+      // Filter by date range
+      const filteredBookings = bookings.filter(b => 
+        isInDateRange(b.date ? new Date(b.date) : null)
+      );
+      const filteredInvoices = invoices.filter(inv => 
+        isInDateRange(inv.createdAt ? new Date(inv.createdAt) : null)
+      );
+      const filteredCustomers = customers.filter(c => 
+        isInDateRange(c.createdAt ? new Date(c.createdAt) : null)
+      );
 
       // Calculate total revenue from paid invoices
-      const totalRevenue = invoices
+      const totalRevenue = filteredInvoices
         .filter(inv => inv.status === "paid")
         .reduce((sum, inv) => sum + inv.total, 0);
 
       // Calculate average booking value (from completed bookings with invoices)
-      const paidInvoiceCount = invoices.filter(inv => inv.status === "paid").length;
+      const paidInvoiceCount = filteredInvoices.filter(inv => inv.status === "paid").length;
       const avgBookingValue = paidInvoiceCount > 0 ? totalRevenue / paidInvoiceCount : 0;
 
       res.json({
         totalRevenue,
         avgBookingValue: Math.round(avgBookingValue),
-        totalCustomers: customers.length,
-        totalBookings: bookings.length,
+        totalCustomers: filteredCustomers.length,
+        totalBookings: filteredBookings.length,
       });
     } catch (error) {
       console.error("Error fetching analytics metrics:", error);
@@ -4156,6 +4181,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/revenue-trends", isAuthenticated, async (req, res) => {
     try {
+      const fromDate = req.query.fromDate ? new Date(req.query.fromDate as string) : null;
+      const toDate = req.query.toDate ? new Date(req.query.toDate as string) : null;
+      
+      const isInDateRange = (date: Date | null) => {
+        if (!date) return true;
+        if (!fromDate && !toDate) return true;
+        if (fromDate && toDate) {
+          return date >= fromDate && date <= toDate;
+        }
+        if (fromDate) return date >= fromDate;
+        if (toDate) return date <= toDate;
+        return true;
+      };
+      
       const period = (req.query.period as string) || "30";
       const days = parseInt(period);
       const invoices = await storage.getInvoices();
@@ -4167,7 +4206,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const revenueByDate: Record<string, number> = {};
       
       invoices
-        .filter(inv => inv.status === "paid" && new Date(inv.createdAt) >= startDate)
+        .filter(inv => {
+          const createdAt = new Date(inv.createdAt);
+          return inv.status === "paid" && 
+                 createdAt >= startDate && 
+                 isInDateRange(createdAt);
+        })
         .forEach(inv => {
           const date = new Date(inv.createdAt).toISOString().split('T')[0];
           revenueByDate[date] = (revenueByDate[date] || 0) + inv.total;
@@ -4185,15 +4229,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/analytics/booking-stats", isAuthenticated, async (_req, res) => {
+  app.get("/api/analytics/booking-stats", isAuthenticated, async (req, res) => {
     try {
+      const fromDate = req.query.fromDate ? new Date(req.query.fromDate as string) : null;
+      const toDate = req.query.toDate ? new Date(req.query.toDate as string) : null;
+      
+      const isInDateRange = (date: Date | null) => {
+        if (!date) return true;
+        if (!fromDate && !toDate) return true;
+        if (fromDate && toDate) {
+          return date >= fromDate && date <= toDate;
+        }
+        if (fromDate) return date >= fromDate;
+        if (toDate) return date <= toDate;
+        return true;
+      };
+      
       const bookings = await storage.getBookings();
+      
+      // Filter by date range
+      const filteredBookings = bookings.filter(b => 
+        isInDateRange(b.date ? new Date(b.date) : null)
+      );
 
       const stats = {
-        pending: bookings.filter(b => b.status === "pending").length,
-        confirmed: bookings.filter(b => b.status === "confirmed").length,
-        completed: bookings.filter(b => b.status === "completed").length,
-        cancelled: bookings.filter(b => b.status === "cancelled").length,
+        pending: filteredBookings.filter(b => b.status === "pending").length,
+        confirmed: filteredBookings.filter(b => b.status === "confirmed").length,
+        completed: filteredBookings.filter(b => b.status === "completed").length,
+        cancelled: filteredBookings.filter(b => b.status === "cancelled").length,
       };
 
       res.json(stats);
@@ -4203,16 +4266,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/analytics/top-services", isAuthenticated, async (_req, res) => {
+  app.get("/api/analytics/top-services", isAuthenticated, async (req, res) => {
     try {
+      const fromDate = req.query.fromDate ? new Date(req.query.fromDate as string) : null;
+      const toDate = req.query.toDate ? new Date(req.query.toDate as string) : null;
+      
+      const isInDateRange = (date: Date | null) => {
+        if (!date) return true;
+        if (!fromDate && !toDate) return true;
+        if (fromDate && toDate) {
+          return date >= fromDate && date <= toDate;
+        }
+        if (fromDate) return date >= fromDate;
+        if (toDate) return date <= toDate;
+        return true;
+      };
+      
       const [bookings, invoices] = await Promise.all([
         storage.getBookings(),
         storage.getInvoices(),
       ]);
+      
+      // Filter bookings by date range
+      const filteredBookings = bookings.filter(b => 
+        isInDateRange(b.date ? new Date(b.date) : null)
+      );
+      
+      // Filter invoices by date range
+      const filteredInvoices = invoices.filter(inv => 
+        isInDateRange(inv.createdAt ? new Date(inv.createdAt) : null)
+      );
 
       // Map invoices by booking ID for quick lookup
       const invoicesByBooking: Record<string, number> = {};
-      invoices
+      filteredInvoices
         .filter(inv => inv.status === "paid" && inv.bookingId)
         .forEach(inv => {
           if (inv.bookingId) {
@@ -4223,7 +4310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate revenue per service
       const serviceRevenue: Record<string, { revenue: number; count: number }> = {};
       
-      bookings.forEach(booking => {
+      filteredBookings.forEach(booking => {
         const revenue = invoicesByBooking[booking.id] || 0;
         if (!serviceRevenue[booking.service]) {
           serviceRevenue[booking.service] = { revenue: 0, count: 0 };
@@ -4249,14 +4336,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/analytics/customer-acquisition", isAuthenticated, async (_req, res) => {
+  app.get("/api/analytics/customer-acquisition", isAuthenticated, async (req, res) => {
     try {
+      const fromDate = req.query.fromDate ? new Date(req.query.fromDate as string) : null;
+      const toDate = req.query.toDate ? new Date(req.query.toDate as string) : null;
+      
+      const isInDateRange = (date: Date | null) => {
+        if (!date) return true;
+        if (!fromDate && !toDate) return true;
+        if (fromDate && toDate) {
+          return date >= fromDate && date <= toDate;
+        }
+        if (fromDate) return date >= fromDate;
+        if (toDate) return date <= toDate;
+        return true;
+      };
+      
       const customers = await storage.getCustomers();
+      
+      // Filter customers by date range
+      const filteredCustomers = customers.filter(c => 
+        isInDateRange(c.createdAt ? new Date(c.createdAt) : null)
+      );
 
       // Group customers by month
       const customersByMonth: Record<string, number> = {};
       
-      customers.forEach(customer => {
+      filteredCustomers.forEach(customer => {
         const date = new Date(customer.createdAt);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         customersByMonth[monthKey] = (customersByMonth[monthKey] || 0) + 1;
@@ -4286,6 +4392,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/top-customers", isAuthenticated, async (req, res) => {
     try {
+      const fromDate = req.query.fromDate ? new Date(req.query.fromDate as string) : null;
+      const toDate = req.query.toDate ? new Date(req.query.toDate as string) : null;
+      
+      const isInDateRange = (date: Date | null) => {
+        if (!date) return true;
+        if (!fromDate && !toDate) return true;
+        if (fromDate && toDate) {
+          return date >= fromDate && date <= toDate;
+        }
+        if (fromDate) return date >= fromDate;
+        if (toDate) return date <= toDate;
+        return true;
+      };
+      
       const limit = parseInt(req.query.limit as string) || 10;
       
       const [customers, invoices, bookings] = await Promise.all([
@@ -4293,6 +4413,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getInvoices(),
         storage.getBookings(),
       ]);
+      
+      // Filter invoices by date range
+      const filteredInvoices = invoices.filter(inv => 
+        isInDateRange(inv.createdAt ? new Date(inv.createdAt) : null)
+      );
+      
+      // Filter bookings by date range
+      const filteredBookings = bookings.filter(b => 
+        isInDateRange(b.date ? new Date(b.date) : null)
+      );
 
       // Calculate lifetime revenue per customer
       const customerMetrics: Record<string, { 
@@ -4314,8 +4444,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      // Add revenue from paid invoices
-      invoices
+      // Add revenue from paid invoices (filtered)
+      filteredInvoices
         .filter(inv => inv.status === "paid")
         .forEach(inv => {
           if (customerMetrics[inv.customerEmail]) {
@@ -4323,8 +4453,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
 
-      // Add booking counts
-      bookings.forEach(booking => {
+      // Add booking counts (filtered)
+      filteredBookings.forEach(booking => {
         if (customerMetrics[booking.email]) {
           customerMetrics[booking.email].totalBookings += 1;
         }
