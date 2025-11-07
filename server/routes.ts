@@ -3672,6 +3672,346 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Referral routes
+  
+  // Public: Validate referral code
+  app.post("/api/referrals/validate", async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ error: "Referral code is required" });
+      }
+
+      const referrer = await storage.validateReferralCode(code.toUpperCase());
+      if (!referrer) {
+        return res.status(404).json({ error: "Invalid referral code" });
+      }
+
+      const settings = await storage.getReferralSettings();
+      if (!settings?.enabled) {
+        return res.status(400).json({ error: "Referral program is currently disabled" });
+      }
+
+      const tierInfo = await storage.calculateReferralTier(referrer.id);
+
+      res.json({
+        valid: true,
+        referrerName: referrer.name,
+        discountAmount: tierInfo.amount,
+        tier: tierInfo.tier,
+      });
+    } catch (error) {
+      console.error("Error validating referral code:", error);
+      res.status(500).json({ error: "Failed to validate referral code" });
+    }
+  });
+
+  // Admin: Get all referrals
+  app.get("/api/referrals", isAuthenticated, async (_req, res) => {
+    try {
+      const referrals = await storage.getReferrals();
+      res.json(referrals);
+    } catch (error) {
+      console.error("Error fetching referrals:", error);
+      res.status(500).json({ error: "Failed to fetch referrals" });
+    }
+  });
+
+  // Admin: Get referral by ID
+  app.get("/api/referrals/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const referral = await storage.getReferral(id);
+      
+      if (!referral) {
+        return res.status(404).json({ error: "Referral not found" });
+      }
+      
+      res.json(referral);
+    } catch (error) {
+      console.error("Error fetching referral:", error);
+      res.status(500).json({ error: "Failed to fetch referral" });
+    }
+  });
+
+  // Admin: Delete referral
+  app.delete("/api/referrals/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteReferral(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting referral:", error);
+      res.status(500).json({ error: "Failed to delete referral" });
+    }
+  });
+
+  // Admin: Get referral stats for a customer
+  app.get("/api/customers/:id/referral-stats", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const customer = await storage.getCustomer(id);
+      
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+
+      const referralsByCustomer = await storage.getReferralsByReferrer(id);
+      const creditInfo = await storage.getReferralCredit(id);
+      const tierInfo = await storage.calculateReferralTier(id);
+
+      res.json({
+        referralCode: customer.referralCode,
+        friendsReferred: referralsByCustomer.filter(r => r.status === 'credited').length,
+        pendingReferrals: referralsByCustomer.filter(r => r.status === 'pending' || r.status === 'completed').length,
+        creditsEarned: creditInfo?.totalEarned || 0,
+        creditsUsed: creditInfo?.totalUsed || 0,
+        availableBalance: creditInfo?.availableBalance || 0,
+        currentTier: tierInfo.tier,
+        nextRewardAmount: tierInfo.amount,
+        referrals: referralsByCustomer,
+      });
+    } catch (error) {
+      console.error("Error fetching referral stats:", error);
+      res.status(500).json({ error: "Failed to fetch referral stats" });
+    }
+  });
+
+  // Admin: Get booking referral info (for invoice creation)
+  app.get("/api/bookings/:id/referral-info", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const booking = await storage.getBooking(id);
+      
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      let referralInfo = null;
+      let creditInfo = null;
+
+      if (booking.referralCode) {
+        const referrer = await storage.validateReferralCode(booking.referralCode);
+        if (referrer) {
+          const tierInfo = await storage.calculateReferralTier(referrer.id);
+          referralInfo = {
+            code: booking.referralCode,
+            referrerName: referrer.name,
+            discountAmount: tierInfo.amount,
+            tier: tierInfo.tier,
+          };
+        }
+      }
+
+      if (booking.customerId) {
+        const credits = await storage.getReferralCredit(booking.customerId);
+        if (credits && credits.availableBalance > 0) {
+          creditInfo = {
+            available: credits.availableBalance,
+            totalEarned: credits.totalEarned,
+            totalUsed: credits.totalUsed,
+          };
+        }
+      }
+
+      res.json({
+        hasReferralCode: !!referralInfo,
+        referralInfo,
+        hasCredits: !!creditInfo,
+        creditInfo,
+      });
+    } catch (error) {
+      console.error("Error fetching booking referral info:", error);
+      res.status(500).json({ error: "Failed to fetch referral info" });
+    }
+  });
+
+  // Admin: Apply referral discount to invoice
+  app.post("/api/invoices/:id/apply-referral-discount", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amount } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Invalid discount amount" });
+      }
+
+      const invoice = await storage.getInvoice(id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      const booking = invoice.bookingId ? await storage.getBooking(invoice.bookingId) : null;
+      
+      if (!booking?.referralCode) {
+        return res.status(400).json({ error: "No referral code on this booking" });
+      }
+
+      const newTotal = invoice.total - amount;
+      await storage.updateInvoice(id, {
+        referralDiscountApplied: amount,
+        total: newTotal,
+      });
+
+      if (booking.referralCode) {
+        const referrer = await storage.validateReferralCode(booking.referralCode);
+        if (referrer && booking.id) {
+          const tierInfo = await storage.calculateReferralTier(referrer.id);
+          await storage.createReferral({
+            referralCode: booking.referralCode,
+            referrerId: referrer.id,
+            referredCustomerId: invoice.customerId || undefined,
+            referredBookingId: booking.id,
+            status: 'pending',
+            creditAmount: tierInfo.amount,
+            tier: tierInfo.tier,
+          });
+        }
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'other',
+        entityType: 'invoice',
+        entityId: id,
+        entityName: invoice.invoiceNumber,
+        details: `Applied referral discount: $${(amount / 100).toFixed(2)}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error applying referral discount:", error);
+      res.status(500).json({ error: "Failed to apply referral discount" });
+    }
+  });
+
+  // Admin: Apply referral credit to invoice
+  app.post("/api/invoices/:id/apply-referral-credit", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amount } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Invalid credit amount" });
+      }
+
+      const invoice = await storage.getInvoice(id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      if (!invoice.customerId) {
+        return res.status(400).json({ error: "Invoice has no associated customer" });
+      }
+
+      const credit = await storage.getReferralCredit(invoice.customerId);
+      if (!credit || credit.availableBalance < amount) {
+        return res.status(400).json({ error: "Insufficient referral credit balance" });
+      }
+
+      await storage.useReferralCredit(invoice.customerId, amount);
+
+      const newTotal = invoice.total - amount;
+      await storage.updateInvoice(id, {
+        referralCreditApplied: amount,
+        total: newTotal,
+      });
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'other',
+        entityType: 'invoice',
+        entityId: id,
+        entityName: invoice.invoiceNumber,
+        details: `Applied referral credit: $${(amount / 100).toFixed(2)}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error applying referral credit:", error);
+      res.status(500).json({ error: "Failed to apply referral credit" });
+    }
+  });
+
+  // Admin: Get referral settings
+  app.get("/api/referral-settings", isAuthenticated, async (_req, res) => {
+    try {
+      let settings = await storage.getReferralSettings();
+      if (!settings) {
+        settings = await storage.upsertReferralSettings({
+          enabled: true,
+          tier1Amount: 1000,
+          tier2Amount: 1500,
+          tier3Amount: 2000,
+          minimumServicePrice: 5000,
+          welcomeEmailEnabled: true,
+          creditEarnedEmailEnabled: true,
+        });
+      }
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching referral settings:", error);
+      res.status(500).json({ error: "Failed to fetch referral settings" });
+    }
+  });
+
+  // Admin: Update referral settings
+  app.put("/api/referral-settings", isAuthenticated, async (req, res) => {
+    try {
+      const settings = await storage.upsertReferralSettings(req.body);
+      
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'referral_settings',
+        entityId: settings.id,
+        entityName: 'Referral Program Settings',
+      });
+
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating referral settings:", error);
+      res.status(500).json({ error: "Failed to update referral settings" });
+    }
+  });
+
+  // Admin: Manually adjust customer referral credits
+  app.post("/api/customers/:id/adjust-credits", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amount, reason } = req.body;
+
+      if (!amount) {
+        return res.status(400).json({ error: "Amount is required" });
+      }
+
+      const customer = await storage.getCustomer(id);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+
+      if (amount > 0) {
+        await storage.addReferralCredit(id, amount);
+      } else {
+        await storage.useReferralCredit(id, Math.abs(amount));
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'other',
+        entityType: 'customer',
+        entityId: id,
+        entityName: customer.name,
+        details: `Adjusted credits: ${amount > 0 ? 'Added' : 'Deducted'} $${(Math.abs(amount) / 100).toFixed(2)} - ${reason || 'Manual adjustment'}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error adjusting credits:", error);
+      res.status(500).json({ error: "Failed to adjust credits" });
+    }
+  });
+
   // Public endpoint to get banner settings
   app.get("/api/public/banner-settings", async (_req, res) => {
     try {

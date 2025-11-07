@@ -43,6 +43,12 @@ import {
   type InsertEmailTemplate,
   type ServiceArea,
   type InsertServiceArea,
+  type Referral,
+  type InsertReferral,
+  type ReferralCredit,
+  type InsertReferralCredit,
+  type ReferralSettings,
+  type InsertReferralSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -68,6 +74,9 @@ import {
   customerNotes,
   emailTemplates,
   serviceAreas,
+  referrals,
+  referralCredits,
+  referralSettings,
 } from "@shared/schema";
 import { eq, desc, sql, or } from "drizzle-orm";
 
@@ -251,6 +260,30 @@ export interface IStorage {
   updateServiceArea(id: string, area: Partial<InsertServiceArea>): Promise<ServiceArea | undefined>;
   deleteServiceArea(id: string): Promise<void>;
   checkZipCodeInServiceArea(zipCode: string): Promise<boolean>;
+
+  // Referral operations
+  createReferral(referral: InsertReferral): Promise<Referral>;
+  getReferrals(): Promise<Referral[]>;
+  getReferral(id: string): Promise<Referral | undefined>;
+  getReferralsByReferrer(referrerId: string): Promise<Referral[]>;
+  getReferralByBooking(bookingId: string): Promise<Referral | undefined>;
+  updateReferralStatus(id: string, status: string, creditedAt?: Date): Promise<Referral | undefined>;
+  deleteReferral(id: string): Promise<void>;
+
+  // Referral credit operations
+  getOrCreateReferralCredit(customerId: string): Promise<ReferralCredit>;
+  getReferralCredit(customerId: string): Promise<ReferralCredit | undefined>;
+  addReferralCredit(customerId: string, amount: number): Promise<ReferralCredit>;
+  useReferralCredit(customerId: string, amount: number): Promise<ReferralCredit>;
+
+  // Referral settings operations
+  getReferralSettings(): Promise<ReferralSettings | undefined>;
+  upsertReferralSettings(settings: InsertReferralSettings): Promise<ReferralSettings>;
+
+  // Referral helper operations
+  validateReferralCode(code: string): Promise<Customer | null>;
+  generateReferralCode(customerName: string): Promise<string>;
+  calculateReferralTier(referrerId: string): Promise<{ tier: number; amount: number }>;
 }
 
 export class DbStorage implements IStorage {
@@ -962,6 +995,158 @@ export class DbStorage implements IStorage {
     const result = await db.select().from(serviceAreas)
       .where(sql`${serviceAreas.isActive} = true AND ${zipCode} = ANY(${serviceAreas.zipCodes})`);
     return result.length > 0;
+  }
+
+  // Referral operations
+  async createReferral(referral: InsertReferral): Promise<Referral> {
+    const [result] = await db.insert(referrals).values(referral).returning();
+    return result;
+  }
+
+  async getReferrals(): Promise<Referral[]> {
+    return await db.select().from(referrals).orderBy(desc(referrals.createdAt));
+  }
+
+  async getReferral(id: string): Promise<Referral | undefined> {
+    const result = await db.select().from(referrals).where(eq(referrals.id, id));
+    return result[0];
+  }
+
+  async getReferralsByReferrer(referrerId: string): Promise<Referral[]> {
+    return await db.select().from(referrals)
+      .where(eq(referrals.referrerId, referrerId))
+      .orderBy(desc(referrals.createdAt));
+  }
+
+  async getReferralByBooking(bookingId: string): Promise<Referral | undefined> {
+    const result = await db.select().from(referrals)
+      .where(eq(referrals.referredBookingId, bookingId));
+    return result[0];
+  }
+
+  async updateReferralStatus(id: string, status: string, creditedAt?: Date): Promise<Referral | undefined> {
+    const updateData: any = { status };
+    if (creditedAt) {
+      updateData.creditedAt = creditedAt;
+    }
+    const result = await db.update(referrals).set(updateData).where(eq(referrals.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteReferral(id: string): Promise<void> {
+    await db.delete(referrals).where(eq(referrals.id, id));
+  }
+
+  // Referral credit operations
+  async getOrCreateReferralCredit(customerId: string): Promise<ReferralCredit> {
+    const existing = await this.getReferralCredit(customerId);
+    if (existing) {
+      return existing;
+    }
+    
+    const [result] = await db.insert(referralCredits).values({
+      customerId,
+      totalEarned: 0,
+      totalUsed: 0,
+      availableBalance: 0,
+    }).returning();
+    return result;
+  }
+
+  async getReferralCredit(customerId: string): Promise<ReferralCredit | undefined> {
+    const result = await db.select().from(referralCredits)
+      .where(eq(referralCredits.customerId, customerId));
+    return result[0];
+  }
+
+  async addReferralCredit(customerId: string, amount: number): Promise<ReferralCredit> {
+    const credit = await this.getOrCreateReferralCredit(customerId);
+    
+    const [result] = await db.update(referralCredits).set({
+      totalEarned: credit.totalEarned + amount,
+      availableBalance: credit.availableBalance + amount,
+      updatedAt: new Date(),
+    }).where(eq(referralCredits.customerId, customerId)).returning();
+    
+    return result;
+  }
+
+  async useReferralCredit(customerId: string, amount: number): Promise<ReferralCredit> {
+    const credit = await this.getOrCreateReferralCredit(customerId);
+    
+    if (credit.availableBalance < amount) {
+      throw new Error('Insufficient referral credit balance');
+    }
+    
+    const [result] = await db.update(referralCredits).set({
+      totalUsed: credit.totalUsed + amount,
+      availableBalance: credit.availableBalance - amount,
+      updatedAt: new Date(),
+    }).where(eq(referralCredits.customerId, customerId)).returning();
+    
+    return result;
+  }
+
+  // Referral settings operations
+  async getReferralSettings(): Promise<ReferralSettings | undefined> {
+    const result = await db.select().from(referralSettings).limit(1);
+    return result[0];
+  }
+
+  async upsertReferralSettings(settings: InsertReferralSettings): Promise<ReferralSettings> {
+    const existing = await this.getReferralSettings();
+    if (existing) {
+      const [result] = await db.update(referralSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(referralSettings.id, existing.id))
+        .returning();
+      return result;
+    } else {
+      const [result] = await db.insert(referralSettings).values(settings).returning();
+      return result;
+    }
+  }
+
+  // Referral helper operations
+  async validateReferralCode(code: string): Promise<Customer | null> {
+    const result = await db.select().from(customers)
+      .where(eq(customers.referralCode, code));
+    return result[0] || null;
+  }
+
+  async generateReferralCode(customerName: string): Promise<string> {
+    const firstName = customerName.split(' ')[0].toUpperCase();
+    const random = Math.floor(1000 + Math.random() * 9000);
+    let code = `${firstName}${random}`;
+    
+    let exists = await this.validateReferralCode(code);
+    while (exists) {
+      const newRandom = Math.floor(1000 + Math.random() * 9000);
+      code = `${firstName}${newRandom}`;
+      exists = await this.validateReferralCode(code);
+    }
+    
+    return code;
+  }
+
+  async calculateReferralTier(referrerId: string): Promise<{ tier: number; amount: number }> {
+    const completedReferrals = await db.select().from(referrals)
+      .where(sql`${referrals.referrerId} = ${referrerId} AND ${referrals.status} = 'credited'`);
+    
+    const count = completedReferrals.length;
+    const settings = await this.getReferralSettings();
+    
+    const tier1Amount = settings?.tier1Amount || 1000;
+    const tier2Amount = settings?.tier2Amount || 1500;
+    const tier3Amount = settings?.tier3Amount || 2000;
+    
+    if (count === 0) {
+      return { tier: 1, amount: tier1Amount };
+    } else if (count === 1) {
+      return { tier: 2, amount: tier2Amount };
+    } else {
+      return { tier: 3, amount: tier3Amount };
+    }
   }
 }
 

@@ -10,7 +10,8 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Booking } from "@shared/schema";
 import { Link } from "wouter";
 import { PhotoViewButton } from "@/components/CustomerPhotoViewer";
-import { Calendar, Clock, Home, Mail, Phone, MapPin, AlertTriangle, DollarSign } from "lucide-react";
+import { Calendar, Clock, Home, Mail, Phone, MapPin, AlertTriangle, DollarSign, Gift, Share2, Check, Copy, Users, TrendingUp } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const statusColors = {
   pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
@@ -42,15 +43,58 @@ const serviceNames: Record<string, string> = {
 export default function CustomerPortal() {
   const [email, setEmail] = useState("");
   const [searchEmail, setSearchEmail] = useState("");
+  const [copiedCode, setCopiedCode] = useState(false);
+  const { toast } = useToast();
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings/customer", searchEmail],
     enabled: !!searchEmail,
   });
 
+  const { data: referralData, isLoading: referralLoading } = useQuery<{
+    referralCode: string | null;
+    successfulReferrals: number;
+    availableCredits: number;
+    tierLevel: number;
+    nextTierAmount: number;
+    referrals: Array<{
+      id: string;
+      referredCustomerName: string;
+      creditAmount: number;
+      status: string;
+      createdAt: string;
+    }>;
+  }>({
+    queryKey: ["/api/referrals/customer-stats", searchEmail],
+    enabled: !!searchEmail,
+  });
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchEmail(email);
+  };
+
+  const handleCopyReferralCode = () => {
+    if (referralData?.referralCode) {
+      navigator.clipboard.writeText(referralData.referralCode);
+      setCopiedCode(true);
+      toast({
+        title: "Code copied!",
+        description: "Your referral code has been copied to clipboard",
+      });
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
+
+  const handleShareReferralLink = () => {
+    if (referralData?.referralCode) {
+      const referralLink = `${window.location.origin}/book?ref=${referralData.referralCode}`;
+      navigator.clipboard.writeText(referralLink);
+      toast({
+        title: "Link copied!",
+        description: "Share this link with friends to give them a discount",
+      });
+    }
   };
 
   return (
@@ -104,6 +148,154 @@ export default function CustomerPortal() {
             <p className="text-muted-foreground">
               No bookings found for {searchEmail}
             </p>
+          </Card>
+        )}
+
+        {searchEmail && !isLoading && referralData && referralData.referralCode && (
+          <Card className="mb-8" data-testid="card-referral-program">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Gift className="h-5 w-5 text-primary" />
+                <CardTitle>Referral Program</CardTitle>
+              </div>
+              <CardDescription>
+                Share your code and earn rewards when friends book!
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-primary/5 rounded-lg p-4">
+                <Label className="text-sm text-muted-foreground mb-2 block">
+                  Your Referral Code
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-background border rounded-lg px-4 py-3 font-mono text-lg font-bold">
+                    {referralData.referralCode}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyReferralCode}
+                    data-testid="button-copy-referral-code"
+                  >
+                    {copiedCode ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full mt-3"
+                  onClick={handleShareReferralLink}
+                  data-testid="button-share-referral-link"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Referral Link
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Successful Referrals</span>
+                    </div>
+                    <p className="text-2xl font-bold" data-testid="text-successful-referrals">
+                      {referralData.successfulReferrals}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Current Tier</span>
+                    </div>
+                    <p className="text-2xl font-bold" data-testid="text-tier-level">
+                      Tier {referralData.tierLevel}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gift className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Available Credits</span>
+                    </div>
+                    <p className="text-2xl font-bold text-primary" data-testid="text-available-credits">
+                      ${(referralData.availableCredits / 100).toFixed(2)}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Tier Rewards
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className={referralData.tierLevel >= 1 ? "text-primary font-medium" : "text-muted-foreground"}>
+                      1st referral: $10 for you & your friend
+                    </span>
+                    {referralData.tierLevel >= 1 && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={referralData.tierLevel >= 2 ? "text-primary font-medium" : "text-muted-foreground"}>
+                      2nd referral: $15 for you & your friend
+                    </span>
+                    {referralData.tierLevel >= 2 && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={referralData.tierLevel >= 3 ? "text-primary font-medium" : "text-muted-foreground"}>
+                      3rd+ referrals: $20 for you & your friend
+                    </span>
+                    {referralData.tierLevel >= 3 && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                </div>
+              </div>
+
+              {referralData.referrals && referralData.referrals.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3">Your Referral History</h4>
+                  <div className="space-y-2">
+                    {referralData.referrals.map((ref) => (
+                      <div
+                        key={ref.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        data-testid={`referral-${ref.id}`}
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{ref.referredCustomerName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(ref.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-primary">
+                            +${(ref.creditAmount / 100).toFixed(2)}
+                          </p>
+                          <Badge
+                            className={
+                              ref.status === "credited"
+                                ? "bg-green-500/10 text-green-700 dark:text-green-400"
+                                : "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
+                            }
+                          >
+                            {ref.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
           </Card>
         )}
 

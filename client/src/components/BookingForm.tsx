@@ -105,6 +105,10 @@ export function BookingForm() {
     promoCode: "",
     promoCodeId: null as string | null,
     promoCodeDiscount: 0,
+    referralCode: "",
+    referralCodeValid: false,
+    referralReferrerName: "",
+    referralDiscountAmount: 0,
     isRecurring: false,
     recurringFrequency: "weekly" as "weekly" | "biweekly" | "monthly",
     recurringEndDate: undefined as Date | undefined,
@@ -230,6 +234,43 @@ export function BookingForm() {
     },
   });
 
+  const validateReferralCodeMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/referrals/validate", { code });
+      return await res.json();
+    },
+    onSuccess: (data: any) => {
+      if (data.valid) {
+        updateFormData("referralCodeValid", true);
+        updateFormData("referralReferrerName", data.referrerName);
+        updateFormData("referralDiscountAmount", data.discountAmount);
+        toast({
+          title: "Referral code applied!",
+          description: `You'll save $${(data.discountAmount / 100).toFixed(2)} thanks to ${data.referrerName}!`,
+        });
+      } else {
+        updateFormData("referralCodeValid", false);
+        updateFormData("referralReferrerName", "");
+        updateFormData("referralDiscountAmount", 0);
+        toast({
+          title: "Invalid referral code",
+          description: data.message || "This referral code is not valid",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      updateFormData("referralCodeValid", false);
+      updateFormData("referralReferrerName", "");
+      updateFormData("referralDiscountAmount", 0);
+      toast({
+        title: "Error",
+        description: "Failed to validate referral code",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = () => {
     const bookingData = {
       service: formData.service,
@@ -244,6 +285,7 @@ export function BookingForm() {
       paymentMethodId: formData.paymentMethodId,
       promoCodeId: formData.promoCodeId,
       discountAmount: formData.promoCodeDiscount,
+      referralCode: formData.referralCodeValid ? formData.referralCode : undefined,
       isRecurring: formData.isRecurring,
       recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined,
       recurringEndDate: formData.isRecurring && formData.recurringEndDate ? format(formData.recurringEndDate, "yyyy-MM-dd") : undefined,
@@ -584,6 +626,42 @@ export function BookingForm() {
                   <p className="text-sm text-primary font-medium" data-testid="text-promo-applied">
                     ✓ Promo code applied
                   </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="referral-code">Referral Code (Optional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="referral-code"
+                    value={formData.referralCode}
+                    onChange={(e) => updateFormData("referralCode", e.target.value.toUpperCase())}
+                    placeholder="Enter referral code"
+                    data-testid="input-referral-code"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => validateReferralCodeMutation.mutate(formData.referralCode)}
+                    disabled={!formData.referralCode || validateReferralCodeMutation.isPending}
+                    data-testid="button-apply-referral"
+                  >
+                    {validateReferralCodeMutation.isPending ? "Checking..." : "Apply"}
+                  </Button>
+                </div>
+                {formData.referralCodeValid && formData.referralReferrerName && (
+                  <div className="bg-primary/5 rounded-lg p-3 space-y-1" data-testid="alert-referral-applied">
+                    <p className="text-sm text-primary font-medium flex items-center gap-1">
+                      <Check className="h-3 w-3" />
+                      Referral code applied!
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Referred by: <span className="font-medium text-foreground">{formData.referralReferrerName}</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Discount: <span className="font-medium text-primary">${(formData.referralDiscountAmount / 100).toFixed(2)}</span>
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

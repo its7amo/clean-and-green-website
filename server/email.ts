@@ -878,3 +878,121 @@ export async function sendCancellationFeeChargedEmail(
     console.error('Failed to send cancellation fee charged email:', error);
   }
 }
+
+export interface ReferralWelcomeEmailData {
+  customerEmail: string;
+  customerName: string;
+  referralCode: string;
+}
+
+export async function sendReferralWelcomeEmail(data: ReferralWelcomeEmailData): Promise<void> {
+  if (!resend) {
+    console.log('Email not configured - skipping referral welcome email');
+    return;
+  }
+
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: data.customerEmail,
+      subject: 'Share the Clean with Friends! 🎁',
+      html: `
+        <h2>Thanks for Choosing Clean & Green! 🌿</h2>
+        <p>Hi ${escapeHtml(data.customerName)},</p>
+        
+        <p>We loved serving you! As a thank you, we want to share a special opportunity with you.</p>
+        
+        <h3>Your Personal Referral Code:</h3>
+        <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+          <p style="font-size: 28px; font-weight: bold; color: #22c55e; margin: 0;">${escapeHtml(data.referralCode)}</p>
+        </div>
+        
+        <h3>How It Works:</h3>
+        <ol>
+          <li><strong>Share your code</strong> with friends and family</li>
+          <li><strong>They get $10-$20 off</strong> their first cleaning (tiered rewards!)</li>
+          <li><strong>You earn credits</strong> after their service is completed:
+            <ul>
+              <li>1st referral: Both get $10 off</li>
+              <li>2nd referral: Both get $15 off</li>
+              <li>3rd+ referrals: Both get $20 off!</li>
+            </ul>
+          </li>
+        </ol>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://clean-and-green-website.onrender.com/book" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+            Book Your Next Cleaning
+          </a>
+        </p>
+        
+        <p>Questions? Just reply to this email!</p>
+        
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Referral welcome email sent to ${data.customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send referral welcome email:', error);
+  }
+}
+
+export interface ReferralCreditEarnedEmailData {
+  customerEmail: string;
+  customerName: string;
+  referredName: string;
+  creditAmount: number;
+  tier: string;
+}
+
+export async function sendReferralCreditEarnedEmail(data: ReferralCreditEarnedEmailData): Promise<void> {
+  if (!resend) {
+    console.log('Email not configured - skipping referral credit email');
+    return;
+  }
+
+  try {
+    const amount = (data.creditAmount / 100).toFixed(2);
+    
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: data.customerEmail,
+      subject: `You Earned $${amount}! 🎉`,
+      html: `
+        <h2>Great News! Your Referral Paid Off! 🎉</h2>
+        <p>Hi ${escapeHtml(data.customerName)},</p>
+        
+        <p>Your friend ${escapeHtml(data.referredName)} just completed their first Clean & Green service!</p>
+        
+        <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+          <p style="font-size: 18px; margin: 0;">You've earned</p>
+          <p style="font-size: 36px; font-weight: bold; color: #22c55e; margin: 10px 0;">$${amount}</p>
+          <p style="font-size: 14px; color: #666; margin: 0;">in referral credits!</p>
+        </div>
+        
+        <p><strong>Your ${data.tier} referral bonus!</strong> Keep referring friends to unlock higher rewards:</p>
+        <ul>
+          <li>1st referral: $10 off ✓</li>
+          <li>2nd referral: $15 off ${data.tier === '2nd' ? '✓' : ''}</li>
+          <li>3rd+ referrals: $20 off ${data.tier === '3rd+' ? '✓' : ''}</li>
+        </ul>
+        
+        <h3>Ready to Use Your Credits?</h3>
+        <p>Your credits will automatically be available when you book your next cleaning. We'll remind you when creating your invoice!</p>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://clean-and-green-website.onrender.com/book" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+            Book Your Next Cleaning
+          </a>
+        </p>
+        
+        <p>Keep sharing your code to earn more!</p>
+        
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Referral credit earned email sent to ${data.customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send referral credit earned email:', error);
+  }
+}

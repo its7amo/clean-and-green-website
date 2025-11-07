@@ -7,6 +7,7 @@ import { startReminderScheduler } from "./reminderScheduler";
 import { startRecurringBookingScheduler } from "./recurringBookingScheduler";
 import { startFollowUpScheduler } from "./followUpScheduler";
 import { startOverdueInvoiceReminder } from "./schedulers/overdueInvoiceReminder";
+import { startReferralScheduler } from "./referralScheduler";
 
 const app = express();
 
@@ -105,6 +106,9 @@ app.use((req, res, next) => {
 
   // Start overdue invoice reminder scheduler (sends payment reminders at 3, 7, and 14 days overdue)
   startOverdueInvoiceReminder();
+
+  // Start referral program scheduler (auto-credits referrers, generates codes)
+  startReferralScheduler();
 
   const server = await registerRoutes(app);
 
