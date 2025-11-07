@@ -37,6 +37,8 @@ export default function AdminCustomerProfile() {
 
   const { data: profile, isLoading } = useQuery<CustomerProfile>({
     queryKey: [profileUrl],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const addNoteMutation = useMutation({

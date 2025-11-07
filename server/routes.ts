@@ -3142,6 +3142,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customers", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertCustomerSchema.parse(req.body);
+      
+      // Check if customer already exists by email
+      const existingCustomer = await storage.getCustomerByEmail(validatedData.email);
+      if (existingCustomer) {
+        return res.status(409).json({ 
+          error: "A customer with this email already exists",
+          existingCustomer 
+        });
+      }
+      
       const customer = await storage.createCustomer(validatedData);
       await logActivity({
         context: getUserContext(req),
