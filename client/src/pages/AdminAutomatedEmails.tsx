@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { BusinessSettings } from "@shared/schema";
-import { Loader2, Mail, Bell, RefreshCw, Star } from "lucide-react";
+import { Loader2, Mail, Bell, RefreshCw, Star, DollarSign } from "lucide-react";
 import { useEffect } from "react";
 
 const emailSettingsSchema = z.object({
@@ -263,6 +263,28 @@ export default function AdminAutomatedEmails() {
                           </FormItem>
                         )}
                       />
+
+                      <div className="rounded-lg border p-4 bg-muted/50">
+                        <div className="space-y-0.5 flex-1">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-5 w-5 text-primary" />
+                            <div className="text-base font-medium">
+                              Payment Reminders
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Automatically sends escalating payment reminders for overdue invoices:
+                          </p>
+                          <ul className="text-sm text-muted-foreground mt-2 space-y-1 ml-7 list-disc">
+                            <li><strong>3 days overdue:</strong> Friendly payment reminder</li>
+                            <li><strong>7 days overdue:</strong> Important notice with payment link</li>
+                            <li><strong>14 days overdue:</strong> Urgent payment request</li>
+                          </ul>
+                          <p className="text-sm text-muted-foreground mt-3">
+                            <strong>Status:</strong> <span className="text-green-600 dark:text-green-400">✓ Active</span> - Automated reminders run every hour
+                          </p>
+                        </div>
+                      </div>
 
                       <div className="flex justify-end">
                         <Button

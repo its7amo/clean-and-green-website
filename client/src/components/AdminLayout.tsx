@@ -38,11 +38,13 @@ import {
   Tag,
   Repeat,
   MapPin,
+  BarChart3,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/admin/bookings", icon: Calendar, label: "Bookings" },
   { href: "/admin/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/admin/recurring-bookings", icon: Repeat, label: "Recurring Bookings" },
