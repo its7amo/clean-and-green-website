@@ -56,8 +56,19 @@ export default function AdminNewsletter() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/email-templates"] });
+      toast({
+        title: "Templates loaded!",
+        description: `${data.count} email templates are now available to use.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to load templates",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
