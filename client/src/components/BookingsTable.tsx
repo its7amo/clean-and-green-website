@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, CheckCircle, XCircle, Users, Trash2, Camera, DollarSign, Edit2 } from "lucide-react";
+import { Eye, CheckCircle, XCircle, Users, Trash2, Camera, DollarSign, Edit2, Search } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,7 @@ export function BookingsTable() {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [actualPriceInput, setActualPriceInput] = useState<string>("");
   const [editingPromoCode, setEditingPromoCode] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
@@ -194,6 +195,14 @@ export function BookingsTable() {
     );
   }
 
+  const filteredBookings = bookings?.filter(booking =>
+    booking.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    booking.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (booking.phone && booking.phone.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (booking.address && booking.address.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    serviceNames[booking.service].toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   if (!bookings || bookings.length === 0) {
     return (
       <Card className="p-8 text-center">
@@ -203,13 +212,33 @@ export function BookingsTable() {
   }
 
   return (
-    <Card>
-      <div className="p-6 border-b">
-        <h3 className="text-lg font-semibold">Recent Bookings</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-muted/50">
+    <>
+      <Card>
+        <div className="p-6 border-b">
+          <h3 className="text-lg font-semibold">Recent Bookings</h3>
+        </div>
+        <div className="p-6 border-b">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by customer name, email, phone, address, or service..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+              data-testid="input-search-bookings"
+            />
+          </div>
+        </div>
+        {filteredBookings.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground" data-testid="text-no-bookings">
+              {searchQuery ? "No bookings match your search." : "No bookings yet"}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Customer
@@ -235,7 +264,7 @@ export function BookingsTable() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {bookings.map((booking) => (
+            {filteredBookings.map((booking) => (
               <tr key={booking.id} className="hover-elevate" data-testid={`booking-row-${booking.id}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium">{booking.name}</div>
@@ -372,6 +401,8 @@ export function BookingsTable() {
           </tbody>
         </table>
       </div>
+        )}
+      </Card>
 
       {/* View Booking Dialog */}
       <Dialog open={viewDialogOpen !== null} onOpenChange={(open) => !open && setViewDialogOpen(null)}>
@@ -608,6 +639,6 @@ export function BookingsTable() {
           }}
         />
       )}
-    </Card>
+    </>
   );
 }
