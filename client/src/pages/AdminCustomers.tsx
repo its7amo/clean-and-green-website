@@ -31,7 +31,14 @@ import { Loader2, Eye, Edit, Trash2, UserPlus, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Customer } from "@shared/schema";
+import type { Customer, EmailTemplate } from "@shared/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AdminCustomers() {
   const { toast } = useToast();
@@ -50,9 +57,27 @@ export default function AdminCustomers() {
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+  });
+
+  const { data: emailTemplates = [] } = useQuery<EmailTemplate[]>({
+    queryKey: ["/api/email-templates"],
+  });
+
+  const seedTemplatesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/email-templates/seed");
+      if (!res.ok) {
+        throw new Error("Failed to seed templates");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/email-templates"] });
+    },
   });
 
   const createMutation = useMutation({
@@ -235,6 +260,21 @@ export default function AdminCustomers() {
       setSelectedCustomers(new Set());
     } else {
       setSelectedCustomers(new Set(customers.map(c => c.id)));
+    }
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    if (templateId === "") {
+      setEmailSubject("");
+      setEmailMessage("");
+      return;
+    }
+    
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      setEmailSubject(template.subject);
+      setEmailMessage(template.body);
     }
   };
 
@@ -552,6 +592,40 @@ export default function AdminCustomers() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Select Template (Optional)</label>
+              <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                <SelectTrigger data-testid="select-email-template">
+                  <SelectValue placeholder="Start from scratch or choose a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No template - Start from scratch</SelectItem>
+                  {emailTemplates.length === 0 && (
+                    <div className="p-2 text-sm text-muted-foreground">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => seedTemplatesMutation.mutate()}
+                        disabled={seedTemplatesMutation.isPending}
+                        data-testid="button-load-templates"
+                      >
+                        {seedTemplatesMutation.isPending ? "Loading..." : "Load Templates"}
+                      </Button>
+                    </div>
+                  )}
+                  {emailTemplates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} ({template.category})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {emailTemplates.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Click "Load Templates" to access pre-made email templates
+                </p>
+              )}
+            </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Subject</label>
               <Input

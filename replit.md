@@ -14,6 +14,11 @@ Clean and Green is a professional cleaning service booking platform focused on e
 **Admin Tools:**
 - **Customer Profile System**: Comprehensive customer history view with booking/quote/invoice tracking, custom notes, and customer lifetime value metrics
 - **Customer Notes**: Admins can add and manage notes about customer preferences, special requests, allergies, and gate codes
+- **Email Template System**: Pre-made reusable email templates for bulk emails and newsletters
+  - 8 default templates covering promotions, announcements, seasonal greetings, thank you messages, and follow-ups
+  - Template categories: promotion, announcement, thank_you, seasonal, follow_up
+  - Quick template selection in both Newsletter and Customer bulk email features
+  - Templates can be edited before sending for customization
 
 ## User Preferences
 
@@ -40,6 +45,7 @@ PostgreSQL (via Neon for serverless deployment) is the database, with Drizzle OR
 - **Recurring Bookings**: Automatic recurring service appointments.
 - **Job Photos**: Before/after photos for completed jobs.
 - Enhanced Bookings table with promo code integration and reminder tracking.
+- **Email Templates**: Reusable email templates with name, category, subject, and body fields for bulk communications.
 Zod schemas are generated from Drizzle tables for runtime validation and type inference.
 
 ### Authentication & Authorization

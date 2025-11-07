@@ -19,7 +19,9 @@ import {
   insertPromoCodeSchema,
   insertRecurringBookingSchema,
   insertJobPhotoSchema,
+  insertEmailTemplateSchema,
   type JobPhoto,
+  type EmailTemplate,
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
@@ -2657,6 +2659,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid newsletter data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to send newsletter" });
+    }
+  });
+
+  // Email Templates
+  app.get("/api/email-templates", isAuthenticated, async (_req, res) => {
+    try {
+      const templates = await storage.getEmailTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching email templates:", error);
+      res.status(500).json({ error: "Failed to fetch email templates" });
+    }
+  });
+
+  app.post("/api/email-templates", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertEmailTemplateSchema.parse(req.body);
+      const template = await storage.createEmailTemplate(validatedData);
+      res.json(template);
+    } catch (error) {
+      console.error("Error creating email template:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid template data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create email template" });
+    }
+  });
+
+  app.post("/api/email-templates/seed", isAuthenticated, async (_req, res) => {
+    try {
+      const existingTemplates = await storage.getEmailTemplates();
+      if (existingTemplates.length > 0) {
+        return res.json({ message: "Templates already exist", count: existingTemplates.length });
+      }
+
+      const defaultTemplates = [
+        {
+          name: "Spring Cleaning Special",
+          category: "promotion",
+          subject: "Spring Into Savings - 15% Off All Cleaning Services! 🌸",
+          body: "Hi there!\n\nSpring is here, and it's the perfect time to refresh your space! For a limited time, enjoy 15% off all our eco-friendly cleaning services.\n\nWhether you need a deep clean, regular maintenance, or a one-time refresh, Clean & Green has you covered with our environmentally safe cleaning products.\n\nBook now and enjoy a sparkling clean home this season!\n\nBest regards,\nClean & Green Team",
+          isDefault: true,
+        },
+        {
+          name: "Service Update Announcement",
+          category: "announcement",
+          subject: "Important Update: New Service Hours & Offerings",
+          body: "Dear Valued Customer,\n\nWe're excited to share some updates with you!\n\nStarting next month, we're extending our service hours to better accommodate your schedule. We're also introducing new specialized services including carpet deep cleaning and eco-friendly disinfection.\n\nThank you for choosing Clean & Green. We're committed to providing you with the best cleaning experience in Oklahoma.\n\nWarm regards,\nClean & Green Team",
+          isDefault: true,
+        },
+        {
+          name: "Thank You Message",
+          category: "thank_you",
+          subject: "Thank You for Choosing Clean & Green!",
+          body: "Dear Customer,\n\nWe wanted to take a moment to thank you for choosing Clean & Green for your cleaning needs.\n\nYour trust in our eco-friendly services means the world to us. We hope you're enjoying your sparkling clean space!\n\nIf you have any feedback or need anything at all, please don't hesitate to reach out. We're always here to help.\n\nWith gratitude,\nClean & Green Team",
+          isDefault: true,
+        },
+        {
+          name: "Holiday Greetings",
+          category: "seasonal",
+          subject: "Happy Holidays from Clean & Green! 🎄",
+          body: "Season's Greetings!\n\nAs the holiday season approaches, we want to express our heartfelt thanks for your continued support throughout the year.\n\nMay your home be filled with joy, laughter, and sparkling cleanliness this holiday season!\n\nTo help you enjoy the festivities stress-free, we're offering priority booking for holiday cleaning services. Contact us today to secure your spot.\n\nWarmest wishes,\nClean & Green Team",
+          isDefault: true,
+        },
+        {
+          name: "Service Follow-Up",
+          category: "follow_up",
+          subject: "How Was Your Recent Cleaning Service?",
+          body: "Hi there,\n\nWe hope you're enjoying your freshly cleaned space!\n\nWe'd love to hear about your experience with our recent service. Your feedback helps us continue to improve and serve you better.\n\nIf everything was perfect, we'd be grateful if you could share a quick review. And if anything wasn't quite right, please let us know so we can make it right.\n\nThank you for choosing Clean & Green!\n\nBest,\nClean & Green Team",
+          isDefault: true,
+        },
+        {
+          name: "Referral Program",
+          category: "promotion",
+          subject: "Give $20, Get $20 - Refer a Friend!",
+          body: "Hello!\n\nLove Clean & Green? Share the joy of a spotless, eco-friendly home with your friends and family!\n\nFor every friend you refer who books a service, you'll both receive $20 off your next cleaning. It's our way of saying thank you for spreading the word.\n\nSimply share your unique referral code with friends, and the savings will automatically apply when they book.\n\nHappy referring!\n\nClean & Green Team",
+          isDefault: true,
+        },
+        {
+          name: "Summer Maintenance Tips",
+          category: "announcement",
+          subject: "Summer Cleaning Tips from Clean & Green",
+          body: "Hello!\n\nSummer is here, and with it comes unique cleaning challenges. Here are our top eco-friendly tips for keeping your home fresh during the hot months:\n\n• Open windows early morning for fresh air circulation\n• Use natural deodorizers like baking soda\n• Deep clean air vents and filters monthly\n• Protect floors from increased foot traffic\n\nNeed help with your summer deep clean? We're here to make your home sparkle while protecting the environment.\n\nStay cool and clean!\n\nClean & Green Team",
+          isDefault: true,
+        },
+        {
+          name: "Reactivation Offer",
+          category: "promotion",
+          subject: "We Miss You! Come Back to a Clean Home",
+          body: "Hi there,\n\nIt's been a while since we last had the pleasure of cleaning your home, and we'd love to welcome you back!\n\nAs a special welcome-back offer, enjoy 20% off your next service when you book within the next two weeks.\n\nLet us help you get your space back to sparkling clean with our eco-friendly products and professional service.\n\nWe hope to see you soon!\n\nWarmly,\nClean & Green Team",
+          isDefault: true,
+        },
+      ];
+
+      for (const template of defaultTemplates) {
+        await storage.createEmailTemplate(template);
+      }
+
+      res.json({ message: "Default templates created successfully", count: defaultTemplates.length });
+    } catch (error) {
+      console.error("Error seeding templates:", error);
+      res.status(500).json({ error: "Failed to seed templates" });
+    }
+  });
+
+  app.delete("/api/email-templates/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteEmailTemplate(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting email template:", error);
+      res.status(500).json({ error: "Failed to delete email template" });
     }
   });
 

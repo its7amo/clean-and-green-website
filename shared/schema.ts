@@ -509,3 +509,24 @@ export const insertCustomerNoteSchema = createInsertSchema(customerNotes).omit({
 
 export type InsertCustomerNote = z.infer<typeof insertCustomerNoteSchema>;
 export type CustomerNote = typeof customerNotes.$inferSelect;
+
+// Email templates for newsletters and customer emails
+export const emailTemplates = pgTable("email_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // 'promotion', 'announcement', 'thank_you', 'seasonal', 'follow_up'
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  isDefault: boolean("is_default").notNull().default(false), // Pre-loaded templates
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;

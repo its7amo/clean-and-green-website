@@ -39,6 +39,8 @@ import {
   type InsertJobPhoto,
   type CustomerNote,
   type InsertCustomerNote,
+  type EmailTemplate,
+  type InsertEmailTemplate,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -62,6 +64,7 @@ import {
   recurringBookings,
   jobPhotos,
   customerNotes,
+  emailTemplates,
 } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -227,6 +230,12 @@ export interface IStorage {
   createCustomerNote(note: InsertCustomerNote): Promise<CustomerNote>;
   getCustomerNotesByEmail(email: string): Promise<CustomerNote[]>;
   deleteCustomerNote(id: string): Promise<void>;
+
+  // Email template operations
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  getEmailTemplates(): Promise<EmailTemplate[]>;
+  getEmailTemplate(id: string): Promise<EmailTemplate | undefined>;
+  deleteEmailTemplate(id: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -865,6 +874,25 @@ export class DbStorage implements IStorage {
 
   async deleteCustomerNote(id: string): Promise<void> {
     await db.delete(customerNotes).where(eq(customerNotes.id, id));
+  }
+
+  // Email template operations
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [result] = await db.insert(emailTemplates).values(template).returning();
+    return result;
+  }
+
+  async getEmailTemplates(): Promise<EmailTemplate[]> {
+    return await db.select().from(emailTemplates).orderBy(emailTemplates.category, emailTemplates.name);
+  }
+
+  async getEmailTemplate(id: string): Promise<EmailTemplate | undefined> {
+    const result = await db.select().from(emailTemplates).where(eq(emailTemplates.id, id));
+    return result[0];
+  }
+
+  async deleteEmailTemplate(id: string): Promise<void> {
+    await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
   }
 }
 

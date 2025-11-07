@@ -11,6 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Mail, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import type { EmailTemplate } from "@shared/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +35,30 @@ export default function AdminNewsletter() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailContent, setEmailContent] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
   const { data: subscribers = [], isLoading } = useQuery<NewsletterSubscriber[]>({
     queryKey: ["/api/newsletter/subscribers"],
+  });
+
+  const { data: emailTemplates = [] } = useQuery<EmailTemplate[]>({
+    queryKey: ["/api/email-templates"],
+  });
+
+  const seedTemplatesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/email-templates/seed", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to seed templates");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/email-templates"] });
+    },
   });
 
   const sendEmailMutation = useMutation({
@@ -103,6 +132,21 @@ export default function AdminNewsletter() {
   const confirmDelete = (id: string) => {
     setSubscriberToDelete(id);
     setDeleteDialogOpen(true);
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    if (templateId === "") {
+      setEmailSubject("");
+      setEmailContent("");
+      return;
+    }
+    
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      setEmailSubject(template.subject);
+      setEmailContent(template.body);
+    }
   };
 
   const handleSendNewsletter = () => {
@@ -236,6 +280,42 @@ export default function AdminNewsletter() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <label htmlFor="template" className="block text-sm font-medium mb-2">
+                Select Template (Optional)
+              </label>
+              <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                <SelectTrigger data-testid="select-email-template">
+                  <SelectValue placeholder="Start from scratch or choose a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No template - Start from scratch</SelectItem>
+                  {emailTemplates.length === 0 && (
+                    <div className="p-2 text-sm text-muted-foreground">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => seedTemplatesMutation.mutate()}
+                        disabled={seedTemplatesMutation.isPending}
+                        data-testid="button-load-templates"
+                      >
+                        {seedTemplatesMutation.isPending ? "Loading..." : "Load Templates"}
+                      </Button>
+                    </div>
+                  )}
+                  {emailTemplates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} ({template.category})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {emailTemplates.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Click "Load Templates" to access pre-made email templates
+                </p>
+              )}
+            </div>
             <div>
               <label htmlFor="subject" className="block text-sm font-medium mb-2">
                 Subject
