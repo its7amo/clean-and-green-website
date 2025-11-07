@@ -37,9 +37,6 @@ const settingsFormSchema = z.object({
   promoBannerEnabled: z.boolean(),
   promoBannerMessage: z.string().optional(),
   statsCounterEnabled: z.boolean(),
-  reviewEmailEnabled: z.boolean(),
-  followUpEmailEnabled: z.boolean(),
-  reminderEmailEnabled: z.boolean(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -75,9 +72,6 @@ export default function AdminSettings() {
       promoBannerEnabled: true,
       promoBannerMessage: "",
       statsCounterEnabled: true,
-      reviewEmailEnabled: true,
-      followUpEmailEnabled: true,
-      reminderEmailEnabled: true,
     },
   });
 
@@ -105,9 +99,6 @@ export default function AdminSettings() {
         promoBannerEnabled: settings.promoBannerEnabled ?? true,
         promoBannerMessage: settings.promoBannerMessage || "",
         statsCounterEnabled: settings.statsCounterEnabled ?? true,
-        reviewEmailEnabled: settings.reviewEmailEnabled ?? true,
-        followUpEmailEnabled: settings.followUpEmailEnabled ?? true,
-        reminderEmailEnabled: settings.reminderEmailEnabled ?? true,
       });
     }
   }, [settings, form]);
@@ -523,83 +514,6 @@ export default function AdminSettings() {
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
                                 data-testid="switch-stats-counter"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Automated Email Settings</h3>
-                      <p className="text-sm text-muted-foreground">Control which automated emails are sent to customers</p>
-                      
-                      <FormField
-                        control={form.control}
-                        name="reviewEmailEnabled"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Review Request Emails
-                              </FormLabel>
-                              <FormDescription>
-                                Sent 24 hours after service completion - asks customers to leave a review
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                data-testid="switch-review-email"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="followUpEmailEnabled"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Follow-Up Emails
-                              </FormLabel>
-                              <FormDescription>
-                                Sent 30 days after service - encourages customers to book again
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                data-testid="switch-followup-email"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="reminderEmailEnabled"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Appointment Reminders
-                              </FormLabel>
-                              <FormDescription>
-                                Sent 24 hours before scheduled appointment - reduces no-shows
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                data-testid="switch-reminder-email"
                               />
                             </FormControl>
                           </FormItem>

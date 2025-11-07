@@ -51,6 +51,7 @@ const menuItems = [
   { href: "/admin/employees", icon: UserCircle, label: "Employees" },
   { href: "/admin/reviews", icon: Star, label: "Reviews" },
   { href: "/admin/newsletter", icon: Mail, label: "Newsletter" },
+  { href: "/admin/automated-emails", icon: Mail, label: "Automated Emails" },
   { href: "/admin/team", icon: UsersRound, label: "Team" },
   { href: "/admin/messages", icon: MessageSquare, label: "Messages" },
   { href: "/admin/activity-logs", icon: ClipboardList, label: "Activity Logs" },

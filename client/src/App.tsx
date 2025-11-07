@@ -30,6 +30,7 @@ import AdminSettings from "@/pages/AdminSettings";
 import AdminEmployees from "@/pages/AdminEmployees";
 import AdminReviews from "@/pages/AdminReviews";
 import AdminNewsletter from "@/pages/AdminNewsletter";
+import AdminAutomatedEmails from "@/pages/AdminAutomatedEmails";
 import AdminTeam from "@/pages/AdminTeam";
 import AdminContactMessages from "@/pages/AdminContactMessages";
 import AdminActivityLogs from "@/pages/AdminActivityLogs";
@@ -185,6 +186,9 @@ function Router() {
       </Route>
       <Route path="/admin/newsletter">
         <ProtectedRoute component={AdminNewsletter} />
+      </Route>
+      <Route path="/admin/automated-emails">
+        <ProtectedRoute component={AdminAutomatedEmails} />
       </Route>
       <Route path="/admin/team">
         <ProtectedRoute component={AdminTeam} />
