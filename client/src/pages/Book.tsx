@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { BookingForm } from "@/components/BookingForm";
+import BookingNotifications from "@/components/BookingNotifications";
 
 export default function Book() {
   return (
@@ -19,6 +20,7 @@ export default function Book() {
         </div>
       </main>
       <Footer />
+      <BookingNotifications />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { Header } from "@/components/Header";
 import { PromoBanner } from "@/components/PromoBanner";
 import { Hero } from "@/components/Hero";
-import { RecentBookings } from "@/components/RecentBookings";
 import { Services } from "@/components/Services";
 import { StatsSection } from "@/components/StatsSection";
 import { FeaturedGallery } from "@/components/FeaturedGallery";
@@ -15,7 +14,6 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <PromoBanner />
       <Header />
-      <RecentBookings />
       <main className="flex-1">
         <Hero />
         <Services />
