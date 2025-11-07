@@ -1149,6 +1149,26 @@ export class DbStorage implements IStorage {
     }
   }
 
+  async checkAddressAlreadyReferred(address: string, email: string): Promise<boolean> {
+    const normalizedAddress = address.toLowerCase().trim();
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    const existingBookings = await db.select().from(bookings)
+      .where(sql`LOWER(TRIM(${bookings.address})) = ${normalizedAddress} AND ${bookings.referralCode} IS NOT NULL`);
+    
+    if (existingBookings.length === 0) {
+      return false;
+    }
+    
+    for (const booking of existingBookings) {
+      if (booking.email.toLowerCase().trim() !== normalizedEmail) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
   // Admin Dashboard: Get aggregated referral statistics
   async getAdminReferralStats() {
     const allReferrals = await this.getReferrals();

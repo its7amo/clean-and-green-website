@@ -122,6 +122,10 @@ export function BookingForm() {
     queryKey: ["/api/settings"],
   });
 
+  const { data: referralSettings } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/public/referral-settings"],
+  });
+
   const { data: serviceAreas = [] } = useQuery<ServiceArea[]>({
     queryKey: ["/api/service-areas"],
   });
@@ -236,7 +240,11 @@ export function BookingForm() {
 
   const validateReferralCodeMutation = useMutation({
     mutationFn: async (code: string) => {
-      const res = await apiRequest("POST", "/api/referrals/validate", { code });
+      const res = await apiRequest("POST", "/api/referrals/validate", { 
+        code,
+        address: formData.address,
+        email: formData.email
+      });
       return await res.json();
     },
     onSuccess: (data: any) => {
@@ -629,41 +637,43 @@ export function BookingForm() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="referral-code">Referral Code (Optional)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="referral-code"
-                    value={formData.referralCode}
-                    onChange={(e) => updateFormData("referralCode", e.target.value.toUpperCase())}
-                    placeholder="Enter referral code"
-                    data-testid="input-referral-code"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => validateReferralCodeMutation.mutate(formData.referralCode)}
-                    disabled={!formData.referralCode || validateReferralCodeMutation.isPending}
-                    data-testid="button-apply-referral"
-                  >
-                    {validateReferralCodeMutation.isPending ? "Checking..." : "Apply"}
-                  </Button>
-                </div>
-                {formData.referralCodeValid && formData.referralReferrerName && (
-                  <div className="bg-primary/5 rounded-lg p-3 space-y-1" data-testid="alert-referral-applied">
-                    <p className="text-sm text-primary font-medium flex items-center gap-1">
-                      <Check className="h-3 w-3" />
-                      Referral code applied!
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Referred by: <span className="font-medium text-foreground">{formData.referralReferrerName}</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Discount: <span className="font-medium text-primary">${(formData.referralDiscountAmount / 100).toFixed(2)}</span>
-                    </p>
+              {referralSettings?.enabled && (
+                <div className="space-y-2">
+                  <Label htmlFor="referral-code">Referral Code (Optional)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="referral-code"
+                      value={formData.referralCode}
+                      onChange={(e) => updateFormData("referralCode", e.target.value.toUpperCase())}
+                      placeholder="Enter referral code"
+                      data-testid="input-referral-code"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => validateReferralCodeMutation.mutate(formData.referralCode)}
+                      disabled={!formData.referralCode || validateReferralCodeMutation.isPending}
+                      data-testid="button-apply-referral"
+                    >
+                      {validateReferralCodeMutation.isPending ? "Checking..." : "Apply"}
+                    </Button>
                   </div>
-                )}
-              </div>
+                  {formData.referralCodeValid && formData.referralReferrerName && (
+                    <div className="bg-primary/5 rounded-lg p-3 space-y-1" data-testid="alert-referral-applied">
+                      <p className="text-sm text-primary font-medium flex items-center gap-1">
+                        <Check className="h-3 w-3" />
+                        Referral code applied!
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Referred by: <span className="font-medium text-foreground">{formData.referralReferrerName}</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Discount: <span className="font-medium text-primary">${(formData.referralDiscountAmount / 100).toFixed(2)}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

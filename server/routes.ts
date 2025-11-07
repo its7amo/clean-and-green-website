@@ -3674,10 +3674,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Referral routes
   
+  // Public: Get referral program enabled status
+  app.get("/api/public/referral-settings", async (_req, res) => {
+    try {
+      const settings = await storage.getReferralSettings();
+      res.json({ enabled: settings?.enabled ?? true });
+    } catch (error) {
+      console.error("Error fetching referral settings:", error);
+      res.json({ enabled: false });
+    }
+  });
+  
   // Public: Validate referral code
   app.post("/api/referrals/validate", async (req, res) => {
     try {
-      const { code } = req.body;
+      const { code, address, email } = req.body;
       if (!code) {
         return res.status(400).json({ error: "Referral code is required" });
       }
@@ -3690,6 +3701,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settings = await storage.getReferralSettings();
       if (!settings?.enabled) {
         return res.status(400).json({ error: "Referral program is currently disabled" });
+      }
+
+      if (address && email) {
+        const addressAlreadyReferred = await storage.checkAddressAlreadyReferred(address, email);
+        if (addressAlreadyReferred) {
+          return res.status(400).json({ 
+            error: "This address has already been referred. Each address can only be referred once.",
+            valid: false 
+          });
+        }
       }
 
       const tierInfo = await storage.calculateReferralTier(referrer.id);
