@@ -24,7 +24,7 @@ export function usePWARedirect() {
     // Only redirect if we're at root and have a saved preference
     if (location === '/' && savedMode) {
       if (savedMode === 'admin') {
-        setLocation('/admin/login');
+        setLocation('/login');
       } else if (savedMode === 'employee') {
         setLocation('/employee/login');
       }

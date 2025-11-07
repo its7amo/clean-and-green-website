@@ -6,7 +6,7 @@ export function PWAModeSelector() {
 
   useEffect(() => {
     // Save the mode based on current route
-    if (location.startsWith('/admin')) {
+    if (location.startsWith('/admin') || location === '/login') {
       localStorage.setItem('pwa-mode', 'admin');
     } else if (location.startsWith('/employee')) {
       localStorage.setItem('pwa-mode', 'employee');
