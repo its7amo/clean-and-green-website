@@ -3593,7 +3593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate customer stats
       const totalSpent = customerInvoices
         .filter(i => i.status === 'paid')
-        .reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+        .reduce((sum, i) => sum + (i.total || 0), 0);
       
       const completedBookings = bookings.filter(b => b.status === 'completed').length;
       
