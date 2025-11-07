@@ -74,33 +74,33 @@ export default function AdminReferrals() {
 
   // Fetch referral stats
   const { data: stats } = useQuery<ReferralStats>({
-    queryKey: ["/api/referrals/stats"],
+    queryKey: ["/api/admin/referrals/stats"],
   });
 
   // Fetch top referrers
   const { data: topReferrers = [] } = useQuery<TopReferrer[]>({
-    queryKey: ["/api/referrals/top-referrers"],
+    queryKey: ["/api/admin/referrals/top-referrers"],
   });
 
   // Fetch all referrals
   const { data: allReferrals = [], isLoading } = useQuery<Referral[]>({
-    queryKey: ["/api/referrals/all"],
+    queryKey: ["/api/admin/referrals"],
   });
 
   // Fetch referral settings
   const { data: settings } = useQuery<ReferralSettings>({
-    queryKey: ["/api/referrals/settings"],
+    queryKey: ["/api/admin/referral-settings"],
   });
 
   // Fetch customer credits
   const { data: customerCredits = [] } = useQuery<CustomerCredit[]>({
-    queryKey: ["/api/referrals/customer-credits"],
+    queryKey: ["/api/admin/referral-credits"],
   });
 
   // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: Partial<ReferralSettings>) => {
-      const res = await fetch("/api/referrals/settings", {
+      const res = await fetch("/api/admin/referral-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -109,7 +109,7 @@ export default function AdminReferrals() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/referrals/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referral-settings"] });
       toast({
         title: "Settings updated",
         description: "Referral program settings have been updated successfully.",
@@ -128,7 +128,7 @@ export default function AdminReferrals() {
   // Adjust customer credit mutation
   const adjustCreditMutation = useMutation({
     mutationFn: async ({ customerId, amount }: { customerId: string; amount: number }) => {
-      const res = await fetch("/api/referrals/adjust-credit", {
+      const res = await fetch("/api/admin/referral-credits/adjust", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customerId, amount }),
@@ -137,8 +137,8 @@ export default function AdminReferrals() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/referrals/customer-credits"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/referrals/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referral-credits"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals/stats"] });
       toast({
         title: "Credit adjusted",
         description: "Customer credit balance has been updated successfully.",
@@ -235,7 +235,7 @@ export default function AdminReferrals() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="text-conversion-rate">
-                {stats?.conversionRate.toFixed(1) || '0.0'}%
+                {stats ? stats.conversionRate.toFixed(1) : '0.0'}%
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Pending to completed

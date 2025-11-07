@@ -1148,6 +1148,80 @@ export class DbStorage implements IStorage {
       return { tier: 3, amount: tier3Amount };
     }
   }
+
+  // Admin Dashboard: Get aggregated referral statistics
+  async getAdminReferralStats() {
+    const allReferrals = await this.getReferrals();
+    const totalReferrals = allReferrals.length;
+    const pendingReferrals = allReferrals.filter(r => r.status === 'pending').length;
+    const completedReferrals = allReferrals.filter(r => r.status === 'completed').length;
+    const creditedReferrals = allReferrals.filter(r => r.status === 'credited').length;
+    
+    const conversionRate = totalReferrals > 0
+      ? ((completedReferrals + creditedReferrals) / totalReferrals) * 100
+      : 0;
+    
+    const allCredits = await db.select().from(referralCredits);
+    const totalCreditsAwarded = allCredits.reduce((sum, credit) => sum + credit.totalEarned, 0);
+    
+    return {
+      totalReferrals,
+      pendingReferrals,
+      completedReferrals: completedReferrals + creditedReferrals,
+      totalCreditsAwarded,
+      conversionRate,
+    };
+  }
+
+  // Admin Dashboard: Get top referrers leaderboard
+  async getTopReferrers(limit: number = 10) {
+    const allCustomers = await this.getCustomers();
+    const customersWithCodes = allCustomers.filter(c => c.referralCode);
+    
+    const referrerStats = await Promise.all(
+      customersWithCodes.map(async (customer) => {
+        const customerReferrals = await this.getReferralsByReferrer(customer.id);
+        const successfulReferrals = customerReferrals.filter(r => r.status === 'credited');
+        const credit = await this.getReferralCredit(customer.id);
+        
+        return {
+          customerId: customer.id,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          referralCode: customer.referralCode!,
+          successfulReferrals: successfulReferrals.length,
+          totalCreditsEarned: credit?.totalEarned || 0,
+        };
+      })
+    );
+    
+    return referrerStats
+      .filter(stat => stat.successfulReferrals > 0)
+      .sort((a, b) => b.successfulReferrals - a.successfulReferrals)
+      .slice(0, limit);
+  }
+
+  // Admin Dashboard: Get all customer credit balances
+  async getAllReferralCredits() {
+    const allCredits = await db.select().from(referralCredits);
+    const allCustomers = await this.getCustomers();
+    
+    // Get all customers who have referral codes (active in referral program)
+    const customersInProgram = allCustomers.filter(c => c.referralCode);
+    
+    const creditsWithCustomerInfo = customersInProgram.map((customer) => {
+      const credit = allCredits.find(c => c.customerId === customer.id);
+      return {
+        customerId: customer.id,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        balance: credit?.availableBalance || 0,
+      };
+    });
+    
+    // Return all customers in program, even with zero balance (for manual adjustments)
+    return creditsWithCustomerInfo;
+  }
 }
 
 export const storage = new DbStorage();

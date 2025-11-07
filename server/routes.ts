@@ -5028,6 +5028,191 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Referral Dashboard: Get aggregated statistics
+  app.get("/api/admin/referrals/stats", isAuthenticated, async (_req, res) => {
+    try {
+      const stats = await storage.getAdminReferralStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching referral stats:", error);
+      res.status(500).json({ error: "Failed to fetch referral stats" });
+    }
+  });
+
+  // Admin Referral Dashboard: Get top referrers leaderboard
+  app.get("/api/admin/referrals/top-referrers", isAuthenticated, async (_req, res) => {
+    try {
+      const topReferrers = await storage.getTopReferrers(10);
+      res.json(topReferrers);
+    } catch (error) {
+      console.error("Error fetching top referrers:", error);
+      res.status(500).json({ error: "Failed to fetch top referrers" });
+    }
+  });
+
+  // Admin Referral Dashboard: Get all referrals with optional status filter
+  app.get("/api/admin/referrals", isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.query;
+      let allReferrals = await storage.getReferrals();
+      
+      if (status && status !== 'all') {
+        allReferrals = allReferrals.filter(r => r.status === status);
+      }
+
+      const referralsWithDetails = await Promise.all(
+        allReferrals.map(async (referral) => {
+          const referrer = await storage.getCustomer(referral.referrerId);
+          let referredCustomer = null;
+          if (referral.referredCustomerId) {
+            referredCustomer = await storage.getCustomer(referral.referredCustomerId);
+          }
+
+          return {
+            id: referral.id,
+            referrerId: referral.referrerId,
+            referrerName: referrer?.name || 'Unknown',
+            referredCustomerId: referral.referredCustomerId,
+            referredCustomerName: referredCustomer?.name || null,
+            referredCustomerEmail: referredCustomer?.email || null,
+            referralCode: referral.referralCode,
+            bookingId: referral.bookingId,
+            status: referral.status,
+            tierLevel: referral.tierLevel,
+            creditAmount: referral.creditAmount,
+            createdAt: referral.createdAt,
+            completedAt: referral.completedAt,
+          };
+        })
+      );
+
+      res.json(referralsWithDetails);
+    } catch (error) {
+      console.error("Error fetching referrals:", error);
+      res.status(500).json({ error: "Failed to fetch referrals" });
+    }
+  });
+
+  // Admin Referral Dashboard: Get referral settings
+  app.get("/api/admin/referral-settings", isAuthenticated, async (_req, res) => {
+    try {
+      const settings = await storage.getReferralSettings();
+      if (!settings) {
+        return res.status(404).json({ error: "Referral settings not found" });
+      }
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching referral settings:", error);
+      res.status(500).json({ error: "Failed to fetch referral settings" });
+    }
+  });
+
+  // Admin Referral Dashboard: Update referral settings
+  app.patch("/api/admin/referral-settings", isAuthenticated, async (req, res) => {
+    try {
+      const updateSchema = z.object({
+        minimumServicePrice: z.number().int().positive().optional(),
+        tier1Reward: z.number().int().positive().optional(),
+        tier2Reward: z.number().int().positive().optional(),
+        tier3Reward: z.number().int().positive().optional(),
+      });
+
+      const validatedData = updateSchema.parse(req.body);
+      
+      const currentSettings = await storage.getReferralSettings();
+      if (!currentSettings) {
+        return res.status(404).json({ error: "Referral settings not found" });
+      }
+
+      const updatedSettings = await storage.upsertReferralSettings({
+        ...currentSettings,
+        minimumServicePrice: validatedData.minimumServicePrice ?? currentSettings.minimumServicePrice,
+        tier1Amount: validatedData.tier1Reward ?? currentSettings.tier1Amount,
+        tier2Amount: validatedData.tier2Reward ?? currentSettings.tier2Amount,
+        tier3Amount: validatedData.tier3Reward ?? currentSettings.tier3Amount,
+      });
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'update',
+        entityType: 'settings',
+        entityId: updatedSettings.id,
+        entityName: 'Referral Program Settings',
+        details: `Updated referral program settings`,
+      });
+
+      res.json(updatedSettings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      console.error("Error updating referral settings:", error);
+      res.status(500).json({ error: "Failed to update referral settings" });
+    }
+  });
+
+  // Admin Referral Dashboard: Get all customer credit balances
+  app.get("/api/admin/referral-credits", isAuthenticated, async (_req, res) => {
+    try {
+      const credits = await storage.getAllReferralCredits();
+      res.json(credits);
+    } catch (error) {
+      console.error("Error fetching customer credits:", error);
+      res.status(500).json({ error: "Failed to fetch customer credits" });
+    }
+  });
+
+  // Admin Referral Dashboard: Manually adjust customer credit (new admin namespace endpoint)
+  app.post("/api/admin/referral-credits/adjust", isAuthenticated, async (req, res) => {
+    try {
+      const adjustCreditSchema = z.object({
+        customerId: z.string().uuid(),
+        amount: z.number().int().refine((val) => val !== 0, {
+          message: "Amount cannot be zero",
+        }),
+      });
+
+      const validatedData = adjustCreditSchema.parse(req.body);
+
+      const customer = await storage.getCustomer(validatedData.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+
+      let credit = await storage.getReferralCredit(validatedData.customerId);
+      if (!credit) {
+        credit = await storage.getOrCreateReferralCredit(validatedData.customerId);
+      }
+
+      if (validatedData.amount > 0) {
+        await storage.addReferralCredit(validatedData.customerId, validatedData.amount);
+      } else {
+        const positiveAmount = Math.abs(validatedData.amount);
+        if (credit.availableBalance < positiveAmount) {
+          return res.status(400).json({ error: "Insufficient credit balance" });
+        }
+        await storage.useReferralCredit(validatedData.customerId, positiveAmount);
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'other',
+        entityType: 'customer',
+        entityId: validatedData.customerId,
+        entityName: customer.name,
+        details: `Manually adjusted referral credit: ${validatedData.amount > 0 ? '+' : ''}$${(validatedData.amount / 100).toFixed(2)}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      console.error("Error adjusting referral credit:", error);
+      res.status(500).json({ error: "Failed to adjust referral credit" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
