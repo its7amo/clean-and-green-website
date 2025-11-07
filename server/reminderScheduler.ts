@@ -1,6 +1,6 @@
 import { storage } from "./storage";
 import { sendBookingConfirmationSMS } from "./sms";
-import { sendCustomerBookingConfirmation } from "./email";
+import { sendCustomerBookingConfirmation, replaceTemplatePlaceholders, escapeHtml, resend } from "./email";
 
 export function startReminderScheduler() {
   // Run every hour to check for bookings needing reminders
@@ -43,25 +43,16 @@ async function checkAndSendReminders() {
       if (bookingDate >= twoHoursFromNow && bookingDate <= tomorrow) {
         try {
           // Send SMS reminder
-          await sendBookingConfirmationSMS({
-            customerName: booking.name,
-            customerPhone: booking.phone,
-            serviceType: booking.service,
-            date: booking.date,
-            timeSlot: booking.timeSlot,
-            propertySize: booking.propertySize || '',
-          });
+          await sendBookingConfirmationSMS(
+            booking.phone,
+            booking.name,
+            booking.service,
+            new Date(booking.date),
+            booking.timeSlot
+          );
 
-          // Send email reminder
-          await sendCustomerBookingConfirmation({
-            customerName: booking.name,
-            customerEmail: booking.email,
-            serviceType: booking.service,
-            date: booking.date,
-            timeSlot: booking.timeSlot,
-            propertySize: booking.propertySize || '',
-            address: booking.address,
-          });
+          // Send email reminder with custom template
+          await sendReminderEmail(booking, settings);
 
           // Mark reminder as sent
           await storage.updateBooking(booking.id, {
@@ -82,6 +73,68 @@ async function checkAndSendReminders() {
   } catch (error) {
     console.error("Error checking for reminders:", error);
   }
+}
+
+async function sendReminderEmail(booking: any, settings: any) {
+  // Default templates
+  const defaultSubject = 'Reminder: Your cleaning appointment tomorrow ⏰';
+  const defaultBody = `Hi {{customerName}}!
+
+This is a friendly reminder that your {{serviceType}} is scheduled for tomorrow:
+
+Date: {{appointmentDate}}
+Time: {{timeSlot}}
+Address: {{customerAddress}}
+
+Our team will arrive on time with all eco-friendly cleaning supplies. Please ensure someone is available to let us in.
+
+If you need to reschedule, please contact us as soon as possible.
+
+Looking forward to seeing you tomorrow!
+
+Best regards,
+Clean & Green Team`;
+
+  // Use custom templates if available
+  const subjectTemplate = settings?.reminderEmailSubject || defaultSubject;
+  const bodyTemplate = settings?.reminderEmailBody || defaultBody;
+  
+  // Replace placeholders
+  const subject = replaceTemplatePlaceholders(subjectTemplate, {
+    customerName: booking.name,
+    serviceType: booking.service,
+    appointmentDate: booking.date,
+    timeSlot: booking.timeSlot,
+    customerAddress: booking.address,
+  });
+  
+  const bodyText = replaceTemplatePlaceholders(bodyTemplate, {
+    customerName: booking.name,
+    serviceType: booking.service,
+    appointmentDate: booking.date,
+    timeSlot: booking.timeSlot,
+    customerAddress: booking.address,
+  });
+  
+  // Convert plain text to HTML with proper formatting
+  const bodyHtml = bodyText
+    .split('\n\n')
+    .map(para => `<p>${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+  
+  const html = `
+    <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
+      ${bodyHtml}
+      <p style="font-size: 12px; color: #999; margin-top: 30px;">Clean & Green - Making Oklahoma cleaner, one eco-friendly service at a time.</p>
+    </div>
+  `;
+  
+  await resend.emails.send({
+    from: 'Clean & Green <noreply@voryn.store>',
+    to: booking.email,
+    subject,
+    html,
+  });
 }
 
 export async function checkAndSendRemindersNow() {

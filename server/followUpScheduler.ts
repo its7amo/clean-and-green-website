@@ -1,5 +1,5 @@
 import { storage } from "./storage";
-import { resend, escapeHtml } from "./email";
+import { resend, escapeHtml, replaceTemplatePlaceholders } from "./email";
 
 const FOLLOW_UP_INTERVAL = 24 * 60 * 60 * 1000; // Check once per day
 const DAYS_AFTER_COMPLETION = 30;
@@ -35,7 +35,7 @@ async function checkAndSendFollowUps() {
       
       // Send follow-up if it's been 30 days and we haven't sent one yet
       if (daysSinceCompletion === DAYS_AFTER_COMPLETION && !booking.followUpSent) {
-        await sendFollowUpEmail(booking);
+        await sendFollowUpEmail(booking, settings);
       }
     }
   } catch (error) {
@@ -43,65 +43,70 @@ async function checkAndSendFollowUps() {
   }
 }
 
-async function sendFollowUpEmail(booking: any) {
+async function sendFollowUpEmail(booking: any, settings: any) {
   try {
+    // Default templates
+    const defaultSubject = '{{customerName}}, Ready for Another Cleaning? 🏡';
+    const defaultBody = `Hi {{customerName}}!
+
+It's been 30 days since we cleaned your home, and we wanted to check in. Your space is probably ready for another refresh!
+
+We'd love to help you maintain that clean, fresh feeling.
+
+As a returning customer, you're always our top priority. Book your next service today and experience:
+
+✨ The same eco-friendly products you loved
+🏡 Professional deep cleaning service
+💚 100% satisfaction guaranteed
+
+Ready to book? Click here to schedule your next appointment!
+
+Best regards,
+Clean & Green Team`;
+
+    // Use custom templates if available
+    const subjectTemplate = settings?.followUpEmailSubject || defaultSubject;
+    const bodyTemplate = settings?.followUpEmailBody || defaultBody;
+    
     const firstName = booking.name.split(' ')[0];
     
+    // Replace placeholders
+    const subject = replaceTemplatePlaceholders(subjectTemplate, {
+      customerName: firstName,
+    });
+    
+    const bodyText = replaceTemplatePlaceholders(bodyTemplate, {
+      customerName: firstName,
+    });
+    
+    // Convert plain text to HTML with proper formatting
+    const bodyHtml = bodyText
+      .split('\n\n')
+      .map(para => `<p>${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
+      .join('');
+    
+    const bookUrl = process.env.REPL_SLUG 
+      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/book`
+      : 'https://clean-and-green-website.onrender.com/book';
+    
     const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-          .cta-button { display: inline-block; background: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
-          .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Time for Another Cleaning?</h1>
-          </div>
-          <div class="content">
-            <p>Hi ${escapeHtml(firstName)}!</p>
-            
-            <p>It's been 30 days since we cleaned your home, and we wanted to check in. Your space is probably ready for another refresh!</p>
-            
-            <p><strong>We'd love to help you maintain that clean, fresh feeling.</strong></p>
-            
-            <p>As a returning customer, you're always our top priority. Book your next service today and experience:</p>
-            <ul>
-              <li>✨ The same eco-friendly products you loved</li>
-              <li>🏡 Professional deep cleaning service</li>
-              <li>💚 100% satisfaction guaranteed</li>
-            </ul>
-            
-            <div style="text-align: center;">
-              <a href="${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/book` : 'https://yoursite.com/book'}" class="cta-button">
-                Book Your Next Cleaning
-              </a>
-            </div>
-            
-            <p style="margin-top: 30px;">Questions? Just reply to this email - we're here to help!</p>
-            
-            <p>Thank you for choosing Clean & Green,<br>
-            <em>Your Eco-Friendly Cleaning Team</em></p>
-          </div>
-          <div class="footer">
-            <p>© 2025 Clean & Green • Oklahoma's Premier Eco-Friendly Cleaning Service</p>
-          </div>
-        </div>
-      </body>
-      </html>
+      <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
+        ${bodyHtml}
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${bookUrl}" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
+            Book Your Next Cleaning
+          </a>
+        </p>
+        
+        <p style="font-size: 12px; color: #999; margin-top: 30px;">Clean & Green - Making Oklahoma cleaner, one eco-friendly service at a time.</p>
+      </div>
     `;
     
     await resend.emails.send({
-      from: 'Clean & Green <noreply@cleanandgreen.com>',
+      from: 'Clean & Green <noreply@voryn.store>',
       to: booking.email,
-      subject: `${firstName}, Ready for Another Cleaning? 🏡`,
+      subject,
       html,
     });
     

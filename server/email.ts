@@ -1,6 +1,17 @@
 import { Resend } from 'resend';
+import { storage } from './storage';
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Template replacement helper
+export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
+  let result = template;
+  for (const [key, value] of Object.entries(data)) {
+    const placeholder = `{{${key}}}`;
+    result = result.split(placeholder).join(value);
+  }
+  return result;
+}
 
 export function escapeHtml(text: string): string {
   const map: Record<string, string> = {
@@ -718,47 +729,68 @@ export interface PaymentThankYouEmailData {
 
 export async function sendPaymentThankYouEmail(data: PaymentThankYouEmailData): Promise<void> {
   try {
+    // Get settings for custom templates
+    const settings = await storage.getBusinessSettings();
+    
     const reviewUrl = `https://clean-and-green-website.onrender.com/reviews#review-form`;
+    
+    // Default templates
+    const defaultSubject = '{{customerName}}, How was your cleaning experience? ⭐';
+    const defaultBody = `Hi {{customerName}}!
+
+Thank you for choosing Clean & Green for your {{serviceType}}!
+
+We'd love to hear about your experience. Your feedback helps us improve and lets others know about our eco-friendly cleaning services.
+
+Please take a moment to leave us a review and let us know how we did!
+
+Best regards,
+Clean & Green Team`;
+
+    // Use custom templates if available, otherwise use defaults
+    const subjectTemplate = settings?.reviewEmailSubject || defaultSubject;
+    const bodyTemplate = settings?.reviewEmailBody || defaultBody;
+    
+    // Replace placeholders
+    const subject = replaceTemplatePlaceholders(subjectTemplate, {
+      customerName: data.customerName,
+      serviceType: data.serviceDescription,
+    });
+    
+    const bodyText = replaceTemplatePlaceholders(bodyTemplate, {
+      customerName: data.customerName,
+      serviceType: data.serviceDescription,
+    });
+    
+    // Convert plain text to HTML with proper formatting
+    const bodyHtml = bodyText
+      .split('\n\n')
+      .map(para => `<p>${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
+      .join('');
+    
+    const html = `
+      <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
+        ${bodyHtml}
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${reviewUrl}" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
+            Leave a Review ⭐
+          </a>
+        </p>
+        
+        <p style="font-size: 12px; color: #999; margin-top: 30px;">Clean & Green - Making Oklahoma cleaner, one eco-friendly service at a time.</p>
+      </div>
+    `;
     
     await resend.emails.send({
       from: 'Clean & Green <noreply@voryn.store>',
       to: data.customerEmail,
-      subject: '💚 Thank You for Choosing Clean & Green!',
-      html: `
-        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
-          <h2 style="color: #22c55e;">Thank You, ${escapeHtml(data.customerName)}!</h2>
-          
-          <p>We sincerely appreciate you choosing Clean & Green for your ${escapeHtml(data.serviceDescription)}. Your trust in our eco-friendly cleaning services means the world to us!</p>
-          
-          <p>We hope you're thrilled with the results and that your space is sparkling clean. 🌿</p>
-          
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
-          
-          <h3 style="color: #22c55e;">💚 We'd Love Your Feedback!</h3>
-          
-          <p>Your opinion matters to us and helps others in the Oklahoma community discover great eco-friendly cleaning services. Would you take a moment to share your experience?</p>
-          
-          <p style="text-align: center; margin: 30px 0;">
-            <a href="${reviewUrl}" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
-              Leave a Review ⭐
-            </a>
-          </p>
-          
-          <p style="font-size: 14px; color: #666;">Your review will be checked by our team before being published on our website.</p>
-          
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
-          
-          <p>Thank you for being part of our eco-friendly cleaning community!</p>
-          
-          <p>Best regards,<br><strong>The Clean & Green Team</strong><br>Oklahoma's Eco-Friendly Cleaning Service</p>
-          
-          <p style="font-size: 12px; color: #999; margin-top: 30px;">Clean & Green - Making Oklahoma cleaner, one eco-friendly service at a time.</p>
-        </div>
-      `,
+      subject,
+      html,
     });
-    console.log(`Service thank you email sent to ${data.customerEmail} for invoice ${data.invoiceNumber}`);
+    console.log(`Review request email sent to ${data.customerEmail} for invoice ${data.invoiceNumber}`);
   } catch (error) {
-    console.error('Failed to send service thank you email:', error);
+    console.error('Failed to send review request email:', error);
     // Don't throw - email failures shouldn't break the process
   }
 }

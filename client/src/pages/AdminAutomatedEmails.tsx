@@ -6,6 +6,8 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -18,9 +20,64 @@ const emailSettingsSchema = z.object({
   reviewEmailEnabled: z.boolean(),
   followUpEmailEnabled: z.boolean(),
   reminderEmailEnabled: z.boolean(),
+  reviewEmailSubject: z.string().optional(),
+  reviewEmailBody: z.string().optional(),
+  followUpEmailSubject: z.string().optional(),
+  followUpEmailBody: z.string().optional(),
+  reminderEmailSubject: z.string().optional(),
+  reminderEmailBody: z.string().optional(),
 });
 
 type EmailSettingsFormValues = z.infer<typeof emailSettingsSchema>;
+
+// Default email templates
+const DEFAULT_REVIEW_SUBJECT = "{{customerName}}, How was your cleaning experience? ⭐";
+const DEFAULT_REVIEW_BODY = `Hi {{customerName}}!
+
+Thank you for choosing Clean & Green for your {{serviceType}}!
+
+We'd love to hear about your experience. Your feedback helps us improve and lets others know about our eco-friendly cleaning services.
+
+Please take a moment to leave us a review and let us know how we did!
+
+Best regards,
+Clean & Green Team`;
+
+const DEFAULT_FOLLOWUP_SUBJECT = "{{customerName}}, Ready for Another Cleaning? 🏡";
+const DEFAULT_FOLLOWUP_BODY = `Hi {{customerName}}!
+
+It's been 30 days since we cleaned your home, and we wanted to check in. Your space is probably ready for another refresh!
+
+We'd love to help you maintain that clean, fresh feeling.
+
+As a returning customer, you're always our top priority. Book your next service today and experience:
+
+✨ The same eco-friendly products you loved
+🏡 Professional deep cleaning service
+💚 100% satisfaction guaranteed
+
+Ready to book? Click here to schedule your next appointment!
+
+Best regards,
+Clean & Green Team`;
+
+const DEFAULT_REMINDER_SUBJECT = "Reminder: Your cleaning appointment tomorrow ⏰";
+const DEFAULT_REMINDER_BODY = `Hi {{customerName}}!
+
+This is a friendly reminder that your {{serviceType}} is scheduled for tomorrow:
+
+Date: {{appointmentDate}}
+Time: {{timeSlot}}
+Address: {{customerAddress}}
+
+Our team will arrive on time with all eco-friendly cleaning supplies. Please ensure someone is available to let us in.
+
+If you need to reschedule, please contact us as soon as possible.
+
+Looking forward to seeing you tomorrow!
+
+Best regards,
+Clean & Green Team`;
 
 export default function AdminAutomatedEmails() {
   const { toast } = useToast();
@@ -35,6 +92,12 @@ export default function AdminAutomatedEmails() {
       reviewEmailEnabled: true,
       followUpEmailEnabled: true,
       reminderEmailEnabled: true,
+      reviewEmailSubject: "",
+      reviewEmailBody: "",
+      followUpEmailSubject: "",
+      followUpEmailBody: "",
+      reminderEmailSubject: "",
+      reminderEmailBody: "",
     },
   });
 
@@ -44,6 +107,12 @@ export default function AdminAutomatedEmails() {
         reviewEmailEnabled: settings.reviewEmailEnabled ?? true,
         followUpEmailEnabled: settings.followUpEmailEnabled ?? true,
         reminderEmailEnabled: settings.reminderEmailEnabled ?? true,
+        reviewEmailSubject: settings.reviewEmailSubject || "",
+        reviewEmailBody: settings.reviewEmailBody || "",
+        followUpEmailSubject: settings.followUpEmailSubject || "",
+        followUpEmailBody: settings.followUpEmailBody || "",
+        reminderEmailSubject: settings.reminderEmailSubject || "",
+        reminderEmailBody: settings.reminderEmailBody || "",
       });
     }
   }, [settings, form]);
@@ -214,98 +283,197 @@ export default function AdminAutomatedEmails() {
           </TabsContent>
 
           <TabsContent value="templates" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-primary" />
-                  <CardTitle>Review Request Email</CardTitle>
-                </div>
-                <CardDescription>Sent 24 hours after service completion</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium mb-2">Subject Line:</p>
-                  <div className="bg-muted p-3 rounded-md">
-                    <code className="text-sm">[Customer Name], How was your cleaning experience? ⭐</code>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">Email Preview:</p>
-                  <div className="bg-muted p-4 rounded-md space-y-3 text-sm">
-                    <p><strong>Hi [Customer Name]!</strong></p>
-                    <p>Thank you for choosing Clean & Green for your [Service Type]!</p>
-                    <p>We'd love to hear about your experience. Your feedback helps us improve and lets others know about our eco-friendly cleaning services.</p>
-                    <p><strong>📝 Leave a Review</strong> [Button]</p>
-                    <p className="text-xs text-muted-foreground">Includes link to reviews page</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Star className="h-5 w-5 text-primary" />
+                        <CardTitle>Review Request Email</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Sent 24 hours after service completion. Use {`{{customerName}}`} and {`{{serviceType}}`} as placeholders.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="reviewEmailSubject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Subject Line</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={DEFAULT_REVIEW_SUBJECT}
+                                data-testid="input-review-subject"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="reviewEmailBody"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Body</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder={DEFAULT_REVIEW_BODY}
+                                className="min-h-64 font-mono text-sm"
+                                data-testid="input-review-body"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5 text-primary" />
-                  <CardTitle>Follow-Up Email (30-Day)</CardTitle>
-                </div>
-                <CardDescription>Sent 30 days after service completion</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium mb-2">Subject Line:</p>
-                  <div className="bg-muted p-3 rounded-md">
-                    <code className="text-sm">[Customer Name], Ready for Another Cleaning? 🏡</code>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">Email Preview:</p>
-                  <div className="bg-muted p-4 rounded-md space-y-3 text-sm">
-                    <p><strong>Hi [Customer Name]!</strong></p>
-                    <p>It's been 30 days since we cleaned your home, and we wanted to check in. Your space is probably ready for another refresh!</p>
-                    <p><strong>We'd love to help you maintain that clean, fresh feeling.</strong></p>
-                    <p>As a returning customer, you're always our top priority. Book your next service today and experience:</p>
-                    <ul className="list-disc list-inside space-y-1">
-                      <li>✨ The same eco-friendly products you loved</li>
-                      <li>🏡 Professional deep cleaning service</li>
-                      <li>💚 100% satisfaction guaranteed</li>
-                    </ul>
-                    <p><strong>📅 Book Your Next Cleaning</strong> [Button]</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="h-5 w-5 text-primary" />
+                        <CardTitle>Follow-Up Email (30-Day)</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Sent 30 days after service completion. Use {`{{customerName}}`} as a placeholder.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="followUpEmailSubject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Subject Line</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={DEFAULT_FOLLOWUP_SUBJECT}
+                                data-testid="input-followup-subject"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="followUpEmailBody"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Body</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder={DEFAULT_FOLLOWUP_BODY}
+                                className="min-h-64 font-mono text-sm"
+                                data-testid="input-followup-body"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-primary" />
-                  <CardTitle>Appointment Reminder</CardTitle>
-                </div>
-                <CardDescription>Sent 24 hours before scheduled appointment</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium mb-2">Subject Line:</p>
-                  <div className="bg-muted p-3 rounded-md">
-                    <code className="text-sm">Reminder: Your cleaning appointment tomorrow ⏰</code>
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Bell className="h-5 w-5 text-primary" />
+                        <CardTitle>Appointment Reminder</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Sent 24 hours before appointment. Use {`{{customerName}}`}, {`{{serviceType}}`}, {`{{appointmentDate}}`}, {`{{timeSlot}}`}, {`{{customerAddress}}`} as placeholders.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="reminderEmailSubject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Subject Line</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder={DEFAULT_REMINDER_SUBJECT}
+                                data-testid="input-reminder-subject"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="reminderEmailBody"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Body</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder={DEFAULT_REMINDER_BODY}
+                                className="min-h-64 font-mono text-sm"
+                                data-testid="input-reminder-body"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to use default template. Also sent as SMS.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="submit"
+                      disabled={updateMutation.isPending}
+                      data-testid="button-save-templates"
+                    >
+                      {updateMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save All Templates"
+                      )}
+                    </Button>
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">Email Preview:</p>
-                  <div className="bg-muted p-4 rounded-md space-y-3 text-sm">
-                    <p><strong>Hi [Customer Name]!</strong></p>
-                    <p>This is a friendly reminder that your [Service Type] is scheduled for tomorrow:</p>
-                    <div className="bg-background p-3 rounded border">
-                      <p><strong>Date:</strong> [Appointment Date]</p>
-                      <p><strong>Time:</strong> [Time Slot]</p>
-                      <p><strong>Address:</strong> [Customer Address]</p>
-                    </div>
-                    <p>Our team will arrive on time with all eco-friendly cleaning supplies. Please ensure someone is available to let us in.</p>
-                    <p className="text-xs text-muted-foreground">Also sent as SMS to customer's phone</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </form>
+              </Form>
+            )}
           </TabsContent>
         </Tabs>
       </div>

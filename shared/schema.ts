@@ -235,6 +235,12 @@ export const businessSettings = pgTable("business_settings", {
   reviewEmailEnabled: boolean("review_email_enabled").notNull().default(true),
   followUpEmailEnabled: boolean("follow_up_email_enabled").notNull().default(true),
   reminderEmailEnabled: boolean("reminder_email_enabled").notNull().default(true),
+  reviewEmailSubject: text("review_email_subject"),
+  reviewEmailBody: text("review_email_body"),
+  followUpEmailSubject: text("follow_up_email_subject"),
+  followUpEmailBody: text("follow_up_email_body"),
+  reminderEmailSubject: text("reminder_email_subject"),
+  reminderEmailBody: text("reminder_email_body"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
