@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { services, faqItems, businessSettings } from "@shared/schema";
+import { services, faqItems, businessSettings, serviceAreas } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 async function seed() {
@@ -133,6 +133,63 @@ async function seed() {
     console.log("Added business settings");
   } else {
     console.log("Business settings already exist");
+  }
+
+  // Add service areas with zip codes
+  const defaultServiceAreas = [
+    {
+      name: "Oklahoma City",
+      zipCodes: ["73101", "73102", "73103", "73104", "73105", "73106", "73107", "73108", "73109", "73110", "73111", "73112", "73113", "73114", "73115", "73116", "73117", "73118", "73119", "73120", "73121", "73122", "73123", "73124", "73125", "73126", "73127", "73128", "73129", "73130", "73131", "73132", "73134", "73135", "73136", "73137", "73139", "73140", "73141", "73142", "73143", "73144", "73145", "73146", "73147", "73148", "73149", "73150", "73151", "73152", "73153", "73154", "73155", "73156", "73157", "73159", "73160", "73162", "73163", "73164", "73165", "73167", "73169", "73170", "73172", "73173", "73178", "73179", "73184", "73185", "73189", "73190", "73194", "73195", "73196", "73198"],
+      isActive: true,
+    },
+    {
+      name: "Edmond",
+      zipCodes: ["73003", "73012", "73013", "73025", "73034", "73083"],
+      isActive: true,
+    },
+    {
+      name: "Piedmont",
+      zipCodes: ["73078"],
+      isActive: true,
+    },
+    {
+      name: "Yukon",
+      zipCodes: ["73085", "73099"],
+      isActive: true,
+    },
+    {
+      name: "Moore",
+      zipCodes: ["73153", "73160", "73165", "73170"],
+      isActive: true,
+    },
+    {
+      name: "Norman",
+      zipCodes: ["73019", "73026", "73069", "73070", "73071", "73072"],
+      isActive: true,
+    },
+    {
+      name: "Mustang",
+      zipCodes: ["73064"],
+      isActive: true,
+    },
+    {
+      name: "El Reno",
+      zipCodes: ["73036"],
+      isActive: true,
+    },
+  ];
+
+  console.log("Adding service areas...");
+  for (const area of defaultServiceAreas) {
+    const existing = await db.select().from(serviceAreas).where(eq(serviceAreas.name, area.name));
+    if (existing.length === 0) {
+      await db.insert(serviceAreas).values(area);
+      console.log(`Added service area: ${area.name} with ${area.zipCodes.length} zip codes`);
+    } else {
+      // Update existing area with new zip codes
+      await db.update(serviceAreas).set({ zipCodes: area.zipCodes }).where(eq(serviceAreas.name, area.name));
+      console.log(`Updated service area: ${area.name} with ${area.zipCodes.length} zip codes`);
+    }
   }
 
   console.log("Seed completed successfully!");

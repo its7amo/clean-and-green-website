@@ -18,7 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const timeSlots = ["8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 const propertySizes = ["Small (< 1000 sq ft)", "Medium (1000-2000 sq ft)", "Large (2000-3000 sq ft)", "Extra Large (> 3000 sq ft)"];
@@ -92,7 +91,6 @@ export function BookingForm() {
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
   const [zipCodeValid, setZipCodeValid] = useState<boolean | null>(null);
   const [extractedZipCode, setExtractedZipCode] = useState<string>("");
-  const [showServiceAreas, setShowServiceAreas] = useState(false);
   const [formData, setFormData] = useState({
     service: "",
     propertySize: "",
@@ -498,34 +496,6 @@ export function BookingForm() {
                     <p className="text-sm text-muted-foreground">
                       {serviceAreas.filter(area => area.isActive).map(area => area.name).join(", ")}
                     </p>
-                    <Collapsible open={showServiceAreas} onOpenChange={setShowServiceAreas}>
-                      <CollapsibleTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="p-0 h-auto mt-2 text-primary hover:text-primary/80"
-                          data-testid="button-toggle-service-areas"
-                        >
-                          {showServiceAreas ? "Hide" : "View"} zip codes
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-2">
-                        <div className="space-y-2">
-                          {serviceAreas.filter(area => area.isActive).map(area => (
-                            <div key={area.id} className="text-sm">
-                              <span className="font-medium">{area.name}:</span>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {area.zipCodes.map((zip, idx) => (
-                                  <span key={idx} className="inline-block bg-background border rounded px-2 py-0.5 text-xs">
-                                    {zip}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
                   </div>
                 </div>
               </div>
