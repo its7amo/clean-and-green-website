@@ -12,6 +12,30 @@ Clean and Green is a professional cleaning service booking platform focused on e
 - **30-Day Follow-Up Automation**: Automated email system that sends "Book Again" emails to customers 30 days after service completion
 
 **Admin Tools:**
+- **Analytics Dashboard**: Comprehensive business intelligence with interactive charts
+  - Revenue trends with configurable time periods (7, 30, 90, 365 days)
+  - Booking status breakdown with pie charts
+  - Top services by revenue with bar charts
+  - Customer acquisition trends over time
+  - Key performance indicators: total revenue, avg booking value, total customers, total bookings
+  - Top 10 customers by lifetime revenue
+- **Calendar View**: Visual monthly calendar for booking management
+  - Color-coded bookings by status (pending, confirmed, completed, cancelled)
+  - Month navigation with "Today" quick jump
+  - Booking details dialog with full information
+  - Multi-booking day support with overflow badges
+- **Customer Lifetime Value (CLV) Tracking**: Advanced customer analytics
+  - Lifetime revenue calculation from paid invoices
+  - Average booking value and repeat customer rate
+  - Customer status classification (New/Active/Loyal)
+  - Days as customer and booking history metrics
+  - Integrated into customer profile pages
+- **Service Area Management**: Geographic service coverage control
+  - Define serviceable regions with zip code arrays
+  - Admin interface for CRUD operations on service areas
+  - Real-time zip code validation during booking
+  - User-facing alerts for unsupported service areas
+  - Collapsible display of all active service areas and zip codes
 - **Customer Profile System**: Comprehensive customer history view with booking/quote/invoice tracking, custom notes, and customer lifetime value metrics
 - **Customer Notes**: Admins can add and manage notes about customer preferences, special requests, allergies, and gate codes
 - **Email Template System**: Pre-made reusable email templates for bulk emails and newsletters
@@ -19,6 +43,13 @@ Clean and Green is a professional cleaning service booking platform focused on e
   - Template categories: promotion, announcement, thank_you, seasonal, follow_up
   - Quick template selection in both Newsletter and Customer bulk email features
   - Templates can be edited before sending for customization
+- **Automated Payment Reminders**: Intelligent overdue invoice management
+  - Automatic detection of overdue invoices (unpaid/partially paid past due date)
+  - Escalating reminder emails at 3, 7, and 14 days overdue
+  - Email tone escalates from friendly to urgent
+  - Direct payment links included in all reminders
+  - Tracking of reminder count and last sent date to prevent duplicates
+  - Hourly scheduler checks for eligible invoices
 - **Customer Autocomplete**: Manual booking form includes searchable dropdown to select existing customers, automatically filling email, phone, and address to prevent duplicate customer records
 - **Search Functionality**: 
   - Customers table: Search by name, email, or phone number with instant filtering
@@ -26,6 +57,7 @@ Clean and Green is a professional cleaning service booking platform focused on e
   - Quotes table: Search by customer name, email, phone, address, or service type
   - Invoices table: Search by customer name, email, phone, address, or invoice number
   - Promo Codes table: Search by code or description
+  - Service Areas table: Search by region name or zip code
   - "Select All" checkbox respects active search filters
 - **Bulk Actions**:
   - Select All checkbox in Bookings table (respects search filters)
@@ -37,6 +69,12 @@ Clean and Green is a professional cleaning service booking platform focused on e
   - Export Invoices to CSV (filtered invoices with invoice number, customer, service, amounts, status, due date)
   - Currency values automatically converted from cents to dollars in exports
   - All exports respect active search filters
+- **Mobile-First Design**: Fully responsive admin interface
+  - All tables support horizontal scrolling on mobile devices
+  - Responsive dialog widths for optimal mobile viewing
+  - Touch-friendly UI with proper touch target sizing (44x44px minimum)
+  - Responsive grid layouts adapt to screen size
+  - Charts resize dynamically for mobile screens
 - **Chronological Ordering**: Both customers and bookings automatically display newest entries first (descending by creation date)
 
 ## User Preferences
@@ -63,8 +101,10 @@ PostgreSQL (via Neon for serverless deployment) is the database, with Drizzle OR
 - **Promo Codes**: Management of discount codes with usage tracking.
 - **Recurring Bookings**: Automatic recurring service appointments.
 - **Job Photos**: Before/after photos for completed jobs.
-- Enhanced Bookings table with promo code integration and reminder tracking.
 - **Email Templates**: Reusable email templates with name, category, subject, and body fields for bulk communications.
+- **Service Areas**: Geographic coverage with region names and zip code arrays for service area validation.
+- **Invoices**: Enhanced with lastReminderSentAt and reminderCount for automated payment reminders.
+- **Customers**: Comprehensive customer records with CLV tracking integration.
 Zod schemas are generated from Drizzle tables for runtime validation and type inference.
 
 ### Authentication & Authorization
@@ -75,7 +115,7 @@ Authentication uses Passport.js with a Local Strategy (username/password) and Ex
 
 **Public Pages**: Include Home (with promo banner, recent bookings ticker, stats counter, featured gallery), Services, About, Contact, Booking, Quote, Customer Portal, Invoice Payment, Reviews, Privacy Policy, and Terms of Service.
 
-**Admin Pages** (authentication required): Dashboard, Bookings, Quotes, Invoices, Promo Codes, Employees, Customer Profiles (with notes and history), Messages, Reviews, Newsletter, Team Management, and Business Settings.
+**Admin Pages** (authentication required): Dashboard, Analytics, Bookings, Calendar View, Recurring Bookings, Quotes, Invoices, Promo Codes, Service Areas, Employees, Customer Profiles (with CLV metrics, notes and history), Messages, Reviews, Newsletter, Team Management, and Business Settings.
 
 **Employee Pages**: Employee Login and Employee Dashboard for work assignments.
 
