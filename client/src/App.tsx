@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { lazy } from "react";
+import { useEffect } from "react";
 import Home from "@/pages/Home";
 import ServicesPage from "@/pages/ServicesPage";
 import About from "@/pages/About";
@@ -23,6 +23,7 @@ import AdminCancellations from "@/pages/AdminCancellations";
 import AdminQuotes from "@/pages/AdminQuotes";
 import AdminInvoices from "@/pages/AdminInvoices";
 import AdminCustomers from "@/pages/AdminCustomers";
+import AdminCustomerProfile from "@/pages/AdminCustomerProfile";
 import AdminServices from "@/pages/AdminServices";
 import AdminGallery from "@/pages/AdminGallery";
 import AdminFaq from "@/pages/AdminFaq";
@@ -53,7 +54,6 @@ import ManageBooking from "@/pages/manage-booking";
 import CustomerPortal from "@/pages/CustomerPortal";
 import PayInvoice from "@/pages/PayInvoice";
 import NotFound from "@/pages/not-found";
-import { useEffect } from "react";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -194,7 +194,7 @@ function Router() {
         <ProtectedRoute component={AdminTeam} />
       </Route>
       <Route path="/admin/customers/:email">
-        <ProtectedRoute component={lazy(() => import("@/pages/AdminCustomerProfile"))} />
+        <ProtectedRoute component={AdminCustomerProfile} />
       </Route>
       <Route path="/admin/messages">
         <ProtectedRoute component={AdminContactMessages} />

@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Link } from "wouter";
 
 export default function AdminCustomers() {
   const { toast } = useToast();
@@ -409,10 +410,12 @@ export default function AdminCustomers() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleView(customer)}
+                            asChild
                             data-testid={`button-view-${customer.id}`}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Link href={`/admin/customers/${encodeURIComponent(customer.email)}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
                           </Button>
                           <Button
                             variant="ghost"

@@ -61,7 +61,7 @@ export default function AdminCustomerProfile() {
 
   if (isLoading) {
     return (
-      <AdminLayout title="Customer Profile">
+      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -71,7 +71,7 @@ export default function AdminCustomerProfile() {
 
   if (!profile) {
     return (
-      <AdminLayout title="Customer Profile">
+      <AdminLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">Customer not found</p>
         </div>
@@ -82,7 +82,7 @@ export default function AdminCustomerProfile() {
   const { customer, bookings, quotes, invoices, notes, stats } = profile;
 
   return (
-    <AdminLayout title="Customer Profile">
+    <AdminLayout>
       <div className="space-y-6">
         <Card>
           <CardHeader>
