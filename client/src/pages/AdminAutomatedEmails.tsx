@@ -119,7 +119,12 @@ export default function AdminAutomatedEmails() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: EmailSettingsFormValues) => {
-      const res = await apiRequest("POST", "/api/settings", data);
+      // Merge email settings with existing business settings to avoid validation errors
+      const mergedData = {
+        ...settings, // Include all existing settings
+        ...data,     // Override with email template changes
+      };
+      const res = await apiRequest("POST", "/api/settings", mergedData);
       return await res.json();
     },
     onSuccess: () => {
