@@ -12,13 +12,16 @@ Clean and Green is a professional cleaning service booking platform focused on e
 - **30-Day Follow-Up Automation**: Automated email system that sends "Book Again" emails to customers 30 days after service completion
 
 **Admin Tools:**
-- **Analytics Dashboard**: Comprehensive business intelligence with interactive charts
-  - Revenue trends with configurable time periods (7, 30, 90, 365 days)
+- **Analytics Dashboard**: Comprehensive business intelligence with interactive charts and downloadable reports
+  - **Date Range Filtering**: 6 preset options (Today, 7 Days, 30 Days, 90 Days, 1 Year, Custom) with dual-month calendar picker
+  - **Downloadable Reports**: PDF and CSV export options with date-stamped filenames
+  - Revenue trends with configurable time periods
   - Booking status breakdown with pie charts
   - Top services by revenue with bar charts
   - Customer acquisition trends over time
   - Key performance indicators: total revenue, avg booking value, total customers, total bookings
   - Top 10 customers by lifetime revenue
+  - All analytics data filters based on selected date range
 - **Calendar View**: Visual monthly calendar for booking management
   - Color-coded bookings by status (pending, confirmed, completed, cancelled)
   - Month navigation with "Today" quick jump
@@ -35,10 +38,10 @@ Clean and Green is a professional cleaning service booking platform focused on e
   - Admin interface for CRUD operations on service areas
   - Real-time zip code validation during booking
   - User-facing alerts for unsupported service areas
-  - Collapsible display of all active service areas and zip codes
-  - **Pre-populated Oklahoma City Regions**: 8 service areas with 32 total zip codes
-    - Downtown OKC (12 zips), Edmond (5 zips), Norman (5 zips), Moore (3 zips)
-    - Yukon (1 zip), Midwest City (4 zips), Bethany (1 zip), Mustang (1 zip)
+  - Simple display of service area names on booking form
+  - **Complete Oklahoma Coverage**: 8 primary service areas with 97 total zip codes
+    - Oklahoma City (76 zips), Edmond (6 zips), Norman (6 zips), Moore (4 zips)
+    - Yukon (2 zips), Piedmont (1 zip), Mustang (1 zip), El Reno (1 zip)
 - **Customer Profile System**: Comprehensive customer history view with booking/quote/invoice tracking, custom notes, and customer lifetime value metrics
 - **Customer Notes**: Admins can add and manage notes about customer preferences, special requests, allergies, and gate codes
 - **Email Template System**: Pre-made reusable email templates for bulk emails and newsletters
