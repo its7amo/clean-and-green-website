@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Eye, Edit, Trash2, UserPlus, Mail } from "lucide-react";
+import { Loader2, Eye, Edit, Trash2, UserPlus, Mail, Search } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +59,7 @@ export default function AdminCustomers() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -343,36 +344,55 @@ export default function AdminCustomers() {
             <CardTitle>All Customers</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, email, or phone..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                  data-testid="input-search-customers"
+                />
+              </div>
+            </div>
             {isLoading ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : customers.length === 0 ? (
-              <div className="text-center p-8 text-muted-foreground" data-testid="text-no-customers">
-                No customers found. Add your first customer to get started.
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectedCustomers.size === customers.length}
-                        onCheckedChange={toggleSelectAll}
-                        data-testid="checkbox-select-all"
-                      />
-                    </TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Bookings</TableHead>
-                    <TableHead>Quotes</TableHead>
-                    <TableHead>Invoices</TableHead>
-                    <TableHead className="w-[150px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.map((customer) => (
+            ) : (() => {
+                const filteredCustomers = customers.filter(customer =>
+                  customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (customer.phone && customer.phone.toLowerCase().includes(searchQuery.toLowerCase()))
+                );
+                
+                return filteredCustomers.length === 0 ? (
+                  <div className="text-center p-8 text-muted-foreground" data-testid="text-no-customers">
+                    {searchQuery ? "No customers match your search." : "No customers found. Add your first customer to get started."}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedCustomers.size === filteredCustomers.length}
+                            onCheckedChange={toggleSelectAll}
+                            data-testid="checkbox-select-all"
+                          />
+                        </TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Bookings</TableHead>
+                        <TableHead>Quotes</TableHead>
+                        <TableHead>Invoices</TableHead>
+                        <TableHead className="w-[150px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCustomers.map((customer) => (
                     <TableRow key={customer.id} data-testid={`row-customer-${customer.id}`}>
                       <TableCell>
                         <Checkbox
@@ -435,11 +455,12 @@ export default function AdminCustomers() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                      </TableRow>
+                    ))}
+                    </TableBody>
+                  </Table>
+                );
+              })()}
           </CardContent>
         </Card>
       </div>

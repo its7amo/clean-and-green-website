@@ -13,14 +13,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import type { Customer } from "@shared/schema";
 
 export default function AdminBookings() {
   const { toast } = useToast();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [customerComboOpen, setCustomerComboOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -33,6 +38,12 @@ export default function AdminBookings() {
     promoCode: "",
     promoCodeId: null as string | null,
     discountAmount: 0,
+  });
+
+  // Fetch existing customers for autocomplete
+  const { data: customers = [] } = useQuery<Customer[]>({
+    queryKey: ["/api/customers"],
+    enabled: createDialogOpen,
   });
 
   const validatePromoCodeMutation = useMutation({
@@ -147,14 +158,68 @@ export default function AdminBookings() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Customer Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="John Doe"
-                  data-testid="input-booking-name"
-                />
+                <Label>Customer Name *</Label>
+                <Popover open={customerComboOpen} onOpenChange={setCustomerComboOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={customerComboOpen}
+                      className="w-full justify-between"
+                      data-testid="button-select-customer"
+                    >
+                      {formData.name || "Select existing customer or type new name..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search or type new customer name..."
+                        value={formData.name}
+                        onValueChange={(value) => setFormData({ ...formData, name: value })}
+                        data-testid="input-booking-name"
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <div className="p-2 text-sm text-muted-foreground">
+                            Type to add "{formData.name}" as new customer
+                          </div>
+                        </CommandEmpty>
+                        <CommandGroup heading="Existing Customers">
+                          {customers.map((customer) => (
+                            <CommandItem
+                              key={customer.id}
+                              value={`${customer.name} (${customer.email})`}
+                              onSelect={() => {
+                                setFormData({
+                                  ...formData,
+                                  name: customer.name,
+                                  email: customer.email,
+                                  phone: customer.phone || "",
+                                  address: customer.address || "",
+                                });
+                                setCustomerComboOpen(false);
+                              }}
+                              data-testid={`customer-option-${customer.id}`}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.email === customer.email ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{customer.name}</span>
+                                <span className="text-xs text-muted-foreground">{customer.email}</span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>
