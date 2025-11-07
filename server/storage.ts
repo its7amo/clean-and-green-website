@@ -188,8 +188,11 @@ export interface IStorage {
   updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
   deleteCustomer(id: string): Promise<void>;
   incrementCustomerBookings(id: string): Promise<void>;
+  decrementCustomerBookings(id: string): Promise<void>;
   incrementCustomerQuotes(id: string): Promise<void>;
+  decrementCustomerQuotes(id: string): Promise<void>;
   incrementCustomerInvoices(id: string): Promise<void>;
+  decrementCustomerInvoices(id: string): Promise<void>;
 
   // Activity log operations
   createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
@@ -711,15 +714,33 @@ export class DbStorage implements IStorage {
       .where(eq(customers.id, id));
   }
 
+  async decrementCustomerBookings(id: string): Promise<void> {
+    await db.update(customers)
+      .set({ totalBookings: sql`GREATEST(${customers.totalBookings} - 1, 0)` })
+      .where(eq(customers.id, id));
+  }
+
   async incrementCustomerQuotes(id: string): Promise<void> {
     await db.update(customers)
       .set({ totalQuotes: sql`${customers.totalQuotes} + 1` })
       .where(eq(customers.id, id));
   }
 
+  async decrementCustomerQuotes(id: string): Promise<void> {
+    await db.update(customers)
+      .set({ totalQuotes: sql`GREATEST(${customers.totalQuotes} - 1, 0)` })
+      .where(eq(customers.id, id));
+  }
+
   async incrementCustomerInvoices(id: string): Promise<void> {
     await db.update(customers)
       .set({ totalInvoices: sql`${customers.totalInvoices} + 1` })
+      .where(eq(customers.id, id));
+  }
+
+  async decrementCustomerInvoices(id: string): Promise<void> {
+    await db.update(customers)
+      .set({ totalInvoices: sql`GREATEST(${customers.totalInvoices} - 1, 0)` })
       .where(eq(customers.id, id));
   }
 

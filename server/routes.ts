@@ -1619,6 +1619,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Booking not found" });
       }
 
+      // Decrement customer booking count
+      if (booking.email) {
+        const customer = await storage.getCustomerByEmail(booking.email);
+        if (customer) {
+          await storage.decrementCustomerBookings(customer.id);
+        }
+      }
+
       await storage.deleteBooking(req.params.id);
 
       // Log activity
@@ -2845,6 +2853,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete routes for bookings and quotes
   app.delete("/api/bookings/:id", isAuthenticated, async (req, res) => {
     try {
+      // Get booking first to find the customer
+      const booking = await storage.getBooking(req.params.id);
+      if (booking && booking.email) {
+        const customer = await storage.getCustomerByEmail(booking.email);
+        if (customer) {
+          await storage.decrementCustomerBookings(customer.id);
+        }
+      }
+      
       await storage.deleteBooking(req.params.id);
       res.status(204).send();
     } catch (error) {
