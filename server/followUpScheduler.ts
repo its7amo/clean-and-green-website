@@ -85,9 +85,8 @@ Clean & Green Team`;
       .map(para => `<p>${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
       .join('');
     
-    const bookUrl = process.env.REPL_SLUG 
-      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/book`
-      : 'https://clean-and-green-website.onrender.com/book';
+    const baseUrl = process.env.APP_URL || process.env.REPLIT_DEV_DOMAIN || 'https://clean-and-green-website.onrender.com';
+    const bookUrl = `${baseUrl}/book`;
     
     const html = `
       <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
