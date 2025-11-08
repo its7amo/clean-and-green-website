@@ -52,12 +52,9 @@ type ReferralSettings = {
   id: string;
   enabled: boolean;
   minimumServicePrice: number;
-  tier1Amount?: number;
-  tier2Amount?: number;
-  tier3Amount?: number;
-  tier1Reward?: number;
-  tier2Reward?: number;
-  tier3Reward?: number;
+  tier1Amount: number;
+  tier2Amount: number;
+  tier3Amount: number;
 };
 
 type CustomerCredit = {
@@ -95,12 +92,14 @@ export default function AdminReferrals() {
   // Fetch referral settings
   const { data: settings } = useQuery<ReferralSettings>({
     queryKey: ["/api/admin/referral-settings"],
-    onSuccess: (data) => {
-      if (data) {
-        setProgramEnabled(data.enabled);
-      }
-    },
   });
+
+  // Sync program enabled state when settings load
+  useEffect(() => {
+    if (settings) {
+      setProgramEnabled(settings.enabled);
+    }
+  }, [settings]);
 
   // Fetch customer credits
   const { data: customerCredits = [] } = useQuery<CustomerCredit[]>({
@@ -109,7 +108,13 @@ export default function AdminReferrals() {
 
   // Update settings mutation
   const updateSettingsMutation = useMutation({
-    mutationFn: async (data: Partial<ReferralSettings>) => {
+    mutationFn: async (data: {
+      enabled?: boolean;
+      minimumServicePrice?: number;
+      tier1Reward?: number;
+      tier2Reward?: number;
+      tier3Reward?: number;
+    }) => {
       const res = await fetch("/api/admin/referral-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -584,7 +589,7 @@ export default function AdminReferrals() {
                     name="tier1Reward"
                     type="number"
                     step="0.01"
-                    defaultValue={settings ? ((settings.tier1Reward || settings.tier1Amount || 1000) / 100).toFixed(2) : "10.00"}
+                    defaultValue={settings ? (settings.tier1Amount / 100).toFixed(2) : "10.00"}
                     data-testid="input-tier1-reward"
                     required
                   />
@@ -598,7 +603,7 @@ export default function AdminReferrals() {
                     name="tier2Reward"
                     type="number"
                     step="0.01"
-                    defaultValue={settings ? ((settings.tier2Reward || settings.tier2Amount || 1500) / 100).toFixed(2) : "15.00"}
+                    defaultValue={settings ? (settings.tier2Amount / 100).toFixed(2) : "15.00"}
                     data-testid="input-tier2-reward"
                     required
                   />
@@ -612,7 +617,7 @@ export default function AdminReferrals() {
                     name="tier3Reward"
                     type="number"
                     step="0.01"
-                    defaultValue={settings ? ((settings.tier3Reward || settings.tier3Amount || 2000) / 100).toFixed(2) : "20.00"}
+                    defaultValue={settings ? (settings.tier3Amount / 100).toFixed(2) : "20.00"}
                     data-testid="input-tier3-reward"
                     required
                   />
