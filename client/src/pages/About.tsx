@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { PromoBanner } from "@/components/PromoBanner";
 import { Footer } from "@/components/Footer";
 import { CallToAction } from "@/components/CallToAction";
 import { Leaf, Heart, Award, Users } from "lucide-react";
@@ -53,6 +54,7 @@ export default function About() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <PromoBanner />
       <Header />
       <main className="flex-1">
         <section className="py-16 md:py-24">

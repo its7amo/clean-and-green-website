@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { PromoBanner } from "@/components/PromoBanner";
 import { Footer } from "@/components/Footer";
 import { Services } from "@/components/Services";
 import { CallToAction } from "@/components/CallToAction";
@@ -23,6 +24,7 @@ export default function ServicesPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <PromoBanner />
       <Header />
       <main className="flex-1">
         <section className="py-16 md:py-24 bg-muted/30">

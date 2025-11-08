@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PromoBanner } from "@/components/PromoBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,7 +99,9 @@ export default function CustomerPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <PromoBanner />
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Customer Portal</h1>
@@ -419,5 +422,6 @@ export default function CustomerPortal() {
         )}
       </div>
     </div>
+    </>
   );
 }
