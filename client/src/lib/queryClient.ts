@@ -50,6 +50,7 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: true,
       staleTime: 0,
+      gcTime: 0,
       refetchOnMount: "always",
       retry: false,
     },
