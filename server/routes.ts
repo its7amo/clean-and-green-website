@@ -5097,12 +5097,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             referredCustomerName: referredCustomer?.name || null,
             referredCustomerEmail: referredCustomer?.email || null,
             referralCode: referral.referralCode,
-            bookingId: referral.bookingId,
+            bookingId: referral.referredBookingId,
             status: referral.status,
-            tierLevel: referral.tierLevel,
+            tierLevel: referral.tier,
             creditAmount: referral.creditAmount,
             createdAt: referral.createdAt,
-            completedAt: referral.completedAt,
+            completedAt: referral.creditedAt,
           };
         })
       );
@@ -5157,7 +5157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await logActivity({
         context: getUserContext(req),
-        action: 'update',
+        action: 'updated',
         entityType: 'settings',
         entityId: updatedSettings.id,
         entityName: 'Referral Program Settings',
@@ -5247,8 +5247,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if customer was referred (has a booking with referralCode)
-      const bookings = await storage.getBookingsByCustomerId(customerId);
-      const referredBooking = bookings.find(b => b.referralCode);
+      const allBookings = await storage.getBookings();
+      const customerBookings = allBookings.filter(b => b.customerId === customerId);
+      const referredBooking = customerBookings.find(b => b.referralCode);
       
       // Get customer's referral credits
       const credits = await storage.getReferralCredit(customerId);
