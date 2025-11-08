@@ -94,10 +94,10 @@ export default function AdminBookings() {
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/bookings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/recent-bookings"] });
       setCreateDialogOpen(false);
       setFormData({
         name: "",

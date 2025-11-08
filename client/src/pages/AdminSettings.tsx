@@ -126,11 +126,11 @@ export default function AdminSettings() {
       const res = await apiRequest("POST", "/api/settings", rest);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/banner-settings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats-settings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/active-promo"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/settings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/banner-settings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats-settings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/active-promo"] });
       toast({
         title: "Settings saved",
         description: "Business settings have been updated successfully.",

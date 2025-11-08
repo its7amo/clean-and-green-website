@@ -63,10 +63,10 @@ export function BookingsTable() {
       const res = await apiRequest("PATCH", `/api/bookings/${id}/status`, { status });
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/bookings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/recent-bookings"] });
     },
   });
 
@@ -75,10 +75,10 @@ export function BookingsTable() {
       const res = await apiRequest("PATCH", `/api/bookings/${bookingId}/assign`, { employeeIds });
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/bookings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/recent-bookings"] });
       setAssignDialogOpen(null);
       setSelectedEmployees([]);
     },
@@ -96,10 +96,10 @@ export function BookingsTable() {
       }
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/bookings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/recent-bookings"] });
       setDeleteDialogOpen(null);
       toast({
         title: "Booking deleted",
@@ -120,10 +120,10 @@ export function BookingsTable() {
       const res = await apiRequest("PATCH", `/api/bookings/${bookingId}/actual-price`, { actualPrice });
       return await res.json();
     },
-    onSuccess: (updatedBooking) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
+    onSuccess: async (updatedBooking) => {
+      await queryClient.refetchQueries({ queryKey: ["/api/bookings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/recent-bookings"] });
       setActualPriceInput("");
       toast({
         title: "Actual price updated",
@@ -168,10 +168,10 @@ export function BookingsTable() {
       const res = await apiRequest("DELETE", `/api/bookings/${bookingId}/promo-code`, {});
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/bookings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/recent-bookings"] });
       toast({
         title: "Promo code removed",
         description: "Promo code and discount have been removed from this booking.",
@@ -191,10 +191,10 @@ export function BookingsTable() {
       const res = await apiRequest("PATCH", `/api/bookings/${bookingId}/promo-code`, { promoCode });
       return await res.json();
     },
-    onSuccess: (updatedBooking) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
+    onSuccess: async (updatedBooking) => {
+      await queryClient.refetchQueries({ queryKey: ["/api/bookings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/recent-bookings"] });
       setEditingPromoCode(null);
       toast({
         title: "Promo code updated",

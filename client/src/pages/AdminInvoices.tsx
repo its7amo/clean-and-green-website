@@ -196,9 +196,9 @@ export default function AdminInvoices() {
       const res = await apiRequest("POST", "/api/invoices", payload);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/invoices"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
       setIsDialogOpen(false);
       setEditingInvoice(null);
       form.reset();
@@ -238,9 +238,9 @@ export default function AdminInvoices() {
       const res = await apiRequest("PATCH", `/api/invoices/${id}`, payload);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/invoices"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
       setIsDialogOpen(false);
       setEditingInvoice(null);
       form.reset();
@@ -270,9 +270,9 @@ export default function AdminInvoices() {
       }
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/invoices"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/stats"] });
       toast({
         title: "Invoice deleted",
         description: "Invoice has been deleted successfully.",

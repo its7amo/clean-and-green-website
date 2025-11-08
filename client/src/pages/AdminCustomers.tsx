@@ -103,8 +103,8 @@ export default function AdminCustomers() {
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/customers"] });
       setCreateDialogOpen(false);
       setFormData({ name: "", email: "", phone: "", address: "" });
       toast({
@@ -130,8 +130,8 @@ export default function AdminCustomers() {
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/customers"] });
       setEditDialogOpen(false);
       setSelectedCustomer(null);
       toast({
@@ -156,8 +156,8 @@ export default function AdminCustomers() {
         throw new Error(errorData.error || "Failed to delete customer");
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/customers"] });
       setDeleteDialogOpen(false);
       setSelectedCustomer(null);
       toast({
