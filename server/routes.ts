@@ -3545,6 +3545,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint to get active promo code for banner
   app.get("/api/public/active-promo", async (_req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const promoCodes = await storage.getPromoCodes();
       const now = new Date();
       
@@ -3653,6 +3656,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public service area endpoints
   app.get("/api/public/service-areas", async (_req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const serviceAreas = await storage.getActiveServiceAreas();
       res.json(serviceAreas);
     } catch (error) {
@@ -3677,6 +3683,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public: Get referral program enabled status
   app.get("/api/public/referral-settings", async (_req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const settings = await storage.getReferralSettings();
       res.json({ enabled: settings?.enabled ?? true });
     } catch (error) {
