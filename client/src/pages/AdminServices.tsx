@@ -73,9 +73,9 @@ export default function AdminServices() {
       const res = await apiRequest("POST", "/api/services", data);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/services"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/services"] });
       setIsDialogOpen(false);
       setEditingService(null);
       form.reset();
@@ -98,9 +98,9 @@ export default function AdminServices() {
       const res = await apiRequest("PATCH", `/api/services/${id}`, data);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/services"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/services"] });
       setIsDialogOpen(false);
       setEditingService(null);
       form.reset();
@@ -123,9 +123,9 @@ export default function AdminServices() {
       const res = await apiRequest("DELETE", `/api/services/${id}`);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/services"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/services"] });
       toast({
         title: "Service deleted",
         description: "Service has been deleted successfully.",

@@ -68,9 +68,9 @@ export default function AdminGallery() {
       const res = await apiRequest("POST", "/api/gallery", data);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/featured-photos"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/gallery"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/featured-photos"] });
       setIsDialogOpen(false);
       setEditingImage(null);
       form.reset();
@@ -93,9 +93,9 @@ export default function AdminGallery() {
       const res = await apiRequest("PATCH", `/api/gallery/${id}`, data);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/featured-photos"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/gallery"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/featured-photos"] });
       setIsDialogOpen(false);
       setEditingImage(null);
       form.reset();
@@ -118,9 +118,9 @@ export default function AdminGallery() {
       const res = await apiRequest("DELETE", `/api/gallery/${id}`);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/featured-photos"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/gallery"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/featured-photos"] });
       toast({
         title: "Image deleted",
         description: "Gallery image has been deleted successfully.",

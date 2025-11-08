@@ -57,8 +57,8 @@ export default function Reviews() {
       const res = await apiRequest("POST", "/api/reviews", data);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/reviews/approved"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/reviews/approved"] });
       toast({
         title: "Review submitted!",
         description: "Thank you for your feedback. Your review will be published after approval.",

@@ -117,9 +117,9 @@ export default function AdminReferrals() {
     }) => {
       await apiRequest("PATCH", "/api/admin/referral-settings", data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referral-settings"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/referral-settings"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/referral-settings"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/referral-settings"] });
       toast({
         title: "Settings updated",
         description: "Referral program settings have been updated successfully.",
@@ -140,9 +140,9 @@ export default function AdminReferrals() {
     mutationFn: async ({ customerId, amount }: { customerId: string; amount: number }) => {
       await apiRequest("POST", "/api/admin/referral-credits/adjust", { customerId, amount });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referral-credits"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals/stats"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/referral-credits"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/referrals/stats"] });
       toast({
         title: "Credit adjusted",
         description: "Customer credit balance has been updated successfully.",

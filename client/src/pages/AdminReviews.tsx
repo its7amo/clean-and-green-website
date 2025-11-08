@@ -31,9 +31,9 @@ export default function AdminReviews() {
     mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
       await apiRequest("PATCH", `/api/reviews/${id}/status`, { status });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/reviews"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reviews/approved"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/reviews"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/reviews/approved"] });
       toast({
         title: "Review updated",
         description: "Review status has been updated successfully.",
@@ -52,9 +52,9 @@ export default function AdminReviews() {
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/reviews/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/reviews"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reviews/approved"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/reviews"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/reviews/approved"] });
       setDeleteDialogOpen(false);
       setReviewToDelete(null);
       toast({

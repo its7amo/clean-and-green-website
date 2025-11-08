@@ -86,9 +86,9 @@ export default function AdminPromoCodes() {
       };
       await apiRequest("POST", "/api/promo-codes", payload);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/active-promo"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/promo-codes"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/active-promo"] });
       setIsDialogOpen(false);
       form.reset();
       toast({
@@ -114,9 +114,9 @@ export default function AdminPromoCodes() {
       };
       await apiRequest("PATCH", `/api/promo-codes/${id}`, payload);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/active-promo"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/promo-codes"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/active-promo"] });
       setIsDialogOpen(false);
       setEditingPromoCode(null);
       form.reset();
@@ -138,9 +138,9 @@ export default function AdminPromoCodes() {
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/promo-codes/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/active-promo"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/promo-codes"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/active-promo"] });
       toast({
         title: "Success",
         description: "Promo code deleted successfully",
