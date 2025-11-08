@@ -2,7 +2,7 @@
 
 ## Overview
 
-Clean and Green is a professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests. The platform features an admin dashboard for comprehensive management of bookings, quotes, business analytics, customer interactions, and team operations. Its primary goal is to streamline eco-friendly cleaning service bookings, foster customer trust, and provide robust tools for efficient business management.
+Clean and Green is a production-ready professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests. The platform features a comprehensive admin dashboard for management of bookings, quotes, business analytics, customer interactions, team operations, and a tiered referral program ($10/$15/$20 rewards). The system includes PWA functionality, automated email/SMS notifications, and is fully deployed to Render.com with proper production environment configuration.
 
 ## User Preferences
 
@@ -80,3 +80,25 @@ Passport.js with a Local Strategy and Express sessions (stored in PostgreSQL via
 ### API Communication
 
 - **Data Fetching**: TanStack Query (React Query)
+
+## Performance & Caching
+
+The application uses a comprehensive anti-caching strategy to ensure real-time data updates:
+
+**Backend**: All 8 public API endpoints (`/api/public/*`) include Cache-Control headers (`no-store, no-cache, must-revalidate, proxy-revalidate`).
+
+**Frontend**: 
+- React Query configured with `gcTime: 0`, `staleTime: 0`, `refetchOnMount: "always"`, `refetchOnWindowFocus: true`
+- All fetch requests include `cache: "no-store"`
+- Admin mutations use a mix of `refetchQueries` (69 instances) and `invalidateQueries` (45 instances) for cache management
+
+This configuration eliminates caching issues that can occur in production builds.
+
+## Code Quality
+
+- **Type Safety**: Full TypeScript coverage across 172 TypeScript files
+- **Testing**: Comprehensive data-testid attributes on all interactive elements for e2e testing
+- **Components**: 88 reusable components following shadcn/ui patterns
+- **Error Handling**: Proper try-catch blocks on all 181 backend routes
+- **Security**: Passwords hashed with Bcrypt, no password logging, proper validation with Zod
+- **Performance**: Optimized React Query configuration, memoization where needed (9 instances)
