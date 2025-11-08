@@ -47,15 +47,6 @@ export function PhotoUpload({ bookingId, open, onOpenChange }: PhotoUploadProps)
 
   const uploadMutation = useMutation({
     mutationFn: async (data: { photoData: string; photoType: string; caption: string }) => {
-      console.log("Starting photo upload...", {
-        bookingId,
-        photoType: data.photoType,
-        captionLength: data.caption.length,
-        photoDataLength: data.photoData.length,
-        employeeId: employee?.id,
-        employeeName: employee?.name
-      });
-      
       const result = await apiRequest("POST", "/api/job-photos", {
         bookingId,
         photoData: data.photoData,
@@ -65,11 +56,9 @@ export function PhotoUpload({ bookingId, open, onOpenChange }: PhotoUploadProps)
         caption: data.caption,
       });
       
-      console.log("Photo upload successful", result);
       return result;
     },
     onSuccess: () => {
-      console.log("Upload mutation onSuccess triggered");
       queryClient.invalidateQueries({ queryKey: ["/api/job-photos", bookingId] });
       setPreviewImage(null);
       setCaption("");
