@@ -77,6 +77,8 @@ export function BookingsTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
       setAssignDialogOpen(null);
       setSelectedEmployees([]);
     },
@@ -120,6 +122,8 @@ export function BookingsTable() {
     },
     onSuccess: (updatedBooking) => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
       setActualPriceInput("");
       toast({
         title: "Actual price updated",
@@ -166,6 +170,8 @@ export function BookingsTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
       toast({
         title: "Promo code removed",
         description: "Promo code and discount have been removed from this booking.",
@@ -187,6 +193,8 @@ export function BookingsTable() {
     },
     onSuccess: (updatedBooking) => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
       setEditingPromoCode(null);
       toast({
         title: "Promo code updated",
