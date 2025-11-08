@@ -92,6 +92,26 @@ app.use((req, res, next) => {
     process.exit(1);
   }
 
+  // Initialize default referral settings if they don't exist
+  try {
+    const { storage } = await import("./storage");
+    const existingSettings = await storage.getReferralSettings();
+    if (!existingSettings) {
+      await storage.upsertReferralSettings({
+        enabled: true,
+        tier1Amount: 1000, // $10
+        tier2Amount: 1500, // $15
+        tier3Amount: 2000, // $20
+        minimumServicePrice: 5000, // $50
+        welcomeEmailEnabled: true,
+        creditEarnedEmailEnabled: true,
+      });
+      console.log('✓ Initialized default referral program settings');
+    }
+  } catch (error) {
+    console.warn('Warning: Could not initialize referral settings:', error);
+  }
+
   // Start review email scheduler (checks every hour for invoices paid 24h ago)
   startReviewEmailScheduler();
 
