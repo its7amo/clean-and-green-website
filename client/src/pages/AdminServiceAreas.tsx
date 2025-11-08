@@ -77,8 +77,9 @@ export default function AdminServiceAreas() {
         isActive: data.isActive,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/service-areas"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/service-areas"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/service-areas"] });
       setIsDialogOpen(false);
       form.reset();
       toast({
@@ -108,8 +109,9 @@ export default function AdminServiceAreas() {
       
       await apiRequest("PATCH", `/api/service-areas/${id}`, payload);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/service-areas"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/service-areas"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/service-areas"] });
       setIsDialogOpen(false);
       setEditingServiceArea(null);
       form.reset();
@@ -131,8 +133,9 @@ export default function AdminServiceAreas() {
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/service-areas/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/service-areas"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/service-areas"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/public/service-areas"] });
       toast({
         title: "Success",
         description: "Service area deleted successfully",
