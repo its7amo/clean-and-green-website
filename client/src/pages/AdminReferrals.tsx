@@ -115,13 +115,7 @@ export default function AdminReferrals() {
       tier2Reward?: number;
       tier3Reward?: number;
     }) => {
-      const res = await fetch("/api/admin/referral-settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Failed to update settings");
-      return res.json();
+      await apiRequest("PATCH", "/api/admin/referral-settings", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referral-settings"] });
@@ -143,13 +137,7 @@ export default function AdminReferrals() {
   // Adjust customer credit mutation
   const adjustCreditMutation = useMutation({
     mutationFn: async ({ customerId, amount }: { customerId: string; amount: number }) => {
-      const res = await fetch("/api/admin/referral-credits/adjust", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId, amount }),
-      });
-      if (!res.ok) throw new Error("Failed to adjust credit");
-      return res.json();
+      await apiRequest("POST", "/api/admin/referral-credits/adjust", { customerId, amount });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referral-credits"] });
