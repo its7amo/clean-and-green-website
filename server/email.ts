@@ -3,6 +3,11 @@ import { storage } from './storage';
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Get base URL for links (environment-aware)
+function getBaseUrl(): string {
+  return process.env.APP_URL || process.env.REPLIT_DEV_DOMAIN || 'https://clean-and-green-website.onrender.com';
+}
+
 // Template replacement helper
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
   let result = template;
@@ -79,7 +84,7 @@ export async function sendQuoteNotification(
           <li><strong>Additional Details:</strong> ${escapeHtml(quoteData.details)}</li>
         </ul>
         
-        <p><a href="https://clean-and-green-website.onrender.com/admin/quotes">View in Admin Dashboard</a></p>
+        <p><a href="${getBaseUrl()}/admin/quotes">View in Admin Dashboard</a></p>
       `,
     });
     console.log('Quote notification email sent successfully');
@@ -119,7 +124,7 @@ export async function sendBookingNotification(
           <li><strong>Time Slot:</strong> ${escapeHtml(bookingData.timeSlot)}</li>
         </ul>
         
-        <p><a href="https://clean-and-green-website.onrender.com/admin/bookings">View in Admin Dashboard</a></p>
+        <p><a href="${getBaseUrl()}/admin/bookings">View in Admin Dashboard</a></p>
       `,
     });
     console.log('Booking notification email sent successfully');
@@ -162,7 +167,7 @@ export async function sendContactMessageNotification(
           ${escapeHtml(messageData.message)}
         </p>
         
-        <p><a href="https://clean-and-green-website.onrender.com/admin/messages">View in Admin Dashboard</a></p>
+        <p><a href="${getBaseUrl()}/admin/messages">View in Admin Dashboard</a></p>
       `,
     });
     console.log('Contact message notification email sent successfully');
@@ -179,7 +184,8 @@ export interface CustomerBookingData extends BookingEmailData {
 export async function sendBookingUnderReviewEmail(
   bookingData: CustomerBookingData
 ): Promise<void> {
-  const portalUrl = `https://clean-and-green-website.onrender.com/portal`;
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
   
   try {
     await resend.emails.send({
@@ -223,7 +229,8 @@ export async function sendBookingUnderReviewEmail(
 export async function sendCustomerBookingConfirmation(
   bookingData: CustomerBookingData
 ): Promise<void> {
-  const manageUrl = `https://clean-and-green-website.onrender.com/manage-booking/${bookingData.managementToken}`;
+  const baseUrl = getBaseUrl();
+  const manageUrl = `${baseUrl}/manage-booking/${bookingData.managementToken}`;
   
   try {
     await resend.emails.send({
@@ -255,7 +262,7 @@ export async function sendCustomerBookingConfirmation(
           <a href="${manageUrl}" style="display: inline-block; padding: 12px 24px; background-color: #ef4444; color: white; text-decoration: none; border-radius: 6px;">Cancel Booking</a>
         </p>
         
-        <p>View your booking status anytime: <a href="https://clean-and-green-website.onrender.com/portal">Customer Portal</a></p>
+        <p>View your booking status anytime: <a href="${getBaseUrl()}/portal">Customer Portal</a></p>
         
         <p>If you have any questions, feel free to reply to this email or call us.</p>
         
@@ -334,7 +341,7 @@ export async function sendBookingChangeNotification(
         ${bookingData.originalDate ? `<p><strong>Original Date:</strong> ${escapeHtml(bookingData.originalDate)} at ${escapeHtml(bookingData.originalTimeSlot || '')}</p>` : ''}
         ${bookingData.action === 'rescheduled' ? `<p><strong>New Date:</strong> ${escapeHtml(bookingData.date)} at ${escapeHtml(bookingData.timeSlot)}</p>` : ''}
         
-        <p><a href="https://clean-and-green-website.onrender.com/admin/bookings">View in Admin Dashboard</a></p>
+        <p><a href="${getBaseUrl()}/admin/bookings">View in Admin Dashboard</a></p>
       `,
     });
     console.log('Booking change notification email sent successfully');
@@ -374,7 +381,7 @@ export async function sendEmployeeAssignmentNotification(
           <li><strong>Email:</strong> ${escapeHtml(bookingData.email)}</li>
         </ul>
         
-        <p>Please log in to your employee dashboard to view all your assignments: <a href="https://clean-and-green-website.onrender.com/employee/dashboard">Employee Dashboard</a></p>
+        <p>Please log in to your employee dashboard to view all your assignments: <a href="${getBaseUrl()}/employee/dashboard">Employee Dashboard</a></p>
         
         <p>Thank you,<br>Clean & Green Management</p>
       `,
@@ -400,7 +407,8 @@ export async function sendInvoicePaymentLinkEmail(
   }
 ) {
   try {
-    const paymentUrl = `https://clean-and-green-website.onrender.com/pay-invoice/${invoiceId}`;
+    const baseUrl = getBaseUrl();
+    const paymentUrl = `${baseUrl}/pay-invoice/${invoiceId}`;
     
     // Build price breakdown HTML if promo code was used
     let breakdownHtml = '';
@@ -521,7 +529,7 @@ export async function sendBookingStatusUpdateEmail(
           <li><strong>Address:</strong> ${escapeHtml(bookingDetails.address)}</li>
         </ul>
         
-        <p>View your booking status anytime: <a href="https://clean-and-green-website.onrender.com/portal">Customer Portal</a></p>
+        <p>View your booking status anytime: <a href="${getBaseUrl()}/portal">Customer Portal</a></p>
         
         <p>Thank you for choosing Clean & Green!</p>
         <p>Best regards,<br>Clean & Green Team</p>
@@ -605,7 +613,7 @@ export async function sendAdminPaymentNotification(
           <li><strong>Payment Date:</strong> ${paidDate.toLocaleDateString()} at ${paidDate.toLocaleTimeString()}</li>
         </ul>
         
-        <p>View invoice details: <a href="https://clean-and-green-website.onrender.com/admin/invoices">Admin Dashboard</a></p>
+        <p>View invoice details: <a href="${getBaseUrl()}/admin/invoices">Admin Dashboard</a></p>
         
         <p>Clean & Green Notification System</p>
       `,
@@ -689,7 +697,8 @@ export async function sendReviewRequestEmail(
   service: string
 ) {
   try {
-    const reviewUrl = `https://clean-and-green-website.onrender.com/review/${bookingId}`;
+    const baseUrl = getBaseUrl();
+    const reviewUrl = `${baseUrl}/review/${bookingId}`;
     
     await resend.emails.send({
       from: 'Clean & Green <noreply@voryn.store>',
@@ -732,7 +741,8 @@ export async function sendPaymentThankYouEmail(data: PaymentThankYouEmailData): 
     // Get settings for custom templates
     const settings = await storage.getBusinessSettings();
     
-    const reviewUrl = `https://clean-and-green-website.onrender.com/reviews#review-form`;
+    const baseUrl = getBaseUrl();
+    const reviewUrl = `${baseUrl}/reviews#review-form`;
     
     // Default templates
     const defaultSubject = '{{customerName}}, How was your cleaning experience? ⭐';
@@ -827,7 +837,7 @@ export async function sendCancellationFeeDismissedEmail(
         
         <p>We understand that plans change, and we appreciate your business. We hope to serve you again in the future!</p>
         
-        <p>If you'd like to schedule a new cleaning, we're just a click away: <a href="https://clean-and-green-website.onrender.com/book">Book Now</a></p>
+        <p>If you'd like to schedule a new cleaning, we're just a click away: <a href="${getBaseUrl()}/book">Book Now</a></p>
         
         <p>Thank you for choosing Clean & Green!</p>
         <p>Best regards,<br>Clean & Green Team</p>
@@ -868,7 +878,7 @@ export async function sendCancellationFeeChargedEmail(
         
         <p>We appreciate your understanding. If you have any questions about this charge, please don't hesitate to contact us.</p>
         
-        <p>We hope to serve you again in the future: <a href="https://clean-and-green-website.onrender.com/book">Book a Service</a></p>
+        <p>We hope to serve you again in the future: <a href="${getBaseUrl()}/book">Book a Service</a></p>
         
         <p>Best regards,<br>Clean & Green Team</p>
       `,
@@ -921,7 +931,7 @@ export async function sendReferralWelcomeEmail(data: ReferralWelcomeEmailData): 
         </ol>
         
         <p style="text-align: center; margin: 30px 0;">
-          <a href="https://clean-and-green-website.onrender.com/book" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+          <a href="${getBaseUrl()}/book" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
             Book Your Next Cleaning
           </a>
         </p>
@@ -981,7 +991,7 @@ export async function sendReferralCreditEarnedEmail(data: ReferralCreditEarnedEm
         <p>Your credits will automatically be available when you book your next cleaning. We'll remind you when creating your invoice!</p>
         
         <p style="text-align: center; margin: 30px 0;">
-          <a href="https://clean-and-green-website.onrender.com/book" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+          <a href="${getBaseUrl()}/book" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
             Book Your Next Cleaning
           </a>
         </p>
