@@ -96,6 +96,8 @@ export default function AdminBookings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
       setCreateDialogOpen(false);
       setFormData({
         name: "",

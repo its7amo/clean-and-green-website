@@ -75,6 +75,7 @@ export default function AdminServices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
       setIsDialogOpen(false);
       setEditingService(null);
       form.reset();
@@ -99,6 +100,7 @@ export default function AdminServices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
       setIsDialogOpen(false);
       setEditingService(null);
       form.reset();
@@ -123,6 +125,7 @@ export default function AdminServices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/services"] });
       toast({
         title: "Service deleted",
         description: "Service has been deleted successfully.",

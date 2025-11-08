@@ -4036,6 +4036,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint to get banner settings
   app.get("/api/public/banner-settings", async (_req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const settings = await storage.getBusinessSettings();
       res.json({
         enabled: settings?.promoBannerEnabled ?? true,
@@ -4050,6 +4053,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint to get stats counter settings
   app.get("/api/public/stats-settings", async (_req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const settings = await storage.getBusinessSettings();
       res.json({
         enabled: settings?.statsCounterEnabled ?? true,
@@ -4063,6 +4069,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint for recent bookings ticker
   app.get("/api/public/recent-bookings", async (_req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const bookings = await storage.getBookings();
       const recentBookings = bookings
         .filter(b => b.status !== 'cancelled' && b.leadType === 'web')
@@ -4085,6 +4094,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint for business stats
   app.get("/api/public/stats", async (_req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const bookings = await storage.getBookings();
       const completedBookings = bookings.filter(b => b.status === 'completed').length;
       
@@ -4110,6 +4122,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint for featured photos
   app.get("/api/public/featured-photos", async (_req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       const photos = await storage.getJobPhotos();
       const featured = photos
         .filter((p: JobPhoto) => p.isFeatured)

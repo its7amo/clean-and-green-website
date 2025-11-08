@@ -65,6 +65,8 @@ export function BookingsTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
     },
   });
 
@@ -94,6 +96,8 @@ export function BookingsTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/recent-bookings"] });
       setDeleteDialogOpen(null);
       toast({
         title: "Booking deleted",

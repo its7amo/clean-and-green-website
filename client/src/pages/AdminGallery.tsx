@@ -70,6 +70,7 @@ export default function AdminGallery() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/featured-photos"] });
       setIsDialogOpen(false);
       setEditingImage(null);
       form.reset();
@@ -94,6 +95,7 @@ export default function AdminGallery() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/featured-photos"] });
       setIsDialogOpen(false);
       setEditingImage(null);
       form.reset();
@@ -118,6 +120,7 @@ export default function AdminGallery() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/featured-photos"] });
       toast({
         title: "Image deleted",
         description: "Gallery image has been deleted successfully.",

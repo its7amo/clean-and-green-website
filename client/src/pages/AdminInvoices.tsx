@@ -198,6 +198,7 @@ export default function AdminInvoices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
       setIsDialogOpen(false);
       setEditingInvoice(null);
       form.reset();
@@ -239,6 +240,7 @@ export default function AdminInvoices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
       setIsDialogOpen(false);
       setEditingInvoice(null);
       form.reset();
@@ -270,6 +272,7 @@ export default function AdminInvoices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/stats"] });
       toast({
         title: "Invoice deleted",
         description: "Invoice has been deleted successfully.",

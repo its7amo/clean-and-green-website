@@ -88,6 +88,7 @@ export default function AdminPromoCodes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/active-promo"] });
       setIsDialogOpen(false);
       form.reset();
       toast({
@@ -115,6 +116,7 @@ export default function AdminPromoCodes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/active-promo"] });
       setIsDialogOpen(false);
       setEditingPromoCode(null);
       form.reset();
@@ -138,6 +140,7 @@ export default function AdminPromoCodes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/promo-codes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/active-promo"] });
       toast({
         title: "Success",
         description: "Promo code deleted successfully",

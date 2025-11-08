@@ -119,6 +119,7 @@ export default function AdminReferrals() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referral-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/referral-settings"] });
       toast({
         title: "Settings updated",
         description: "Referral program settings have been updated successfully.",
