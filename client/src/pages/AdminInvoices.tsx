@@ -397,7 +397,9 @@ export default function AdminInvoices() {
       // Fetch referral info for this customer
       if (booking.customerId) {
         try {
-          const response = await fetch(`/api/invoices/referral-info/${booking.customerId}`);
+          const response = await fetch(`/api/invoices/referral-info/${booking.customerId}`, {
+            credentials: "include"
+          });
           if (response.ok) {
             const referralData = await response.json();
             setReferralInfo(referralData);

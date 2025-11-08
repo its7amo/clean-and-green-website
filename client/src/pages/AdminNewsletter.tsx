@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { AdminLayout } from "@/components/AdminLayout";
 import type { NewsletterSubscriber } from "@shared/schema";
 import { Card } from "@/components/ui/card";
@@ -47,14 +47,8 @@ export default function AdminNewsletter() {
 
   const seedTemplatesMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/email-templates/seed", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to seed templates");
-      }
-      return response.json();
+      const res = await apiRequest("POST", "/api/email-templates/seed");
+      return res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/email-templates"] });
@@ -74,17 +68,8 @@ export default function AdminNewsletter() {
 
   const sendEmailMutation = useMutation({
     mutationFn: async (data: { subject: string; htmlContent: string }) => {
-      const response = await fetch("/api/newsletter/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to send newsletter");
-      }
-      return response.json();
+      const res = await apiRequest("POST", "/api/newsletter/send", data);
+      return res.json();
     },
     onSuccess: (data) => {
       toast({
@@ -106,15 +91,7 @@ export default function AdminNewsletter() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/newsletter/subscribers/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete subscriber");
-      }
-      return response.json();
+      await apiRequest("DELETE", `/api/newsletter/subscribers/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/newsletter/subscribers"] });

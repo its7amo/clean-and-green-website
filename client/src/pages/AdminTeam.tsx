@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { AdminLayout } from "@/components/AdminLayout";
 import type { TeamMember } from "@shared/schema";
 import { Card } from "@/components/ui/card";
@@ -46,17 +46,7 @@ export default function AdminTeam() {
 
   const createMutation = useMutation({
     mutationFn: async (data: TeamMemberForm) => {
-      const response = await fetch("/api/team", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create team member");
-      }
-      return response.json();
+      await apiRequest("POST", "/api/team", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/team"] });
@@ -78,17 +68,7 @@ export default function AdminTeam() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: TeamMemberForm }) => {
-      const response = await fetch(`/api/team/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update team member");
-      }
-      return response.json();
+      await apiRequest("PATCH", `/api/team/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/team"] });
@@ -111,15 +91,7 @@ export default function AdminTeam() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/team/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete team member");
-      }
-      return response.json();
+      await apiRequest("DELETE", `/api/team/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/team"] });
