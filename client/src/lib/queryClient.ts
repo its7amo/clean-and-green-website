@@ -47,10 +47,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
+      refetchInterval: 10000, // Auto-refresh every 10 seconds (background polling)
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
-      refetchIntervalInBackground: false,
+      refetchIntervalInBackground: true, // Keep polling even when tab is inactive
       staleTime: 0,
       gcTime: 0,
       refetchOnMount: "always",
