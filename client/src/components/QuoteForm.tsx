@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Upload, Home, Building2, Check, Sparkles, Star, Shield, Zap, Mail, Phone, MapPin } from "lucide-react";
+import { Upload, Home, Building2, Check, Sparkles, Star, Shield, Zap, Mail, Phone, MapPin, X, Image as ImageIcon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -18,10 +18,19 @@ const propertySizes = [
   { value: "Custom", label: "Custom", icon: Building2, description: "Over 5,000 sq ft", examples: "Commercial, Estate" }
 ];
 
+interface PhotoData {
+  photoData: string;
+  mimeType: string;
+  originalName: string;
+  preview: string;
+}
+
 export function QuoteForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [photos, setPhotos] = useState<PhotoData[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     serviceType: "",
     propertySize: "",
@@ -35,6 +44,88 @@ export function QuoteForm() {
 
   const updateFormData = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const maxPhotos = 5;
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic'];
+
+    if (photos.length + files.length > maxPhotos) {
+      toast({
+        title: "Too Many Photos",
+        description: `You can upload a maximum of ${maxPhotos} photos.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newPhotos: PhotoData[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      // Validate file type
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Invalid File Type",
+          description: `${file.name} is not a supported image format. Please use JPEG, PNG, WEBP, or HEIC.`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      // Validate file size
+      if (file.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: `${file.name} exceeds the 5MB limit.`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      // Convert to base64
+      try {
+        const base64 = await fileToBase64(file);
+        newPhotos.push({
+          photoData: base64,
+          mimeType: file.type,
+          originalName: file.name,
+          preview: base64,
+        });
+      } catch (error) {
+        console.error("Error converting file:", error);
+        toast({
+          title: "Upload Error",
+          description: `Failed to process ${file.name}.`,
+          variant: "destructive",
+        });
+      }
+    }
+
+    setPhotos([...photos, ...newPhotos]);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(photos.filter((_, i) => i !== index));
   };
 
   const createQuoteMutation = useMutation({
@@ -73,6 +164,7 @@ export function QuoteForm() {
       phone: formData.phone,
       address: formData.address,
       status: "pending",
+      photos: photos.length > 0 ? photos : undefined,
     };
     createQuoteMutation.mutate(quoteData);
   };
@@ -165,7 +257,7 @@ export function QuoteForm() {
                     key={size.value}
                     type="button"
                     onClick={() => updateFormData("propertySize", size.value)}
-                    className={`p-4 rounded-xl border-2 transition-all text-left hover-elevate ${
+                    className={`relative p-4 rounded-xl border-2 transition-all text-left hover-elevate ${
                       isSelected
                         ? "border-primary bg-primary/5"
                         : "border-border"
@@ -233,19 +325,75 @@ export function QuoteForm() {
                 Property Photos (Optional)
               </Label>
               <p className="text-sm text-muted-foreground mb-4">
-                Upload photos to help us better understand your space
+                Upload up to 5 photos to help us better understand your space (max 5MB each)
               </p>
             </div>
-            <div 
-              className="border-2 border-dashed rounded-xl p-8 md:p-12 text-center hover-elevate cursor-pointer transition-all" 
-              data-testid="upload-area"
-            >
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Upload className="h-8 w-8 text-primary" />
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+              data-testid="input-photo-upload"
+            />
+
+            {photos.length === 0 ? (
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed rounded-xl p-8 md:p-12 text-center hover-elevate cursor-pointer transition-all" 
+                data-testid="upload-area"
+              >
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Upload className="h-8 w-8 text-primary" />
+                </div>
+                <p className="font-medium mb-1">Click to upload or drag and drop</p>
+                <p className="text-sm text-muted-foreground">PNG, JPG, WEBP, HEIC up to 5MB each (max 5 photos)</p>
               </div>
-              <p className="font-medium mb-1">Click to upload or drag and drop</p>
-              <p className="text-sm text-muted-foreground">PNG, JPG up to 10MB</p>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {photos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square rounded-lg overflow-hidden border-2 border-border bg-muted">
+                        <img 
+                          src={photo.preview} 
+                          alt={`Upload ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover-elevate transition-all"
+                        data-testid={`button-remove-photo-${index}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <Badge variant="secondary" className="text-xs truncate w-full justify-center">
+                          <ImageIcon className="h-3 w-3 mr-1" />
+                          {photo.originalName}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {photos.length < 5 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full"
+                    data-testid="button-add-more-photos"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Add More Photos ({photos.length}/5)
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Contact Information Section */}
