@@ -115,16 +115,22 @@ function PaymentMethodForm({ onSuccess }: { onSuccess: (pmId: string) => void })
       });
 
       if (submitError) {
+        console.error("Stripe setup error:", submitError);
         setError(submitError.message || "Failed to process payment method");
+        setProcessing(false);
         return;
       }
 
       if (setupIntent?.payment_method) {
         onSuccess(setupIntent.payment_method as string);
+      } else {
+        console.error("No payment method returned from Stripe");
+        setError("Payment setup failed - no payment method returned");
+        setProcessing(false);
       }
     } catch (err: any) {
+      console.error("Payment processing exception:", err);
       setError(err.message || "An unexpected error occurred");
-    } finally {
       setProcessing(false);
     }
   };
