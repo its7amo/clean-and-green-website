@@ -1,0 +1,104 @@
+Failed to load resource: the server responded with a status of 400 ()Understand this error
+shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1  POST https://api.stripe.com/v1/setup_intents/seti_1SRgoz0HUQVItKr46hqyWkw8/confirm 400 (Bad Request)
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+e @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+c @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+s @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+e @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+_ @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+confirm @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+Promise.then
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+Promise.then
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+value @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1Understand this error
+shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1  POST https://api.stripe.com/v1/setup_intents/seti_1SRgoz0HUQVItKr46hqyWkw8/confirm 400 (Bad Request)
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+e @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+c @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+s @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+e @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+_ @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+confirm @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+Promise.then
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+Promise.then
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+value @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1Understand this error
+shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1  POST https://api.stripe.com/v1/setup_intents/seti_1SRgoz0HUQVItKr46hqyWkw8/confirm 400 (Bad Request)
