@@ -1,0 +1,564 @@
+⚡ Done in 21ms
+==> Uploading build...
+==> Uploaded in 8.8s. Compression took 4.8s
+==> Build successful 🎉
+==> Deploying...
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+✓ Twilio SMS client initialized
+Checking database schema...
+Skipping: constraint "invoices_booking_id_bookings_id_fk" for relation "invoices" already exists
+✓ Database schema verified/created successfully
+Adding intelligence feature columns...
+✓ Intelligence feature columns added/verified
+✓ Review email scheduler started (checks every hour)
+✓ Appointment reminder scheduler started (checks every hour)
+✓ Recurring booking scheduler started (checks every hour)
+✓ Follow-up email scheduler started
+✓ Overdue invoice reminder scheduler started (checks every hour)
+✓ Referral auto-crediting scheduler started (checks every 5 minutes)
+4:18:18 AM [express] serving on port 10000
+Found 0 invoices eligible for review emails
+Found 0 bookings eligible for review emails
+Found 0 overdue invoices to check
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://clean-and-green-website.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+4:18:44 AM [express] GET /api/setup/required 200 in 9ms :: {"required":false}
+4:18:45 AM [express] GET /api/settings 200 in 69ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","…
+4:18:45 AM [express] GET /api/reviews/approved 200 in 202ms :: []
+4:18:45 AM [express] GET /api/public/banner-settings 200 in 210ms :: {"enabled":true,"customMessage"…
+4:18:45 AM [express] GET /api/public/active-promo 200 in 573ms :: {"id":"fc9eed8a-50de-4643-9e3d-c91…
+4:18:45 AM [express] GET /api/public/banner-settings 200 in 219ms :: {"enabled":true,"customMessage"…
+4:18:45 AM [express] GET /api/public/stats-settings 200 in 514ms :: {"enabled":false}
+4:18:45 AM [express] GET /api/public/stats 200 in 688ms :: {"homesClean":0,"averageRating":5,"ecoFri…
+4:18:46 AM [express] GET /api/services 200 in 909ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+4:18:46 AM [express] GET /api/public/active-promo 200 in 911ms :: {"id":"fc9eed8a-50de-4643-9e3d-c91…
+4:18:46 AM [express] GET /api/public/stats-settings 200 in 913ms :: {"enabled":false}
+4:18:46 AM [express] GET /api/settings 200 in 1014ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7"…
+4:18:46 AM [express] GET /api/setup/required 200 in 1210ms :: {"required":false}
+4:18:46 AM [express] GET /api/public/featured-photos 200 in 1214ms :: []
+4:18:46 AM [express] GET /api/services 200 in 1122ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c…
+4:18:46 AM [express] GET /api/public/stats 200 in 1122ms :: {"homesClean":0,"averageRating":5,"ecoFr…
+4:18:46 AM [express] GET /api/public/featured-photos 200 in 1680ms :: []
+4:18:46 AM [express] GET /api/reviews/approved 200 in 1475ms :: []
+4:18:47 AM [express] GET /api/setup/required 200 in 12ms :: {"required":false}
+4:18:47 AM [express] GET /api/settings 200 in 31ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","…
+4:18:47 AM [express] GET /api/public/banner-settings 200 in 27ms :: {"enabled":true,"customMessage":…
+4:18:47 AM [express] GET /api/public/stats 200 in 37ms :: {"homesClean":0,"averageRating":5,"ecoFrie…
+4:18:47 AM [express] GET /api/public/featured-photos 200 in 33ms :: []
+4:18:47 AM [express] GET /api/services 200 in 117ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+4:18:47 AM [express] GET /api/public/stats-settings 200 in 120ms :: {"enabled":false}
+4:18:47 AM [express] GET /api/public/active-promo 200 in 101ms :: {"id":"fc9eed8a-50de-4643-9e3d-c91…
+4:18:47 AM [express] GET /api/reviews/approved 200 in 96ms :: []
+4:18:50 AM [express] GET /api/public/banner-settings 200 in 57ms :: {"enabled":true,"customMessage":…
+4:18:50 AM [express] GET /api/settings 200 in 55ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","…
+4:18:50 AM [express] GET /api/public/stats-settings 200 in 54ms :: {"enabled":false}
+4:18:50 AM [express] GET /api/public/stats 200 in 150ms :: {"homesClean":0,"averageRating":5,"ecoFri…
+4:18:50 AM [express] GET /api/setup/required 200 in 105ms :: {"required":false}
+4:18:50 AM [express] GET /api/services 200 in 104ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+4:18:50 AM [express] GET /api/public/featured-photos 200 in 9ms :: []
+4:18:50 AM [express] GET /api/public/active-promo 200 in 13ms :: {"id":"fc9eed8a-50de-4643-9e3d-c914…
+4:18:50 AM [express] GET /api/reviews/approved 200 in 94ms :: []
+4:18:53 AM [express] GET /api/setup/required 200 in 6ms :: {"required":false}
+4:18:54 AM [express] GET /api/public/banner-settings 200 in 8ms :: {"enabled":true,"customMessage":"…
+4:18:54 AM [express] GET /api/reviews/approved 200 in 8ms :: []
+4:18:54 AM [express] GET /api/settings 200 in 30ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","…
+4:18:54 AM [express] GET /api/services 200 in 127ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+4:18:54 AM [express] GET /api/public/featured-photos 200 in 127ms :: []
+4:18:54 AM [express] GET /api/public/active-promo 200 in 104ms :: {"id":"fc9eed8a-50de-4643-9e3d-c91…
+4:18:54 AM [express] GET /api/public/stats-settings 200 in 105ms :: {"enabled":false}
+4:18:54 AM [express] GET /api/public/stats 200 in 197ms :: {"homesClean":0,"averageRating":5,"ecoFri…
+4:18:59 AM [express] GET /api/setup/required 200 in 7ms :: {"required":false}
+4:18:59 AM [express] GET /api/auth/user 200 in 6ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:18:59 AM [express] GET /api/auth/user 200 in 6ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:18:59 AM [express] GET /api/bookings 200 in 6ms :: []
+Error fetching intelligence overview: error: column "churn_risk" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getIntelligenceOverview (file:///opt/render/project/src/dist/index.js:1577:24)
+    at async file:///opt/render/project/src/dist/index.js:7674:24 {
+  length: 110,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '63',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching employees: error: column "availability" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getEmployees (file:///opt/render/project/src/dist/index.js:976:16)
+    at async file:///opt/render/project/src/dist/index.js:4272:26 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '81',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:18:59 AM [express] GET /api/intelligence-overview 500 in 73ms :: {"error":"Failed to fetch intelli…
+Error fetching quick actions: error: column "churn_risk" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getQuickActionsCounts (file:///opt/render/project/src/dist/index.js:1551:24)
+    at async file:///opt/render/project/src/dist/index.js:7664:22 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '418',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:18:59 AM [express] GET /api/employees 500 in 82ms :: {"error":"Failed to fetch employees"}
+4:19:00 AM [express] GET /api/quick-actions 500 in 166ms :: {"error":"Failed to fetch quick actions"}
+4:19:00 AM [express] GET /api/quotes 200 in 122ms :: [{"id":"aaf41f41-32c1-4c31-a9aa-c62f8f3e58d7","…
+4:19:00 AM [express] GET /api/quotes 200 in 6ms :: [{"id":"aaf41f41-32c1-4c31-a9aa-c62f8f3e58d7","cu…
+4:19:00 AM [express] GET /api/auth/user 200 in 4ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:19:00 AM [express] GET /api/setup/required 200 in 7ms :: {"required":false}
+Error fetching quick actions: error: column "churn_risk" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getQuickActionsCounts (file:///opt/render/project/src/dist/index.js:1551:24)
+    at async file:///opt/render/project/src/dist/index.js:7664:22 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '418',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:00 AM [express] GET /api/quick-actions 500 in 96ms :: {"error":"Failed to fetch quick actions"}
+Error fetching employees: error: column "availability" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getEmployees (file:///opt/render/project/src/dist/index.js:976:16)
+    at async file:///opt/render/project/src/dist/index.js:4272:26 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '81',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error fetching intelligence overview: error: column "churn_risk" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getIntelligenceOverview (file:///opt/render/project/src/dist/index.js:1577:24)
+    at async file:///opt/render/project/src/dist/index.js:7674:24 {
+  length: 110,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '63',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:01 AM [express] GET /api/employees 500 in 411ms :: {"error":"Failed to fetch employees"}
+4:19:01 AM [express] GET /api/intelligence-overview 500 in 417ms :: {"error":"Failed to fetch intell…
+4:19:01 AM [express] GET /api/bookings 200 in 331ms :: []
+Error fetching intelligence overview: error: column "churn_risk" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getIntelligenceOverview (file:///opt/render/project/src/dist/index.js:1577:24)
+    at async file:///opt/render/project/src/dist/index.js:7674:24 {
+  length: 110,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '63',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:17 AM [express] GET /api/intelligence-overview 500 in 575ms :: {"error":"Failed to fetch intell…
+4:19:17 AM [express] GET /api/setup/required 200 in 709ms :: {"required":false}
+4:19:17 AM [express] GET /api/bookings 200 in 767ms :: []
+Error fetching employees: error: column "availability" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getEmployees (file:///opt/render/project/src/dist/index.js:976:16)
+    at async file:///opt/render/project/src/dist/index.js:4272:26 {
+  length: 112,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '81',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:17 AM [express] GET /api/analytics/booking-stats 200 in 114ms :: {"pending":0,"confirmed":0,"co…
+Error fetching customer acquisition: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async file:///opt/render/project/src/dist/index.js:7107:26 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:17 AM [express] GET /api/analytics/customer-acquisition 500 in 198ms :: {"error":"Failed to fet…
+4:19:17 AM [express] GET /api/quotes 200 in 970ms :: [{"id":"aaf41f41-32c1-4c31-a9aa-c62f8f3e58d7","…
+Error fetching quick actions: error: column "churn_risk" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getQuickActionsCounts (file:///opt/render/project/src/dist/index.js:1551:24)
+    at async file:///opt/render/project/src/dist/index.js:7664:22 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '418',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:17 AM [express] GET /api/quick-actions 500 in 1185ms :: {"error":"Failed to fetch quick actions…
+4:19:18 AM [express] GET /api/employees 500 in 1268ms :: {"error":"Failed to fetch employees"}
+Error fetching top customers: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async Promise.all (index 0)
+    at async file:///opt/render/project/src/dist/index.js:7149:50 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:18 AM [express] GET /api/analytics/top-customers 500 in 515ms :: {"error":"Failed to fetch top …
+Error fetching analytics metrics: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async Promise.all (index 2)
+    at async file:///opt/render/project/src/dist/index.js:6951:50 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:18 AM [express] GET /api/auth/user 200 in 1603ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288…
+4:19:18 AM [express] GET /api/analytics/revenue-trends 200 in 809ms :: []
+4:19:18 AM [express] GET /api/analytics/top-services 200 in 804ms :: []
+4:19:18 AM [express] GET /api/analytics/metrics 500 in 797ms :: {"error":"Failed to fetch analytics …
+Error fetching top customers: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async Promise.all (index 0)
+    at async file:///opt/render/project/src/dist/index.js:7149:50 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:18 AM [express] GET /api/setup/required 200 in 8ms :: {"required":false}
+4:19:19 AM [express] GET /api/analytics/top-customers 500 in 87ms :: {"error":"Failed to fetch top c…
+4:19:19 AM [express] GET /api/auth/user 200 in 191ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288"…
+4:19:19 AM [express] GET /api/analytics/booking-stats 200 in 116ms :: {"pending":0,"confirmed":0,"co…
+Error fetching customer acquisition: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async file:///opt/render/project/src/dist/index.js:7107:26 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:19 AM [express] GET /api/analytics/revenue-trends 200 in 609ms :: []
+4:19:19 AM [express] GET /api/analytics/top-services 200 in 693ms :: []
+Error fetching analytics metrics: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async Promise.all (index 2)
+    at async file:///opt/render/project/src/dist/index.js:6951:50 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:19 AM [express] GET /api/analytics/customer-acquisition 500 in 618ms :: {"error":"Failed to fet…
+4:19:19 AM [express] GET /api/analytics/metrics 500 in 703ms :: {"error":"Failed to fetch analytics …
+Error fetching analytics metrics: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async Promise.all (index 2)
+    at async file:///opt/render/project/src/dist/index.js:6951:50 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:22 AM [express] GET /api/analytics/metrics 500 in 16ms :: {"error":"Failed to fetch analytics m…
+Error fetching top customers: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async Promise.all (index 0)
+    at async file:///opt/render/project/src/dist/index.js:7149:50 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:22 AM [express] GET /api/auth/user 200 in 16ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288",…
+4:19:22 AM [express] GET /api/analytics/top-customers 500 in 24ms :: {"error":"Failed to fetch top c…
+4:19:22 AM [express] GET /api/setup/required 200 in 24ms :: {"required":false}
+4:19:22 AM [express] GET /api/analytics/booking-stats 200 in 31ms :: {"pending":0,"confirmed":0,"com…
+4:19:22 AM [express] GET /api/analytics/revenue-trends 200 in 112ms :: []
+Error fetching customer acquisition: error: column "tags" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getCustomers (file:///opt/render/project/src/dist/index.js:1098:16)
+    at async file:///opt/render/project/src/dist/index.js:7107:26 {
+  length: 104,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '60',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:19:22 AM [express] GET /api/analytics/customer-acquisition 500 in 234ms :: {"error":"Failed to fet…
+4:19:22 AM [express] GET /api/analytics/top-services 200 in 331ms :: []
+4:19:27 AM [express] GET /api/auth/user 200 in 8ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:19:27 AM [express] GET /api/admin/services 200 in 10ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed…
+4:19:30 AM [express] GET /api/service-areas 200 in 8ms :: []
+4:19:30 AM [express] GET /api/auth/user 200 in 5ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:19:33 AM [express] GET /api/invoices 200 in 9ms :: [{"id":"9d21fdf9-9af0-4d51-8408-3ca5988703d0","…
+4:19:33 AM [express] GET /api/settings 200 in 7ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","b…
+4:19:33 AM [express] GET /api/auth/user 200 in 20ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288",…
+4:19:39 AM [express] DELETE /api/invoices/9d21fdf9-9af0-4d51-8408-3ca5988703d0 204 in 7ms
+4:19:39 AM [express] GET /api/invoices 200 in 7ms :: []
+4:19:41 AM [express] GET /api/quotes 200 in 6ms :: [{"id":"aaf41f41-32c1-4c31-a9aa-c62f8f3e58d7","cu…
+4:19:41 AM [express] GET /api/auth/user 200 in 5ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:19:45 AM [express] DELETE /api/quotes/aaf41f41-32c1-4c31-a9aa-c62f8f3e58d7 204 in 7ms

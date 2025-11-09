@@ -45,8 +45,8 @@ export async function runMigrations() {
     
     console.log('✓ Database schema verified/created successfully');
     
-    // Add intelligence feature columns if they don't exist
-    console.log('Adding intelligence feature columns...');
+    // Add intelligence feature columns to business_settings if they don't exist
+    console.log('Adding intelligence feature columns to business_settings...');
     const intelligenceColumns = `
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS win_back_discount_percent INTEGER DEFAULT 15;
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS win_back_email_subject TEXT;
@@ -67,7 +67,28 @@ export async function runMigrations() {
     `;
     
     await pool.query(intelligenceColumns);
-    console.log('✓ Intelligence feature columns added/verified');
+    console.log('✓ Business settings intelligence columns added/verified');
+    
+    // Add customer intelligence columns if they don't exist
+    console.log('Adding customer intelligence columns...');
+    const customerColumns = `
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS churn_risk TEXT DEFAULT 'low';
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS churn_risk_last_calculated TIMESTAMP;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS tags TEXT[];
+    `;
+    
+    await pool.query(customerColumns);
+    console.log('✓ Customer intelligence columns added/verified');
+    
+    // Add employee scheduling columns if they don't exist
+    console.log('Adding employee scheduling columns...');
+    const employeeColumns = `
+      ALTER TABLE employees ADD COLUMN IF NOT EXISTS availability JSONB;
+      ALTER TABLE employees ADD COLUMN IF NOT EXISTS vacation_days TEXT[];
+    `;
+    
+    await pool.query(employeeColumns);
+    console.log('✓ Employee scheduling columns added/verified');
     
   } catch (error) {
     console.error('Error initializing database:', error);
