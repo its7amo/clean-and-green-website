@@ -47,7 +47,7 @@ Passport.js with a Local Strategy and Express sessions (stored in PostgreSQL via
 
 **Public Pages**: Home (with promo banner, recent bookings, stats, featured gallery), Services, About, Contact, Booking, Quote, Customer Portal, Invoice Payment, Reviews, Privacy Policy, Terms of Service.
 
-**Admin Pages**: Dashboard (with Quick Actions widget), Analytics, Anomaly Alerts, Bookings, Calendar View, Recurring Bookings, Quotes, Invoices, Promo Codes, Service Areas, Employees, Customer Profiles (with CLV, churn risk, tags, notes, history), Messages (with status tracking), Reviews, Newsletter, Team Management, Business Settings (with intelligence feature controls).
+**Admin Pages**: Dashboard (with Quick Actions widget), Analytics, Anomaly Alerts, Bookings, Calendar View, Recurring Bookings, Quotes, Invoices, Promo Codes, Service Areas, Employees, Customer Profiles (with CLV, churn risk, tags, notes, history), Messages (with status tracking: new/in_progress/replied/closed/spam, employee assignment, quick reply), Reviews, Newsletter, Team Management, Business Settings (with intelligence feature controls).
 
 **Employee Pages**: Employee Login, Employee Dashboard.
 

@@ -38,6 +38,20 @@ const settingsFormSchema = z.object({
   promoBannerEnabled: z.boolean(),
   promoBannerMessage: z.string().optional(),
   statsCounterEnabled: z.boolean(),
+  // Intelligence Features
+  winBackDiscountPercent: z.number().min(0).max(100).optional(),
+  winBackEmailSubject: z.string().optional(),
+  winBackEmailBody: z.string().optional(),
+  churnRiskHighDays: z.number().min(1).optional(),
+  churnRiskMediumDays: z.number().min(1).optional(),
+  anomalyPromoCreationThreshold: z.number().min(1).optional(),
+  anomalyInvoiceChangeThreshold: z.number().min(1).optional(),
+  anomalyCancellationThreshold: z.number().min(1).optional(),
+  anomalyDeletionThreshold: z.number().min(1).optional(),
+  anomalyPromoCreationWindow: z.number().min(1).optional(),
+  anomalyInvoiceChangeWindow: z.number().min(1).optional(),
+  anomalyCancellationWindow: z.number().min(1).optional(),
+  quickReplies: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
