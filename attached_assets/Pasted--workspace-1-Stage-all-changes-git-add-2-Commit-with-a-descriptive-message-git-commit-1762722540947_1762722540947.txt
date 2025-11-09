@@ -1,0 +1,45 @@
+~/workspace$ # 1. Stage all changes
+git add .
+
+# 2. Commit with a descriptive message
+git commit -m "Add reschedule approval workflow with email notifications"
+
+# 3. Push to GitHub (Render will auto-deploy)
+git push origin main
+On branch main
+Your branch is ahead of 'origin/main' by 18 commits.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+To https://github.com/its7amo/clean-and-green-website.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/its7amo/clean-and-green-website.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+~/workspace$ # Pull the remote changes and rebase your local commits on top
+git pull --rebase origin main
+
+# If there are no conflicts, push your changes
+git push origin main
+remote: Enumerating objects: 33, done.
+remote: Counting objects: 100% (33/33), done.
+remote: Compressing objects: 100% (8/8), done.
+remote: Total 23 (delta 20), reused 18 (delta 15), pack-reused 0 (from 0)
+Unpacking objects: 100% (23/23), 4.25 KiB | 543.00 KiB/s, done.
+From https://github.com/its7amo/clean-and-green-website
+ * branch            main       -> FETCH_HEAD
+   23a5100..0513099  main       -> origin/main
+Successfully rebased and updated refs/heads/main.
+Enumerating objects: 105, done.
+Counting objects: 100% (105/105), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (82/82), done.
+Writing objects: 100% (82/82), 112.37 KiB | 8.64 MiB/s, done.
+Total 82 (delta 72), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (72/72), completed with 22 local objects.
+To https://github.com/its7amo/clean-and-green-website.git
+   0513099..46cf508  main -> main
+~/workspace$ 

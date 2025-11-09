@@ -207,10 +207,6 @@ export function BookingForm() {
     yesterday.setHours(23, 59, 59, 999);
     return yesterday;
   };
-  
-  const updateFormData = (field: keyof FormState, value: any) => {
-    dispatch({ type: 'UPDATE_FIELD', field, value });
-  };
 
   const extractZipCode = (address: string): string => {
     const zipMatch = address.match(/\b\d{5}\b/);
