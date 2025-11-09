@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
   Calendar, 
+  CalendarClock,
   FileText, 
   Users, 
   Settings, 
@@ -23,6 +24,7 @@ const menuItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/admin/bookings", icon: Calendar, label: "Bookings" },
+  { href: "/admin/reschedules", icon: CalendarClock, label: "Reschedules" },
   { href: "/admin/quotes", icon: FileText, label: "Quotes" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
