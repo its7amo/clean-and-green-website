@@ -53,6 +53,8 @@ import {
   type InsertAnomalyAlert,
   type IntelligenceOverview,
   type GlobalSearchResult,
+  type QuotePhoto,
+  type InsertQuotePhoto,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -82,6 +84,7 @@ import {
   referralCredits,
   referralSettings,
   anomalyAlerts,
+  quotePhotos,
 } from "@shared/schema";
 import { eq, desc, sql, or } from "drizzle-orm";
 
@@ -109,6 +112,11 @@ export interface IStorage {
   getQuote(id: string): Promise<Quote | undefined>;
   updateQuoteStatus(id: string, status: string): Promise<Quote | undefined>;
   deleteQuote(id: string): Promise<void>;
+
+  // Quote photo operations
+  createQuotePhoto(photo: InsertQuotePhoto): Promise<QuotePhoto>;
+  getQuotePhotosByQuote(quoteId: string): Promise<QuotePhoto[]>;
+  deleteQuotePhoto(id: string): Promise<void>;
 
   // Contact message operations
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
@@ -450,6 +458,22 @@ export class DbStorage implements IStorage {
 
   async deleteQuote(id: string): Promise<void> {
     await db.delete(quotes).where(eq(quotes.id, id));
+  }
+
+  // Quote photo operations
+  async createQuotePhoto(photo: InsertQuotePhoto): Promise<QuotePhoto> {
+    const result = await db.insert(quotePhotos).values(photo).returning();
+    return result[0];
+  }
+
+  async getQuotePhotosByQuote(quoteId: string): Promise<QuotePhoto[]> {
+    return await db.select().from(quotePhotos)
+      .where(eq(quotePhotos.quoteId, quoteId))
+      .orderBy(desc(quotePhotos.createdAt));
+  }
+
+  async deleteQuotePhoto(id: string): Promise<void> {
+    await db.delete(quotePhotos).where(eq(quotePhotos.id, id));
   }
 
   // Contact message operations

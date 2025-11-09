@@ -151,6 +151,24 @@ export const insertQuoteSchema = createInsertSchema(quotes).omit({
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;
 export type Quote = typeof quotes.$inferSelect;
 
+// Quote photos for property documentation
+export const quotePhotos = pgTable("quote_photos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  quoteId: varchar("quote_id").notNull().references(() => quotes.id, { onDelete: "cascade" }),
+  photoData: text("photo_data").notNull(), // Base64 encoded image
+  mimeType: text("mime_type").notNull(), // image/jpeg, image/png, image/webp, image/heic
+  originalName: text("original_name"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertQuotePhotoSchema = createInsertSchema(quotePhotos).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertQuotePhoto = z.infer<typeof insertQuotePhotoSchema>;
+export type QuotePhoto = typeof quotePhotos.$inferSelect;
+
 // Contact messages from the contact form
 export const contactMessages = pgTable("contact_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

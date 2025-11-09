@@ -1210,7 +1210,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Quote routes (public submissions, protected admin actions)
   app.post("/api/quotes", async (req, res) => {
     try {
-      const validatedData = insertQuoteSchema.parse(req.body);
+      // Extract photos from request (optional)
+      const { photos, ...quoteData } = req.body;
+      
+      const validatedData = insertQuoteSchema.parse(quoteData);
+      
+      // Validate photos if provided
+      const maxPhotoSize = 5 * 1024 * 1024; // 5MB per photo
+      const maxPhotos = 5;
+      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+      
+      if (photos && Array.isArray(photos)) {
+        if (photos.length > maxPhotos) {
+          return res.status(400).json({ 
+            error: "Too many photos", 
+            details: `Maximum ${maxPhotos} photos allowed` 
+          });
+        }
+        
+        for (const photo of photos) {
+          if (!photo.photoData || !photo.mimeType) {
+            return res.status(400).json({ 
+              error: "Invalid photo data", 
+              details: "Each photo must have photoData and mimeType" 
+            });
+          }
+          
+          if (!allowedMimeTypes.includes(photo.mimeType)) {
+            return res.status(400).json({ 
+              error: "Invalid photo type", 
+              details: `Allowed types: ${allowedMimeTypes.join(', ')}` 
+            });
+          }
+          
+          if (photo.photoData.length > maxPhotoSize) {
+            return res.status(400).json({ 
+              error: "Photo too large", 
+              details: "Each photo must be less than 5MB" 
+            });
+          }
+        }
+      }
       
       // Get business settings for deduplication
       const settings = await storage.getBusinessSettings();
@@ -1266,6 +1306,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         customerId: customer.id,
       });
+      
+      // Create quote photos if provided
+      if (photos && Array.isArray(photos) && photos.length > 0) {
+        for (const photo of photos) {
+          await storage.createQuotePhoto({
+            quoteId: quote.id,
+            photoData: photo.photoData,
+            mimeType: photo.mimeType,
+            originalName: photo.originalName || null,
+          });
+        }
+      }
       
       // Increment customer quote count
       await storage.incrementCustomerQuotes(customer.id);
