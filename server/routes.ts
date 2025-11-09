@@ -42,16 +42,12 @@ import { findMatchingCustomer, createMergeAlert } from "./customerDedup";
 import { pool } from "./db";
 import Stripe from "stripe";
 
-// Use production key in production, fall back to testing key in development
-const stripeSecretKey = process.env.NODE_ENV === 'production' 
-  ? process.env.STRIPE_SECRET_KEY
-  : (process.env.STRIPE_SECRET_KEY || process.env.TESTING_STRIPE_SECRET_KEY);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
 if (!stripeSecretKey) {
   console.warn('Warning: No Stripe secret key found. Payment features will not work.');
 } else if (stripeSecretKey.startsWith('pk_')) {
-  console.error('❌ ERROR: Stripe key is PUBLISHABLE (pk_*) but should be SECRET (sk_*)');
-  console.error('   Please check STRIPE_SECRET_KEY or TESTING_STRIPE_SECRET_KEY environment variable');
+  console.error('❌ ERROR: STRIPE_SECRET_KEY is set to a PUBLISHABLE key (pk_*) but should be a SECRET key (sk_*)');
 } else {
   console.log('✓ Stripe initialized with secret key');
 }
