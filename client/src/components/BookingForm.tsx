@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 const timeSlots = ["8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 
@@ -156,7 +156,7 @@ export function BookingForm() {
   const [state, dispatch] = useReducer(formReducer, initialState);
   const { formData } = { formData: state }; // Keep formData for easier refactoring
 
-  const debouncedAddress = useDebounce(formData.address, 500);
+  const debouncedAddress = useDebouncedValue(formData.address, 500);
 
   const updateFormData = (field: keyof FormState, value: any) => {
     dispatch({ type: 'UPDATE_FIELD', field, value });
