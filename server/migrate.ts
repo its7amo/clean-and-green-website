@@ -142,6 +142,21 @@ export async function runMigrations() {
     await pool.query(customerPortalColumns);
     console.log('✓ Customer portal feature columns added/verified');
     
+    // Add fraud protection columns for referrals
+    console.log('Adding referral fraud protection columns...');
+    const fraudProtectionColumns = `
+      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS ip_address TEXT;
+      ALTER TABLE referral_settings ADD COLUMN IF NOT EXISTS max_referrals_per_day INTEGER DEFAULT 3;
+      ALTER TABLE referral_settings ADD COLUMN IF NOT EXISTS max_referrals_per_week INTEGER DEFAULT 10;
+      ALTER TABLE referral_settings ADD COLUMN IF NOT EXISTS fraud_detection_enabled BOOLEAN DEFAULT true;
+      ALTER TABLE referral_settings ADD COLUMN IF NOT EXISTS block_same_address BOOLEAN DEFAULT true;
+      ALTER TABLE referral_settings ADD COLUMN IF NOT EXISTS block_same_phone_number BOOLEAN DEFAULT true;
+      ALTER TABLE referral_settings ADD COLUMN IF NOT EXISTS block_same_ip_address BOOLEAN DEFAULT true;
+    `;
+    
+    await pool.query(fraudProtectionColumns);
+    console.log('✓ Referral fraud protection columns added/verified');
+    
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;

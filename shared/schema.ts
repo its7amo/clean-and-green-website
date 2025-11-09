@@ -115,6 +115,7 @@ export const bookings = pgTable("bookings", {
   reminderSentAt: timestamp("reminder_sent_at"),
   followUpSent: boolean("follow_up_sent").notNull().default(false),
   recurringBookingId: varchar("recurring_booking_id"),
+  ipAddress: text("ip_address"), // For fraud detection
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -658,6 +659,13 @@ export const referralSettings = pgTable("referral_settings", {
   minimumServicePrice: integer("minimum_service_price").notNull().default(5000), // $50 minimum
   welcomeEmailEnabled: boolean("welcome_email_enabled").notNull().default(true),
   creditEarnedEmailEnabled: boolean("credit_earned_email_enabled").notNull().default(true),
+  // Fraud protection settings
+  maxReferralsPerDay: integer("max_referrals_per_day").notNull().default(3), // Max 3 referrals per day from one code
+  maxReferralsPerWeek: integer("max_referrals_per_week").notNull().default(10), // Max 10 per week
+  fraudDetectionEnabled: boolean("fraud_detection_enabled").notNull().default(true),
+  blockSameAddress: boolean("block_same_address").notNull().default(true), // Prevent same address from being referred twice
+  blockSamePhoneNumber: boolean("block_same_phone_number").notNull().default(true), // Prevent same phone from being referred twice
+  blockSameIpAddress: boolean("block_same_ip_address").notNull().default(true), // Prevent same IP from being referred multiple times
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 

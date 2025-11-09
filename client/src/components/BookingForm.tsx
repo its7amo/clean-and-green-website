@@ -243,7 +243,8 @@ export function BookingForm() {
       const res = await apiRequest("POST", "/api/referrals/validate", { 
         code,
         address: formData.address,
-        email: formData.email
+        email: formData.email,
+        phone: formData.phone
       });
       return await res.json();
     },

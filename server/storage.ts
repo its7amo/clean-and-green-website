@@ -295,6 +295,13 @@ export interface IStorage {
   validateReferralCode(code: string): Promise<Customer | null>;
   generateReferralCode(customerName: string): Promise<string>;
   calculateReferralTier(referrerId: string): Promise<{ tier: number; amount: number }>;
+  detectReferralFraud(params: {
+    referralCode: string;
+    email: string;
+    phone: string;
+    address: string;
+    ipAddress?: string;
+  }): Promise<{ isValid: boolean; reason?: string; severity?: string }>;
 
   // Churn risk operations
   calculateCustomerChurnRisk(customerId: string): Promise<{ risk: string; daysSinceLastBooking: number }>;
@@ -1245,6 +1252,113 @@ export class DbStorage implements IStorage {
     }
     
     return false;
+  }
+
+  // Enhanced fraud detection for referrals
+  async detectReferralFraud(params: {
+    referralCode: string;
+    email: string;
+    phone: string;
+    address: string;
+    ipAddress?: string;
+  }): Promise<{ isValid: boolean; reason?: string; severity?: string }> {
+    const settings = await this.getReferralSettings();
+    if (!settings?.fraudDetectionEnabled) {
+      return { isValid: true };
+    }
+
+    const { referralCode, email, phone, address, ipAddress } = params;
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedPhone = phone.replace(/\D/g, ''); // Remove all non-digits
+    const normalizedAddress = address.toLowerCase().trim();
+
+    // Get all bookings that used ANY referral code
+    const referredBookings = await db.select().from(bookings)
+      .where(sql`${bookings.referralCode} IS NOT NULL`);
+
+    // Check 1: Same address, different email
+    if (settings.blockSameAddress) {
+      const sameAddress = referredBookings.find(b => 
+        b.address.toLowerCase().trim() === normalizedAddress && 
+        b.email.toLowerCase().trim() !== normalizedEmail
+      );
+      if (sameAddress) {
+        return { 
+          isValid: false, 
+          reason: "This address has already been referred. Each address can only be referred once.",
+          severity: "high"
+        };
+      }
+    }
+
+    // Check 2: Same phone number, different email
+    if (settings.blockSamePhoneNumber) {
+      const samePhone = referredBookings.find(b => {
+        const existingPhone = b.phone.replace(/\D/g, '');
+        return existingPhone === normalizedPhone && 
+               b.email.toLowerCase().trim() !== normalizedEmail;
+      });
+      if (samePhone) {
+        return { 
+          isValid: false, 
+          reason: "This phone number has already been referred. Each phone number can only be referred once.",
+          severity: "high"
+        };
+      }
+    }
+
+    // Check 3: Same IP address (if provided and enabled)
+    if (ipAddress && settings.blockSameIpAddress) {
+      const sameIP = referredBookings.find(b => 
+        b.ipAddress === ipAddress && 
+        b.email.toLowerCase().trim() !== normalizedEmail
+      );
+      if (sameIP) {
+        return { 
+          isValid: false, 
+          reason: "Multiple referrals detected from the same location. Please contact support if you believe this is an error.",
+          severity: "medium"
+        };
+      }
+    }
+
+    // Check 4: Velocity limits - how many times this specific code was used recently
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const codeBookings = referredBookings.filter(b => b.referralCode === referralCode);
+    
+    // Daily limit
+    const dailyReferrals = codeBookings.filter(b => {
+      const createdAt = new Date(b.createdAt);
+      return createdAt >= oneDayAgo;
+    });
+    
+    if (dailyReferrals.length >= settings.maxReferralsPerDay) {
+      return { 
+        isValid: false, 
+        reason: `This referral code has reached its daily limit of ${settings.maxReferralsPerDay} uses. Please try again tomorrow.`,
+        severity: "medium"
+      };
+    }
+
+    // Weekly limit
+    const weeklyReferrals = codeBookings.filter(b => {
+      const createdAt = new Date(b.createdAt);
+      return createdAt >= oneWeekAgo;
+    });
+    
+    if (weeklyReferrals.length >= settings.maxReferralsPerWeek) {
+      return { 
+        isValid: false, 
+        reason: `This referral code has reached its weekly limit of ${settings.maxReferralsPerWeek} uses. Please try again next week.`,
+        severity: "medium"
+      };
+    }
+
+    // All checks passed
+    return { isValid: true };
   }
 
   // Admin Dashboard: Get aggregated referral statistics

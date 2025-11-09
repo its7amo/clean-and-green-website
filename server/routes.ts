@@ -108,6 +108,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertBookingSchema.parse(req.body);
       
+      // Capture IP address from request
+      const ipAddress = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 
+                        req.headers['x-real-ip']?.toString() || 
+                        req.socket.remoteAddress || 
+                        undefined;
+      
+      // Referral fraud detection - run BEFORE creating booking
+      if (req.body.referralCode) {
+        const fraudCheck = await storage.detectReferralFraud({
+          referralCode: req.body.referralCode,
+          email: validatedData.email,
+          phone: validatedData.phone,
+          address: validatedData.address,
+          ipAddress,
+        });
+        
+        if (!fraudCheck.isValid) {
+          // Create anomaly alert for fraud attempt
+          try {
+            await storage.createAnomalyAlert({
+              type: 'referral_fraud',
+              severity: fraudCheck.severity || 'high',
+              title: 'Referral Fraud Attempt Blocked',
+              description: `Blocked referral booking: ${fraudCheck.reason}`,
+              payload: {
+                email: validatedData.email,
+                phone: validatedData.phone,
+                address: validatedData.address,
+                referralCode: req.body.referralCode,
+                ipAddress,
+                reason: fraudCheck.reason,
+              },
+            });
+          } catch (alertError) {
+            console.error("Failed to create fraud anomaly alert:", alertError);
+          }
+          
+          // Return 400 with specific fraud message
+          return res.status(400).json({ 
+            error: "Booking blocked", 
+            message: fraudCheck.reason 
+          });
+        }
+      }
+      
       // Handle promo code if provided
       let promoCodeData: { promoCode?: string; discountAmount?: number } = {};
       if (req.body.promoCodeId) {
@@ -143,12 +188,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.address
       );
       
-      // Create booking with customer link and leadType
+      // Create booking with customer link, leadType, and IP address
       const booking = await storage.createBooking({
         ...validatedData,
         ...promoCodeData,
         customerId: customer.id,
         leadType: 'web', // Public endpoint = web lead
+        ipAddress, // Store IP for fraud tracking
       });
       
       // Increment customer booking count
@@ -3899,7 +3945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public: Validate referral code
   app.post("/api/referrals/validate", async (req, res) => {
     try {
-      const { code, address, email } = req.body;
+      const { code, address, email, phone } = req.body;
       if (!code) {
         return res.status(400).json({ error: "Referral code is required" });
       }
@@ -3914,7 +3960,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Referral program is currently disabled" });
       }
 
-      if (address && email) {
+      // Enhanced fraud detection if we have enough information
+      if (address && email && phone) {
+        // Capture IP for comprehensive fraud check
+        const ipAddress = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 
+                          req.headers['x-real-ip']?.toString() || 
+                          req.socket.remoteAddress || 
+                          undefined;
+        
+        const fraudCheck = await storage.detectReferralFraud({
+          referralCode: code.toUpperCase(),
+          email,
+          phone,
+          address,
+          ipAddress,
+        });
+        
+        if (!fraudCheck.isValid) {
+          return res.status(400).json({ 
+            error: fraudCheck.reason,
+            valid: false 
+          });
+        }
+      } else if (address && email) {
+        // Fallback to basic address check if phone not provided
         const addressAlreadyReferred = await storage.checkAddressAlreadyReferred(address, email);
         if (addressAlreadyReferred) {
           return res.status(400).json({ 
