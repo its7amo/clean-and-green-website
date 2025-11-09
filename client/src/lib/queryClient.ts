@@ -47,10 +47,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: 10000, // Auto-refresh every 10 seconds (background polling)
+      refetchInterval: 30000, // Auto-refresh every 30 seconds (safe for forms)
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
-      refetchIntervalInBackground: true, // Keep polling even when tab is inactive
+      refetchIntervalInBackground: false, // Don't poll inactive tabs (save resources)
       staleTime: 0,
       gcTime: 0,
       refetchOnMount: "always",
@@ -60,10 +60,7 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: false,
       networkMode: "always",
-      onSuccess: () => {
-        // After ANY mutation, invalidate ALL queries to force fresh data
-        queryClient.invalidateQueries();
-      },
+      // Don't use global invalidation - let each mutation handle its own
     },
   },
 });

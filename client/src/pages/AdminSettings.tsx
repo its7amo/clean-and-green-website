@@ -77,7 +77,9 @@ export default function AdminSettings() {
   });
 
   useEffect(() => {
-    if (settings) {
+    // Only reset form on initial load, not during background refetches
+    // This prevents wiping admin's in-progress edits
+    if (settings && !form.formState.isDirty) {
       form.reset({
         businessName: settings.businessName || "",
         tagline: settings.tagline || "",

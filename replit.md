@@ -83,16 +83,18 @@ Passport.js with a Local Strategy and Express sessions (stored in PostgreSQL via
 
 ## Performance & Caching
 
-The application uses a comprehensive anti-caching strategy to ensure real-time data updates:
+The application uses a comprehensive anti-caching strategy with intelligent background refresh to ensure real-time data updates:
 
 **Backend**: All 8 public API endpoints (`/api/public/*`) include Cache-Control headers (`no-store, no-cache, must-revalidate, proxy-revalidate`).
 
 **Frontend**: 
 - React Query configured with `gcTime: 0`, `staleTime: 0`, `refetchOnMount: "always"`, `refetchOnWindowFocus: true`
+- **Background polling**: 30-second auto-refresh on active tabs (disabled on inactive tabs to save resources)
+- **Form protection**: AdminSettings and other long-edit forms use `isDirty` guards to prevent background refetches from wiping in-progress edits
 - All fetch requests include `cache: "no-store"`
 - Admin mutations use a mix of `refetchQueries` (69 instances) and `invalidateQueries` (45 instances) for cache management
 
-This configuration eliminates caching issues that can occur in production builds.
+This configuration eliminates caching issues that can occur in production builds while maintaining a responsive user experience with automatic updates.
 
 ## Code Quality
 
