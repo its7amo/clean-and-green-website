@@ -42,6 +42,7 @@ const initialState = {
   agreedToCancellationPolicy: false,
   promoCode: "",
   promoCodeId: null as string | null,
+  promoCodeValid: false,
   promoCodeDiscount: 0,
   referralCode: "",
   referralCodeValid: false,
@@ -183,6 +184,119 @@ export function BookingForm() {
   }>({
     queryKey: ["/api/available-slots", formData.date ? format(formData.date, "yyyy-MM-dd") : ""],
     enabled: !!formData.date,
+  });
+
+  const checkZipCodeMutation = useMutation({
+    mutationFn: async (zip: string) => {
+      const res = await apiRequest("POST", "/api/service-areas/check-zip", { zipCode: zip });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setZipCodeValid(data.isValid);
+      if (!data.isValid) {
+        toast({
+          title: "Service Area Not Available",
+          description: "We don't currently service this zip code. Please contact us for more information.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      setZipCodeValid(false);
+    },
+  });
+
+  const fetchSetupIntentMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/create-setup-intent", {});
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setClientSecret(data.clientSecret);
+    },
+    onError: () => {
+      toast({
+        title: "Payment Setup Failed",
+        description: "Unable to initialize payment. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createBookingMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/bookings", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      setBookingSubmitted(true);
+      toast({
+        title: "Booking Confirmed!",
+        description: "We've received your booking and will contact you shortly.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Booking Failed",
+        description: error.message || "Unable to complete booking. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const validatePromoCodeMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/promo-codes/validate", { code });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      if (data.valid) {
+        updateFormData('promoCodeValid', true);
+        updateFormData('promoCodeId', data.promoCode.id);
+        toast({
+          title: "Promo Code Applied!",
+          description: `You'll save ${data.promoCode.discountType === 'percentage' ? `${data.promoCode.discountValue}%` : `$${data.promoCode.discountValue}`}`,
+        });
+      } else {
+        updateFormData('promoCodeValid', false);
+        updateFormData('promoCodeId', null);
+        toast({
+          title: "Invalid Promo Code",
+          description: data.reason || "This promo code is not valid.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      updateFormData('promoCodeValid', false);
+      updateFormData('promoCodeId', null);
+    },
+  });
+
+  const validateReferralCodeMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/referrals/validate-code", { referralCode: code });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      if (data.valid) {
+        updateFormData('referralCodeValid', true);
+        toast({
+          title: "Referral Code Applied!",
+          description: `You'll save $${data.discountAmount / 100} on your first booking!`,
+        });
+      } else {
+        updateFormData('referralCodeValid', false);
+        toast({
+          title: "Invalid Referral Code",
+          description: data.message || "This referral code is not valid.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      updateFormData('referralCodeValid', false);
+    },
   });
 
   useEffect(() => {
