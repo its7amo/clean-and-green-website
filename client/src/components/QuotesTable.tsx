@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Eye, CheckCircle, XCircle, Trash2, Search, Calendar } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye, CheckCircle, XCircle, Trash2, Search, Calendar, Image as ImageIcon, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Quote } from "@shared/schema";
+import type { Quote, QuotePhoto } from "@shared/schema";
 
 const statusColors = {
   pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
@@ -22,19 +24,65 @@ export function QuotesTable() {
   const [, setLocation] = useLocation();
   const [viewDialogOpen, setViewDialogOpen] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+  const [approveDialogOpen, setApproveDialogOpen] = useState<string | null>(null);
+  const [enlargedPhoto, setEnlargedPhoto] = useState<QuotePhoto | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [approvalData, setApprovalData] = useState({ date: "", timeSlot: "" });
 
   const { data: quotes, isLoading } = useQuery<Quote[]>({
     queryKey: ["/api/quotes"],
   });
 
+  const { data: photos = [], isLoading: photosLoading } = useQuery<QuotePhoto[]>({
+    queryKey: [`/api/quotes/${viewDialogOpen}/photos`],
+    enabled: !!viewDialogOpen,
+  });
+
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await apiRequest("PATCH", `/api/quotes/${id}/status`, { status });
-      return await res.json();
+    mutationFn: async ({ id, status, date, timeSlot }: { id: string; status: string; date?: string; timeSlot?: string }) => {
+      const payload: any = { status };
+      if (date) payload.date = date;
+      if (timeSlot) payload.timeSlot = timeSlot;
+      const res = await apiRequest("PATCH", `/api/quotes/${id}/status`, payload);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to update quote status");
+      }
+      return { ...await res.json(), requestedStatus: status };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      setApproveDialogOpen(null);
+      setApprovalData({ date: "", timeSlot: "" });
+      
+      const messages = {
+        approved: {
+          title: "Quote approved",
+          description: "Quote has been approved and converted to a booking.",
+        },
+        rejected: {
+          title: "Quote rejected",
+          description: "Quote has been rejected.",
+        },
+        completed: {
+          title: "Quote completed",
+          description: "Quote has been marked as completed.",
+        },
+      };
+      
+      const message = messages[data.requestedStatus as keyof typeof messages] || {
+        title: "Quote updated",
+        description: "Quote status has been updated.",
+      };
+      
+      toast(message);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update quote",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -62,6 +110,23 @@ export function QuotesTable() {
 
   const handleStatusUpdate = (id: string, status: string) => {
     updateStatusMutation.mutate({ id, status });
+  };
+
+  const handleApproveQuote = () => {
+    if (!approveDialogOpen || !approvalData.date || !approvalData.timeSlot) {
+      toast({
+        title: "Missing required fields",
+        description: "Please select both date and time slot",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateStatusMutation.mutate({
+      id: approveDialogOpen,
+      status: "approved",
+      date: approvalData.date,
+      timeSlot: approvalData.timeSlot,
+    });
   };
 
   const handleDelete = () => {
@@ -197,7 +262,7 @@ export function QuotesTable() {
                             <Button 
                               size="icon" 
                               variant="ghost" 
-                              onClick={() => handleStatusUpdate(quote.id, "approved")}
+                              onClick={() => setApproveDialogOpen(quote.id)}
                               data-testid={`button-approve-quote-${quote.id}`}
                             >
                               <CheckCircle className="h-4 w-4 text-green-600" />
@@ -297,10 +362,106 @@ export function QuotesTable() {
                       <p className="mt-1" data-testid="view-quote-details">{quote.details}</p>
                     </div>
                   )}
+                  <div className="col-span-2 pt-2 border-t">
+                    <p className="text-sm text-muted-foreground mb-2">Property Photos</p>
+                    {photosLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading photos...</p>
+                    ) : photos.length === 0 ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <ImageIcon className="h-4 w-4" />
+                        <span>No photos attached</span>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-auto">
+                        {photos.map((photo) => (
+                          <button
+                            key={photo.id}
+                            onClick={() => setEnlargedPhoto(photo)}
+                            className="relative rounded-md overflow-hidden hover-elevate"
+                            data-testid={`button-view-photo-${photo.id}`}
+                          >
+                            <img
+                              src={`data:${photo.mimeType};base64,${photo.photoData}`}
+                              alt={photo.originalName || "Property photo"}
+                              className="object-cover w-full max-h-48 rounded-md"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Quote Dialog */}
+      <Dialog open={approveDialogOpen !== null} onOpenChange={(open) => {
+        if (!open) {
+          setApproveDialogOpen(null);
+          setApprovalData({ date: "", timeSlot: "" });
+        }
+      }}>
+        <DialogContent className="max-w-full sm:max-w-md" data-testid="dialog-approve-quote">
+          <DialogHeader>
+            <DialogTitle>Approve Quote & Create Booking</DialogTitle>
+            <DialogDescription>
+              Select a date and time slot to approve this quote and convert it to a booking.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="approval-date">Date *</Label>
+              <Input
+                id="approval-date"
+                type="date"
+                value={approvalData.date}
+                onChange={(e) => setApprovalData({ ...approvalData, date: e.target.value })}
+                min={new Date().toISOString().split('T')[0]}
+                data-testid="input-approval-date"
+              />
+            </div>
+            <div>
+              <Label htmlFor="approval-time">Time Slot *</Label>
+              <Select
+                value={approvalData.timeSlot}
+                onValueChange={(value) => setApprovalData({ ...approvalData, timeSlot: value })}
+              >
+                <SelectTrigger id="approval-time" data-testid="select-approval-time">
+                  <SelectValue placeholder="Select time slot" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="8:00 AM - 10:00 AM">8:00 AM - 10:00 AM</SelectItem>
+                  <SelectItem value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</SelectItem>
+                  <SelectItem value="12:00 PM - 2:00 PM">12:00 PM - 2:00 PM</SelectItem>
+                  <SelectItem value="2:00 PM - 4:00 PM">2:00 PM - 4:00 PM</SelectItem>
+                  <SelectItem value="4:00 PM - 6:00 PM">4:00 PM - 6:00 PM</SelectItem>
+                  <SelectItem value="6:00 PM - 8:00 PM">6:00 PM - 8:00 PM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setApproveDialogOpen(null);
+                setApprovalData({ date: "", timeSlot: "" });
+              }}
+              data-testid="button-cancel-approve"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApproveQuote}
+              disabled={updateStatusMutation.isPending || !approvalData.date || !approvalData.timeSlot}
+              data-testid="button-confirm-approve"
+            >
+              {updateStatusMutation.isPending ? "Approving..." : "Approve & Create Booking"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -330,6 +491,48 @@ export function QuotesTable() {
               {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enlarged Photo Dialog */}
+      <Dialog open={enlargedPhoto !== null} onOpenChange={(open) => !open && setEnlargedPhoto(null)}>
+        <DialogContent className="max-w-full sm:max-w-4xl" data-testid="dialog-enlarged-photo">
+          <DialogHeader>
+            <DialogTitle>Property Photo</DialogTitle>
+            <button
+              onClick={() => setEnlargedPhoto(null)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
+              data-testid="button-close-photo"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </DialogHeader>
+          {enlargedPhoto && (
+            <div className="space-y-4">
+              <img
+                src={`data:${enlargedPhoto.mimeType};base64,${enlargedPhoto.photoData}`}
+                alt={enlargedPhoto.originalName || "Property photo"}
+                className="w-full h-auto rounded-md"
+                data-testid="img-enlarged-photo"
+              />
+              {enlargedPhoto.originalName && (
+                <p className="text-sm text-muted-foreground">
+                  {enlargedPhoto.originalName}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <a
+                  href={`data:${enlargedPhoto.mimeType};base64,${enlargedPhoto.photoData}`}
+                  download={enlargedPhoto.originalName || "property-photo"}
+                  className="inline-flex"
+                >
+                  <Button variant="outline" data-testid="button-download-photo">
+                    Download
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
