@@ -44,6 +44,29 @@ export async function runMigrations() {
     }
     
     console.log('✓ Database schema verified/created successfully');
+    
+    // Add intelligence feature columns if they don't exist
+    console.log('Adding intelligence feature columns...');
+    const intelligenceColumns = `
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS win_back_discount_percent INTEGER DEFAULT 15;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS win_back_email_subject TEXT;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS win_back_email_body TEXT;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS churn_risk_high_days INTEGER DEFAULT 90;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS churn_risk_medium_days INTEGER DEFAULT 60;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_promo_creation_threshold INTEGER DEFAULT 5;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_promo_creation_minutes INTEGER DEFAULT 10;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_invoice_change_percent INTEGER DEFAULT 80;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_cancellation_threshold INTEGER DEFAULT 10;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_cancellation_hours INTEGER DEFAULT 24;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS quick_reply_templates JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_churn_risk_scoring BOOLEAN DEFAULT true;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_win_back_campaigns BOOLEAN DEFAULT true;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_anomaly_detection BOOLEAN DEFAULT true;
+    `;
+    
+    await pool.query(intelligenceColumns);
+    console.log('✓ Intelligence feature columns added/verified');
+    
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;
