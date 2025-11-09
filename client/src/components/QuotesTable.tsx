@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Eye, CheckCircle, XCircle, Trash2, Search } from "lucide-react";
+import { Eye, CheckCircle, XCircle, Trash2, Search, Calendar } from "lucide-react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +19,7 @@ const statusColors = {
 
 export function QuotesTable() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [viewDialogOpen, setViewDialogOpen] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,6 +68,20 @@ export function QuotesTable() {
     if (deleteDialogOpen) {
       deleteMutation.mutate(deleteDialogOpen);
     }
+  };
+
+  const handleConvertToBooking = (quote: Quote) => {
+    const params = new URLSearchParams({
+      fromQuote: "true",
+      quoteId: quote.id,
+      name: quote.name,
+      email: quote.email,
+      phone: quote.phone || "",
+      address: quote.address || "",
+      service: quote.serviceType,
+      propertySize: quote.propertySize,
+    });
+    setLocation(`/book?${params.toString()}`);
   };
 
   if (isLoading) {
@@ -195,6 +211,17 @@ export function QuotesTable() {
                               <XCircle className="h-4 w-4 text-red-600" />
                             </Button>
                           </>
+                        )}
+                        {(quote.status === "pending" || quote.status === "approved") && (
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            onClick={() => handleConvertToBooking(quote)}
+                            data-testid={`button-convert-quote-${quote.id}`}
+                            title="Convert to Booking"
+                          >
+                            <Calendar className="h-4 w-4 text-blue-600" />
+                          </Button>
                         )}
                         <Button 
                           size="icon" 

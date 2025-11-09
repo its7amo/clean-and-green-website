@@ -45,6 +45,16 @@ export const employees = pgTable("employees", {
   role: text("role").notNull().default("employee"),
   active: boolean("active").notNull().default(true),
   userId: varchar("user_id").references(() => users.id),
+  availability: jsonb("availability").$type<{
+    monday?: { start: string; end: string; available: boolean };
+    tuesday?: { start: string; end: string; available: boolean };
+    wednesday?: { start: string; end: string; available: boolean };
+    thursday?: { start: string; end: string; available: boolean };
+    friday?: { start: string; end: string; available: boolean };
+    saturday?: { start: string; end: string; available: boolean };
+    sunday?: { start: string; end: string; available: boolean };
+  }>(),
+  vacationDays: text("vacation_days").array(),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
@@ -147,7 +157,10 @@ export const contactMessages = pgTable("contact_messages", {
   email: text("email").notNull(),
   phone: text("phone"),
   message: text("message").notNull(),
-  status: text("status").notNull().default("unread"),
+  status: text("status").notNull().default("new"), // new, in_progress, replied, closed, spam
+  assignedTo: varchar("assigned_to").references(() => employees.id),
+  replyMessage: text("reply_message"),
+  repliedAt: timestamp("replied_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -167,6 +180,7 @@ export const customers = pgTable("customers", {
   phone: text("phone").notNull(),
   address: text("address"),
   notes: text("notes"),
+  tags: text("tags").array(), // vip, at-risk, new, referral-champion
   referralCode: varchar("referral_code").unique(),
   totalBookings: integer("total_bookings").notNull().default(0),
   totalQuotes: integer("total_quotes").notNull().default(0),
