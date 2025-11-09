@@ -381,7 +381,7 @@ export function QuotesTable() {
                             data-testid={`button-view-photo-${photo.id}`}
                           >
                             <img
-                              src={`data:${photo.mimeType};base64,${photo.photoData}`}
+                              src={photo.photoData}
                               alt={photo.originalName || "Property photo"}
                               className="object-cover w-full max-h-48 rounded-md"
                             />
@@ -510,7 +510,7 @@ export function QuotesTable() {
           {enlargedPhoto && (
             <div className="space-y-4">
               <img
-                src={`data:${enlargedPhoto.mimeType};base64,${enlargedPhoto.photoData}`}
+                src={enlargedPhoto.photoData}
                 alt={enlargedPhoto.originalName || "Property photo"}
                 className="w-full h-auto rounded-md"
                 data-testid="img-enlarged-photo"
@@ -522,7 +522,7 @@ export function QuotesTable() {
               )}
               <div className="flex gap-2">
                 <a
-                  href={`data:${enlargedPhoto.mimeType};base64,${enlargedPhoto.photoData}`}
+                  href={enlargedPhoto.photoData}
                   download={enlargedPhoto.originalName || "property-photo"}
                   className="inline-flex"
                 >

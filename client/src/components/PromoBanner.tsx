@@ -22,6 +22,7 @@ interface BannerConfig {
 interface BannerSettings {
   enabled: boolean;
   customMessage?: string;
+  showPromoDetails?: boolean;
 }
 
 export function PromoBanner() {
@@ -61,8 +62,8 @@ export function PromoBanner() {
   // Use custom message if provided, otherwise use promo description
   const message = config.customMessage || (activePromo?.description || "");
   
-  // Show promo details only if there's an active promo
-  const showPromoDetails = !!activePromo;
+  // Show promo details only if there's an active promo AND the setting allows it
+  const showPromoDetails = !!activePromo && (settings?.showPromoDetails !== false);
   const discount = activePromo 
     ? (activePromo.discountType === "percentage" 
       ? `${activePromo.discountValue}% OFF` 

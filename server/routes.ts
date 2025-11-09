@@ -5181,6 +5181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         enabled: settings?.promoBannerEnabled ?? true,
         customMessage: settings?.promoBannerMessage,
+        showPromoDetails: settings?.promoBannerShowPromoDetails ?? true,
       });
     } catch (error) {
       console.error("Error fetching banner settings:", error);

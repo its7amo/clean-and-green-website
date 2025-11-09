@@ -37,6 +37,7 @@ const settingsFormSchema = z.object({
   cancellationPolicy: z.string().optional(),
   promoBannerEnabled: z.boolean(),
   promoBannerMessage: z.string().optional(),
+  promoBannerShowPromoDetails: z.boolean(),
   statsCounterEnabled: z.boolean(),
   // Intelligence Features
   winBackDiscountPercent: z.number().min(0).max(100).optional(),
@@ -91,6 +92,7 @@ export default function AdminSettings() {
       cancellationPolicy: "",
       promoBannerEnabled: true,
       promoBannerMessage: "",
+      promoBannerShowPromoDetails: true,
       statsCounterEnabled: true,
       // Intelligence Features
       winBackDiscountPercent: 15,
@@ -139,6 +141,7 @@ export default function AdminSettings() {
         cancellationPolicy: settings.cancellationPolicy || "",
         promoBannerEnabled: settings.promoBannerEnabled ?? true,
         promoBannerMessage: settings.promoBannerMessage || "",
+        promoBannerShowPromoDetails: settings.promoBannerShowPromoDetails ?? true,
         statsCounterEnabled: settings.statsCounterEnabled ?? true,
         // Intelligence Features
         winBackDiscountPercent: settings.winBackDiscountPercent ?? 15,
@@ -529,7 +532,7 @@ export default function AdminSettings() {
                                 Enable Promo Banner
                               </FormLabel>
                               <FormDescription>
-                                Show active promo codes across your website
+                                Show banner across your website
                               </FormDescription>
                             </div>
                             <FormControl>
@@ -537,6 +540,29 @@ export default function AdminSettings() {
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
                                 data-testid="switch-promo-banner"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="promoBannerShowPromoDetails"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">
+                                Show Promo Code Details in Banner
+                              </FormLabel>
+                              <FormDescription>
+                                When enabled, active promo discounts and codes will automatically show in the banner. Disable to show only your custom message.
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-banner-show-promo"
                               />
                             </FormControl>
                           </FormItem>

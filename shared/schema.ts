@@ -306,6 +306,7 @@ export const businessSettings = pgTable("business_settings", {
   cancellationPolicy: text("cancellation_policy"),
   promoBannerEnabled: boolean("promo_banner_enabled").notNull().default(true),
   promoBannerMessage: text("promo_banner_message"),
+  promoBannerShowPromoDetails: boolean("promo_banner_show_promo_details").notNull().default(true),
   statsCounterEnabled: boolean("stats_counter_enabled").notNull().default(true),
   reviewEmailEnabled: boolean("review_email_enabled").notNull().default(true),
   followUpEmailEnabled: boolean("follow_up_email_enabled").notNull().default(true),
