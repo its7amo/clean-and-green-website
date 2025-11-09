@@ -1,0 +1,122 @@
+ServiceWorker registered successfully: https://clean-and-green-website.onrender.com/
+controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1 [Stripe.js] You have not registered or verified the domain, so the following payment methods are not enabled in the Payment Element: 
+
+- apple_pay
+
+Please follow https://stripe.com/docs/payments/payment-methods/pmd-registration to register and verify the domain.
+warn @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+setTimeout
+(anonymous) @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+(anonymous) @ elements-inner-payme…daee22018b83a5.js:1
+(anonymous) @ elements-inner-payme…daee22018b83a5.js:1
+(anonymous) @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+r.test._emit @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+value @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+value @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+Promise.then
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+dispatch @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+Promise.then
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+Promise.then
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+Promise.then
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+value @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+n @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+d.innerAction @ shared-5e9ce671af4ff…a274d7ef7bf2fe.js:1
+r.dispatchAction @ elements-inner-payme…daee22018b83a5.js:1
+(anonymous) @ elements-inner-payme…daee22018b83a5.js:1
+(anonymous) @ elements-inner-payme…daee22018b83a5.js:1
+la @ elements-inner-payme…daee22018b83a5.js:1
+Ha @ elements-inner-payme…daee22018b83a5.js:1
+n.unstable_runWithPriority @ elements-inner-payme…daee22018b83a5.js:1
+wn @ elements-inner-payme…daee22018b83a5.js:1
+Va @ elements-inner-payme…daee22018b83a5.js:1
+(anonymous) @ elements-inner-payme…daee22018b83a5.js:1
+c @ elements-inner-payme…daee22018b83a5.js:1
+P.port1.onmessage @ elements-inner-payme…daee22018b83a5.js:1Understand this warning
+shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1:227277
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+Promise.catch
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+e @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+c @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+log @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+log @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+value @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+setTimeout
+value @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+recordOuterPerformanceTimeline @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+n @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+a @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+i @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ shared-5e9ce671af4ff17000a274d7ef7bf2fe.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+value @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1
+(anonymous) @ controller-with-dual-preconnect-treatment-d2b596f03760f0eefd2ab6809c08d42b.js:1Understand this error
