@@ -18,8 +18,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Shield, Mail } from "lucide-react";
+import { Plus, Pencil, Trash2, Shield, Mail, Calendar, X } from "lucide-react";
 import { PERMISSION_METADATA, type PermissionTemplate, type Feature, type Action } from "@shared/permissions";
+
+const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
 export default function AdminEmployees() {
   const { toast } = useToast();
@@ -32,6 +34,8 @@ export default function AdminEmployees() {
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
+  const [vacationDays, setVacationDays] = useState<string[]>([]);
+  const [newVacationDate, setNewVacationDate] = useState("");
 
   const { data: employees, isLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -45,6 +49,16 @@ export default function AdminEmployees() {
       phone: "",
       role: "cleaner",
       active: true,
+      availability: {
+        monday: { start: "09:00", end: "17:00", available: true },
+        tuesday: { start: "09:00", end: "17:00", available: true },
+        wednesday: { start: "09:00", end: "17:00", available: true },
+        thursday: { start: "09:00", end: "17:00", available: true },
+        friday: { start: "09:00", end: "17:00", available: true },
+        saturday: { start: "09:00", end: "17:00", available: false },
+        sunday: { start: "09:00", end: "17:00", available: false },
+      },
+      vacationDays: [],
     },
   });
 
@@ -181,13 +195,25 @@ export default function AdminEmployees() {
 
   const handleEdit = (employee: Employee) => {
     setEditingEmployee(employee);
+    const defaultAvailability = {
+      monday: { start: "09:00", end: "17:00", available: true },
+      tuesday: { start: "09:00", end: "17:00", available: true },
+      wednesday: { start: "09:00", end: "17:00", available: true },
+      thursday: { start: "09:00", end: "17:00", available: true },
+      friday: { start: "09:00", end: "17:00", available: true },
+      saturday: { start: "09:00", end: "17:00", available: false },
+      sunday: { start: "09:00", end: "17:00", available: false },
+    };
     form.reset({
       name: employee.name,
       email: employee.email,
       phone: employee.phone,
       role: employee.role,
       active: employee.active,
+      availability: employee.availability || defaultAvailability,
+      vacationDays: employee.vacationDays || [],
     });
+    setVacationDays(employee.vacationDays || []);
     setIsDialogOpen(true);
   };
 
@@ -200,7 +226,24 @@ export default function AdminEmployees() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingEmployee(null);
+    setVacationDays([]);
+    setNewVacationDate("");
     form.reset();
+  };
+
+  const addVacationDay = () => {
+    if (newVacationDate && !vacationDays.includes(newVacationDate)) {
+      const updatedDays = [...vacationDays, newVacationDate].sort();
+      setVacationDays(updatedDays);
+      form.setValue('vacationDays', updatedDays);
+      setNewVacationDate("");
+    }
+  };
+
+  const removeVacationDay = (date: string) => {
+    const updatedDays = vacationDays.filter(d => d !== date);
+    setVacationDays(updatedDays);
+    form.setValue('vacationDays', updatedDays);
   };
 
   const handleManagePermissions = (employee: Employee) => {
@@ -406,6 +449,104 @@ export default function AdminEmployees() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <h3 className="font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Weekly Availability
+                    </h3>
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div key={day} className="flex items-center gap-4 flex-wrap">
+                        <FormField
+                          control={form.control}
+                          name={`availability.${day}.available`}
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-2">
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  data-testid={`switch-${day}-available`}
+                                />
+                              </FormControl>
+                              <FormLabel className="capitalize min-w-[100px] !mt-0">
+                                {day}
+                              </FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`availability.${day}.start`}
+                          render={({ field }) => (
+                            <FormItem className="flex items-center gap-2">
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  {...field}
+                                  disabled={!form.watch(`availability.${day}.available`)}
+                                  className="w-32"
+                                  data-testid={`input-${day}-start`}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <span className="text-muted-foreground">to</span>
+                        <FormField
+                          control={form.control}
+                          name={`availability.${day}.end`}
+                          render={({ field }) => (
+                            <FormItem className="flex items-center gap-2">
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  {...field}
+                                  disabled={!form.watch(`availability.${day}.available`)}
+                                  className="w-32"
+                                  data-testid={`input-${day}-end`}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <h3 className="font-medium">Vacation Days</h3>
+                    <div className="flex gap-2">
+                      <Input
+                        type="date"
+                        value={newVacationDate}
+                        onChange={(e) => setNewVacationDate(e.target.value)}
+                        data-testid="input-vacation-date"
+                      />
+                      <Button type="button" onClick={addVacationDay} data-testid="button-add-vacation">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {vacationDays.length > 0 && (
+                      <div className="space-y-2">
+                        {vacationDays.map((date) => (
+                          <div key={date} className="flex items-center justify-between bg-muted p-2 rounded">
+                            <span data-testid={`text-vacation-${date}`}>{new Date(date).toLocaleDateString()}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeVacationDay(date)}
+                              data-testid={`button-remove-vacation-${date}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex gap-2 justify-end">
                     <Button type="button" variant="outline" onClick={handleDialogClose} data-testid="button-cancel">
                       Cancel
