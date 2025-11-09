@@ -23,7 +23,9 @@ export function GlobalSearch() {
   const [, setLocation] = useLocation();
 
   const { data, isLoading } = useQuery<GlobalSearchResult>({
-    queryKey: ["/api/global-search", { q: debouncedQuery }],
+    queryKey: debouncedQuery.trim().length >= 2 
+      ? [`/api/global-search?q=${encodeURIComponent(debouncedQuery)}`]
+      : ["/api/global-search-disabled"],
     enabled: debouncedQuery.trim().length >= 2,
     staleTime: 0,
     refetchOnWindowFocus: false,

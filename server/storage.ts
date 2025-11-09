@@ -1445,10 +1445,10 @@ export class DbStorage implements IStorage {
         (SELECT COUNT(*) FROM ${customers} WHERE churn_risk IN ('high', 'medium') AND updated_at >= ${oneWeekAgoStr}) as last_week_at_risk,
         (SELECT COUNT(*) FROM ${anomalyAlerts} WHERE status = 'open') as open_alerts,
         (SELECT COUNT(*) FROM ${anomalyAlerts} WHERE status = 'open' AND severity = 'high') as high_severity_alerts,
-        (SELECT COUNT(*) FROM ${customers} WHERE 'vip' = ANY(tags)) as vip_customers,
-        (SELECT COUNT(*) FROM ${customers} WHERE 'at-risk' = ANY(tags)) as at_risk_tagged,
-        (SELECT COUNT(*) FROM ${customers} WHERE 'new' = ANY(tags)) as new_customers,
-        (SELECT COUNT(*) FROM ${customers} WHERE 'referral-champion' = ANY(tags)) as referral_champions,
+        (SELECT COUNT(*) FROM ${customers} WHERE tags IS NOT NULL AND 'vip' = ANY(tags)) as vip_customers,
+        (SELECT COUNT(*) FROM ${customers} WHERE tags IS NOT NULL AND 'at-risk' = ANY(tags)) as at_risk_tagged,
+        (SELECT COUNT(*) FROM ${customers} WHERE tags IS NOT NULL AND 'new' = ANY(tags)) as new_customers,
+        (SELECT COUNT(*) FROM ${customers} WHERE tags IS NOT NULL AND 'referral-champion' = ANY(tags)) as referral_champions,
         (SELECT COUNT(*) FROM ${contactMessages} WHERE status = 'new') as new_messages,
         (SELECT COUNT(*) FROM ${contactMessages} WHERE status = 'in_progress') as in_progress_messages,
         (SELECT COUNT(*) FROM ${contactMessages} WHERE status IN ('new', 'in_progress')) as total_unresolved,
@@ -1522,10 +1522,10 @@ export class DbStorage implements IStorage {
         overdueInvoices: Number(row.overdue_invoices) || 0,
       },
       businessSettings: {
-        winBackCampaignsEnabled: settings?.enableWinBackCampaigns || false,
-        churnRiskThreshold: settings?.churnRiskDays || 30,
-        anomalyDetectionEnabled: settings?.enableAnomalyDetection || false,
-        autoTaggingEnabled: settings?.enableAutoTagging || false,
+        winBackCampaignsEnabled: (settings?.winBackDiscountPercent || 0) > 0,
+        churnRiskThreshold: settings?.churnRiskHighDays || 90,
+        anomalyDetectionEnabled: (settings?.anomalyPromoCreationThreshold || 0) > 0,
+        autoTaggingEnabled: true, // Always enabled in this version
       },
       lastUpdated: new Date().toISOString(),
     };
@@ -1576,7 +1576,7 @@ export class DbStorage implements IStorage {
           email: customers.email,
           phone: customers.phone,
           totalBookings: customers.totalBookings,
-          lastBooking: customers.lastBooking,
+          lastBooking: customers.updatedAt,
           relevance: sql<number>`
             CASE
               WHEN LOWER(${customers.email}) = LOWER(${trimmedQuery}) THEN 3
@@ -1591,7 +1591,7 @@ export class DbStorage implements IStorage {
               OR ${customers.email} ILIKE ${searchPattern} 
               OR ${customers.phone} ILIKE ${searchPattern}`
         )
-        .orderBy(sql`relevance DESC, ${customers.lastBooking} DESC NULLS LAST`)
+        .orderBy(sql`relevance DESC, ${customers.updatedAt} DESC NULLS LAST`)
         .limit(perEntityLimit),
 
       db
@@ -1599,7 +1599,7 @@ export class DbStorage implements IStorage {
           id: quotes.id,
           name: quotes.name,
           email: quotes.email,
-          service: quotes.service,
+          service: quotes.serviceType,
           status: quotes.status,
           createdAt: quotes.createdAt,
           phone: quotes.phone,
@@ -1616,7 +1616,7 @@ export class DbStorage implements IStorage {
           sql`${quotes.name} ILIKE ${searchPattern} 
               OR ${quotes.email} ILIKE ${searchPattern} 
               OR ${quotes.phone} ILIKE ${searchPattern}
-              OR ${quotes.service} ILIKE ${searchPattern}`
+              OR ${quotes.serviceType} ILIKE ${searchPattern}`
         )
         .orderBy(sql`relevance DESC, ${quotes.createdAt} DESC`)
         .limit(perEntityLimit),
@@ -1628,7 +1628,7 @@ export class DbStorage implements IStorage {
         name: b.name,
         email: b.email,
         service: b.service,
-        date: b.date.toISOString(),
+        date: typeof b.date === 'string' ? b.date : b.date.toISOString(),
         status: b.status,
         phone: b.phone,
       })),
