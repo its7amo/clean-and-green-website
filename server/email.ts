@@ -5,7 +5,7 @@ export const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Get base URL for links (environment-aware)
 function getBaseUrl(): string {
-  return process.env.APP_URL || process.env.REPLIT_DEV_DOMAIN || 'https://clean-and-green-website.onrender.com';
+  return process.env.APP_URL || 'https://clean-and-green-website.onrender.com';
 }
 
 // Template replacement helper

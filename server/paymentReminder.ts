@@ -60,7 +60,8 @@ export async function sendPaymentReminderEmail(data: PaymentReminderData): Promi
   const { invoice, daysOverdue, reminderNumber, settings } = data;
   
   const amountDue = (invoice.total / 100).toFixed(2);
-  const paymentLink = `${process.env.REPLIT_DOMAINS}/invoice/${invoice.id}/pay`;
+  const baseUrl = process.env.APP_URL || 'https://clean-and-green-website.onrender.com';
+  const paymentLink = `${baseUrl}/invoice/${invoice.id}/pay`;
   
   // Get custom or default templates based on reminder number
   let subjectTemplate: string;

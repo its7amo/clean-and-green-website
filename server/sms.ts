@@ -60,7 +60,7 @@ export async function sendInvoicePaymentLinkSMS(
     const normalizedPhone = normalizePhoneNumber(customerPhone);
     console.log(`📱 Normalizing phone: "${customerPhone}" → "${normalizedPhone}"`);
     
-    const baseUrl = process.env.APP_URL || process.env.REPLIT_DEV_DOMAIN || 'https://clean-and-green-website.onrender.com';
+    const baseUrl = process.env.APP_URL || 'https://clean-and-green-website.onrender.com';
     const paymentUrl = `${baseUrl}/pay-invoice/${invoiceId}`;
     
     const message = `Hi ${customerName}! Your Clean & Green invoice #${invoiceNumber} for $${(total / 100).toFixed(2)} is ready. Pay online: ${paymentUrl}`;
