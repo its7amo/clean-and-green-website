@@ -294,9 +294,12 @@ export default function AdminBookings() {
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Morning (8am-12pm)">Morning (8am-12pm)</SelectItem>
-                    <SelectItem value="Afternoon (12pm-4pm)">Afternoon (12pm-4pm)</SelectItem>
-                    <SelectItem value="Evening (4pm-8pm)">Evening (4pm-8pm)</SelectItem>
+                    <SelectItem value="8:00 AM - 10:00 AM">8:00 AM - 10:00 AM</SelectItem>
+                    <SelectItem value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</SelectItem>
+                    <SelectItem value="12:00 PM - 2:00 PM">12:00 PM - 2:00 PM</SelectItem>
+                    <SelectItem value="2:00 PM - 4:00 PM">2:00 PM - 4:00 PM</SelectItem>
+                    <SelectItem value="4:00 PM - 6:00 PM">4:00 PM - 6:00 PM</SelectItem>
+                    <SelectItem value="6:00 PM - 8:00 PM">6:00 PM - 8:00 PM</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
