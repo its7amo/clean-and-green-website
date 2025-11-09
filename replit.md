@@ -2,7 +2,7 @@
 
 ## Overview
 
-Clean and Green is a production-ready professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests. The platform features a comprehensive admin dashboard for management of bookings, quotes, business analytics, customer interactions, team operations, and a tiered referral program ($10/$15/$20 rewards). The system includes PWA functionality, automated email/SMS notifications, and is fully deployed to Render.com with proper production environment configuration.
+Clean and Green is a production-ready professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests. The platform features a comprehensive admin dashboard for management of bookings, quotes, business analytics, customer interactions, team operations, and a tiered referral program ($10/$15/$20 rewards). Recently expanded with 6 new admin intelligence features: Customer Churn Risk Scoring, Smart Anomaly Alerts, Message Status Tracking, Employee Scheduling, Customer Segmentation, and Quick Actions Dashboard. The system includes PWA functionality, automated email/SMS notifications, and is fully deployed to Render.com with proper production environment configuration.
 
 ## User Preferences
 
@@ -31,12 +31,13 @@ PostgreSQL (Neon for serverless deployment) is the database, managed with Drizzl
 - **Email Templates**: Reusable templates for bulk communications.
 - **Service Areas**: Geographic coverage with zip code validation.
 - **Invoices**: Includes payment reminder tracking and referral program integration.
-- **Customers**: Comprehensive records with CLV tracking and personal referral codes.
+- **Customers**: Comprehensive records with CLV tracking, personal referral codes, churn risk scoring, and custom tags.
 - **Referrals**: Tracks referral relationships and tier levels.
 - **Referral Credits**: Manages customer credit balances.
 - **Referral Settings**: Global referral program configuration.
-- **Business Settings**: Customizable payment reminder email templates.
-Zod schemas are generated from Drizzle tables for validation and type inference.
+- **Anomaly Alerts**: Fraud and mistake detection system tracking bulk operations and suspicious activities.
+- **Business Settings**: Customizable templates and intelligence feature configuration (win-back campaigns, churn risk thresholds, anomaly detection settings, quick reply templates).
+Zod schemas are generated from Drizzle tables for validation and type inference. All new admin intelligence endpoints include strict Zod validation with enum constraints for security.
 
 ### Authentication & Authorization
 
@@ -46,7 +47,7 @@ Passport.js with a Local Strategy and Express sessions (stored in PostgreSQL via
 
 **Public Pages**: Home (with promo banner, recent bookings, stats, featured gallery), Services, About, Contact, Booking, Quote, Customer Portal, Invoice Payment, Reviews, Privacy Policy, Terms of Service.
 
-**Admin Pages**: Dashboard, Analytics, Bookings, Calendar View, Recurring Bookings, Quotes, Invoices, Promo Codes, Service Areas, Employees, Customer Profiles (with CLV, notes, history), Messages, Reviews, Newsletter, Team Management, Business Settings.
+**Admin Pages**: Dashboard (with Quick Actions widget), Analytics, Anomaly Alerts, Bookings, Calendar View, Recurring Bookings, Quotes, Invoices, Promo Codes, Service Areas, Employees, Customer Profiles (with CLV, churn risk, tags, notes, history), Messages (with status tracking), Reviews, Newsletter, Team Management, Business Settings (with intelligence feature controls).
 
 **Employee Pages**: Employee Login, Employee Dashboard.
 

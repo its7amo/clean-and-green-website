@@ -21,6 +21,12 @@ import {
   insertJobPhotoSchema,
   insertEmailTemplateSchema,
   insertServiceAreaSchema,
+  createAnomalyAlertSchema,
+  assignMessageSchema,
+  replyMessageSchema,
+  updateCustomerTagsSchema,
+  suggestEmployeesSchema,
+  updateContactMessageSchema,
   type JobPhoto,
   type EmailTemplate,
   type User,
@@ -5330,6 +5336,280 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching referral info:", error);
       res.status(500).json({ error: "Failed to fetch referral info" });
+    }
+  });
+
+  // Churn risk endpoints
+  app.get("/api/customers/:id/churn-risk", isAuthenticated, async (req, res) => {
+    try {
+      const risk = await storage.calculateCustomerChurnRisk(req.params.id);
+      await storage.updateCustomerChurnRisk(req.params.id, risk.risk);
+      res.json(risk);
+    } catch (error) {
+      console.error("Error calculating churn risk:", error);
+      res.status(500).json({ error: "Failed to calculate churn risk" });
+    }
+  });
+
+  app.post("/api/customers/churn-risk/recompute", isAuthenticated, async (req, res) => {
+    try {
+      const allCustomers = await storage.getCustomers();
+      let updated = 0;
+      
+      for (const customer of allCustomers) {
+        const risk = await storage.calculateCustomerChurnRisk(customer.id);
+        await storage.updateCustomerChurnRisk(customer.id, risk.risk);
+        updated++;
+      }
+      
+      res.json({ message: `Updated churn risk for ${updated} customers` });
+    } catch (error) {
+      console.error("Error recomputing churn risk:", error);
+      res.status(500).json({ error: "Failed to recompute churn risk" });
+    }
+  });
+
+  app.get("/api/customers/at-risk", isAuthenticated, async (req, res) => {
+    try {
+      const customers = await storage.getAtRiskCustomers();
+      res.json(customers);
+    } catch (error) {
+      console.error("Error fetching at-risk customers:", error);
+      res.status(500).json({ error: "Failed to fetch at-risk customers" });
+    }
+  });
+
+  // Anomaly alert endpoints
+  app.post("/api/alerts", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = createAnomalyAlertSchema.parse(req.body);
+      const alert = await storage.createAnomalyAlert(validatedData);
+      res.json(alert);
+    } catch (error) {
+      console.error("Error creating anomaly alert:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create anomaly alert" });
+    }
+  });
+
+  app.get("/api/alerts", isAuthenticated, async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const alerts = await storage.getAnomalyAlerts(status);
+      res.json(alerts);
+    } catch (error) {
+      console.error("Error fetching anomaly alerts:", error);
+      res.status(500).json({ error: "Failed to fetch anomaly alerts" });
+    }
+  });
+
+  app.get("/api/alerts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const alert = await storage.getAnomalyAlert(req.params.id);
+      if (!alert) {
+        return res.status(404).json({ error: "Alert not found" });
+      }
+      res.json(alert);
+    } catch (error) {
+      console.error("Error fetching anomaly alert:", error);
+      res.status(500).json({ error: "Failed to fetch anomaly alert" });
+    }
+  });
+
+  app.patch("/api/alerts/:id/acknowledge", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const alert = await storage.acknowledgeAnomalyAlert(req.params.id, userId);
+      if (!alert) {
+        return res.status(404).json({ error: "Alert not found" });
+      }
+      res.json(alert);
+    } catch (error) {
+      console.error("Error acknowledging anomaly alert:", error);
+      res.status(500).json({ error: "Failed to acknowledge anomaly alert" });
+    }
+  });
+
+  app.patch("/api/alerts/:id/resolve", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const alert = await storage.resolveAnomalyAlert(req.params.id, userId);
+      if (!alert) {
+        return res.status(404).json({ error: "Alert not found" });
+      }
+      res.json(alert);
+    } catch (error) {
+      console.error("Error resolving anomaly alert:", error);
+      res.status(500).json({ error: "Failed to resolve anomaly alert" });
+    }
+  });
+
+  app.delete("/api/alerts/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteAnomalyAlert(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting anomaly alert:", error);
+      res.status(500).json({ error: "Failed to delete anomaly alert" });
+    }
+  });
+
+  // Quick actions dashboard endpoint
+  app.get("/api/quick-actions", isAuthenticated, async (req, res) => {
+    try {
+      const counts = await storage.getQuickActionsCounts();
+      res.json(counts);
+    } catch (error) {
+      console.error("Error fetching quick actions:", error);
+      res.status(500).json({ error: "Failed to fetch quick actions" });
+    }
+  });
+
+  // Message enhancement endpoints
+  app.patch("/api/messages/:id", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = updateContactMessageSchema.parse(req.body);
+      const message = await storage.updateContactMessage(req.params.id, validatedData);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json(message);
+    } catch (error) {
+      console.error("Error updating message:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update message" });
+    }
+  });
+
+  app.patch("/api/messages/:id/assign", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = assignMessageSchema.parse(req.body);
+      const message = await storage.assignContactMessage(req.params.id, validatedData.employeeId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json(message);
+    } catch (error) {
+      console.error("Error assigning message:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to assign message" });
+    }
+  });
+
+  app.post("/api/messages/:id/reply", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = replyMessageSchema.parse(req.body);
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const message = await storage.replyToContactMessage(req.params.id, validatedData.replyMessage, userId);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json(message);
+    } catch (error) {
+      console.error("Error replying to message:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to reply to message" });
+    }
+  });
+
+  app.get("/api/messages/unread", isAuthenticated, async (req, res) => {
+    try {
+      const messages = await storage.getUnreadMessages();
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching unread messages:", error);
+      res.status(500).json({ error: "Failed to fetch unread messages" });
+    }
+  });
+
+  // Customer enhancement endpoints
+  app.patch("/api/customers/:id/tags", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = updateCustomerTagsSchema.parse(req.body);
+      const customer = await storage.updateCustomerTags(req.params.id, validatedData.tags);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      res.json(customer);
+    } catch (error) {
+      console.error("Error updating customer tags:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update customer tags" });
+    }
+  });
+
+  app.post("/api/customers/:id/auto-tag", isAuthenticated, async (req, res) => {
+    try {
+      const customer = await storage.autoTagCustomer(req.params.id);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      res.json(customer);
+    } catch (error) {
+      console.error("Error auto-tagging customer:", error);
+      res.status(500).json({ error: "Failed to auto-tag customer" });
+    }
+  });
+
+  app.get("/api/customers/by-tag/:tag", isAuthenticated, async (req, res) => {
+    try {
+      const customers = await storage.getCustomersByTag(req.params.tag);
+      res.json(customers);
+    } catch (error) {
+      console.error("Error fetching customers by tag:", error);
+      res.status(500).json({ error: "Failed to fetch customers by tag" });
+    }
+  });
+
+  // Employee availability endpoints
+  app.post("/api/employees/suggest", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = suggestEmployeesSchema.parse(req.body);
+      const employees = await storage.getSuggestedEmployees(validatedData.date, validatedData.timeSlot);
+      res.json(employees);
+    } catch (error) {
+      console.error("Error suggesting employees:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to suggest employees" });
+    }
+  });
+
+  app.get("/api/employees/:id/workload", isAuthenticated, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ error: "Start date and end date are required" });
+      }
+      const workload = await storage.getEmployeeWorkload(
+        req.params.id,
+        startDate as string,
+        endDate as string
+      );
+      res.json(workload);
+    } catch (error) {
+      console.error("Error fetching employee workload:", error);
+      res.status(500).json({ error: "Failed to fetch employee workload" });
     }
   });
 

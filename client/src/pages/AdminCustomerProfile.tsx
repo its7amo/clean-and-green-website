@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Mail, Phone, MapPin, DollarSign, Calendar, Trash2, ShoppingCart, FileText, TrendingUp } from "lucide-react";
+import { Loader2, Mail, Phone, MapPin, DollarSign, Calendar, Trash2, ShoppingCart, FileText, TrendingUp, AlertTriangle, Tag, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -100,6 +100,30 @@ export default function AdminCustomerProfile() {
     },
   });
 
+  const autoTagMutation = useMutation({
+    mutationFn: async () => {
+      if (!customer?.id) throw new Error("No customer ID");
+      const res = await apiRequest("POST", `/api/customers/${customer.id}/auto-tag`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.refetchQueries({ queryKey: ['/api/customers/profile', email] });
+      toast({ title: "Tags updated automatically" });
+    },
+  });
+
+  const calculateChurnRiskMutation = useMutation({
+    mutationFn: async () => {
+      if (!customer?.id) throw new Error("No customer ID");
+      const res = await apiRequest("GET", `/api/customers/${customer.id}/churn-risk`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.refetchQueries({ queryKey: ['/api/customers/profile', email] });
+      toast({ title: "Churn risk calculated" });
+    },
+  });
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -175,6 +199,98 @@ export default function AdminCustomerProfile() {
                 <Calendar className="h-6 w-6 text-primary mx-auto mb-2" />
                 <p className="text-2xl font-bold">{stats.totalQuotes}</p>
                 <p className="text-xs text-muted-foreground">Quotes</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Churn Risk & Tags Section */}
+        <Card data-testid="card-churn-risk-tags">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Intelligence & Segmentation</CardTitle>
+                <CardDescription>Churn risk analysis and customer tags</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => calculateChurnRiskMutation.mutate()}
+                  disabled={calculateChurnRiskMutation.isPending || !customer}
+                  data-testid="button-calculate-churn-risk"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  {calculateChurnRiskMutation.isPending ? "Calculating..." : "Calculate Churn Risk"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => autoTagMutation.mutate()}
+                  disabled={autoTagMutation.isPending || !customer}
+                  data-testid="button-auto-tag"
+                >
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  {autoTagMutation.isPending ? "Tagging..." : "Auto-Tag"}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Churn Risk */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Churn Risk</span>
+                </div>
+                {customer?.churnRisk ? (
+                  <Badge
+                    variant={
+                      customer.churnRisk === "high"
+                        ? "destructive"
+                        : customer.churnRisk === "medium"
+                        ? "default"
+                        : "secondary"
+                    }
+                    data-testid="badge-churn-risk"
+                  >
+                    {customer.churnRisk.toUpperCase()} RISK
+                  </Badge>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No churn risk calculated. Click "Calculate Churn Risk" to analyze.
+                  </p>
+                )}
+                {customer?.churnRiskLastCalculated && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last calculated:{" "}
+                    {format(new Date(customer.churnRiskLastCalculated), "MMM d, yyyy 'at' h:mm a")}
+                  </p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Tags */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Customer Tags</span>
+                </div>
+                {customer?.tags && customer.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2" data-testid="container-tags">
+                    {customer.tags.map((tag) => (
+                      <Badge key={tag} variant="outline" data-testid={`tag-${tag}`}>
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No tags assigned. Click "Auto-Tag" to automatically categorize this customer.
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>

@@ -49,6 +49,8 @@ import {
   type InsertReferralCredit,
   type ReferralSettings,
   type InsertReferralSettings,
+  type AnomalyAlert,
+  type InsertAnomalyAlert,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -77,6 +79,7 @@ import {
   referrals,
   referralCredits,
   referralSettings,
+  anomalyAlerts,
 } from "@shared/schema";
 import { eq, desc, sql, or } from "drizzle-orm";
 
@@ -284,6 +287,45 @@ export interface IStorage {
   validateReferralCode(code: string): Promise<Customer | null>;
   generateReferralCode(customerName: string): Promise<string>;
   calculateReferralTier(referrerId: string): Promise<{ tier: number; amount: number }>;
+
+  // Churn risk operations
+  calculateCustomerChurnRisk(customerId: string): Promise<{ risk: string; daysSinceLastBooking: number }>;
+  updateCustomerChurnRisk(customerId: string, risk: string): Promise<Customer | undefined>;
+  getAtRiskCustomers(): Promise<Customer[]>;
+
+  // Anomaly alert operations
+  createAnomalyAlert(alert: InsertAnomalyAlert): Promise<AnomalyAlert>;
+  getAnomalyAlerts(status?: string): Promise<AnomalyAlert[]>;
+  getAnomalyAlert(id: string): Promise<AnomalyAlert | undefined>;
+  acknowledgeAnomalyAlert(id: string, userId: string): Promise<AnomalyAlert | undefined>;
+  resolveAnomalyAlert(id: string, userId: string): Promise<AnomalyAlert | undefined>;
+  deleteAnomalyAlert(id: string): Promise<void>;
+
+  // Quick actions dashboard aggregation
+  getQuickActionsCounts(): Promise<{
+    pendingQuotes: number;
+    overdueInvoices: number;
+    pendingReviews: number;
+    todaysBookings: number;
+    atRiskCustomers: number;
+    unreadMessages: number;
+    openAlerts: number;
+  }>;
+
+  // Message operations enhancement
+  updateContactMessage(id: string, message: Partial<InsertContactMessage>): Promise<ContactMessage | undefined>;
+  assignContactMessage(id: string, employeeId: string): Promise<ContactMessage | undefined>;
+  replyToContactMessage(id: string, replyMessage: string, userId: string): Promise<ContactMessage | undefined>;
+  getUnreadMessages(): Promise<ContactMessage[]>;
+
+  // Customer operations enhancement
+  updateCustomerTags(customerId: string, tags: string[]): Promise<Customer | undefined>;
+  autoTagCustomer(customerId: string): Promise<Customer | undefined>;
+  getCustomersByTag(tag: string): Promise<Customer[]>;
+
+  // Employee availability operations
+  getSuggestedEmployees(date: string, timeSlot: string): Promise<Employee[]>;
+  getEmployeeWorkload(employeeId: string, startDate: string, endDate: string): Promise<{ totalBookings: number; bookings: Booking[] }>;
 }
 
 export class DbStorage implements IStorage {
@@ -1241,6 +1283,271 @@ export class DbStorage implements IStorage {
     
     // Return all customers in program, even with zero balance (for manual adjustments)
     return creditsWithCustomerInfo;
+  }
+
+  // Churn risk operations
+  async calculateCustomerChurnRisk(customerId: string): Promise<{ risk: string; daysSinceLastBooking: number }> {
+    const settings = await this.getBusinessSettings();
+    const highDays = settings?.churnRiskHighDays || 90;
+    const mediumDays = settings?.churnRiskMediumDays || 60;
+
+    const lastBookingResult = await db
+      .select({ lastDate: sql<Date>`max(${bookings.createdAt})` })
+      .from(bookings)
+      .where(sql`${bookings.customerId} = ${customerId} AND ${bookings.status} != 'cancelled'`);
+
+    let lastActivityDate = lastBookingResult[0]?.lastDate;
+
+    if (!lastActivityDate) {
+      const lastQuoteResult = await db
+        .select({ lastDate: sql<Date>`max(${quotes.createdAt})` })
+        .from(quotes)
+        .where(eq(quotes.customerId, customerId));
+      lastActivityDate = lastQuoteResult[0]?.lastDate;
+    }
+
+    const daysSinceLastBooking = lastActivityDate
+      ? Math.floor((Date.now() - new Date(lastActivityDate).getTime()) / (1000 * 60 * 60 * 24))
+      : 9999;
+
+    let risk = "low";
+    if (daysSinceLastBooking >= highDays) {
+      risk = "high";
+    } else if (daysSinceLastBooking >= mediumDays) {
+      risk = "medium";
+    }
+
+    return { risk, daysSinceLastBooking };
+  }
+
+  async updateCustomerChurnRisk(customerId: string, risk: string): Promise<Customer | undefined> {
+    const [updated] = await db
+      .update(customers)
+      .set({ churnRisk: risk, churnRiskLastCalculated: new Date() })
+      .where(eq(customers.id, customerId))
+      .returning();
+    return updated;
+  }
+
+  async getAtRiskCustomers(): Promise<Customer[]> {
+    return await db
+      .select()
+      .from(customers)
+      .where(or(eq(customers.churnRisk, "medium"), eq(customers.churnRisk, "high")));
+  }
+
+  // Anomaly alert operations
+  async createAnomalyAlert(alert: InsertAnomalyAlert): Promise<AnomalyAlert> {
+    const [created] = await db.insert(anomalyAlerts).values(alert).returning();
+    return created;
+  }
+
+  async getAnomalyAlerts(status?: string): Promise<AnomalyAlert[]> {
+    if (status) {
+      return await db
+        .select()
+        .from(anomalyAlerts)
+        .where(eq(anomalyAlerts.status, status))
+        .orderBy(desc(anomalyAlerts.createdAt));
+    }
+    return await db.select().from(anomalyAlerts).orderBy(desc(anomalyAlerts.createdAt));
+  }
+
+  async getAnomalyAlert(id: string): Promise<AnomalyAlert | undefined> {
+    const [alert] = await db.select().from(anomalyAlerts).where(eq(anomalyAlerts.id, id));
+    return alert;
+  }
+
+  async acknowledgeAnomalyAlert(id: string, userId: string): Promise<AnomalyAlert | undefined> {
+    const [updated] = await db
+      .update(anomalyAlerts)
+      .set({
+        status: "acknowledged",
+        acknowledgedBy: userId,
+        acknowledgedAt: new Date(),
+      })
+      .where(eq(anomalyAlerts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async resolveAnomalyAlert(id: string, userId: string): Promise<AnomalyAlert | undefined> {
+    const [updated] = await db
+      .update(anomalyAlerts)
+      .set({
+        status: "resolved",
+        resolvedBy: userId,
+        resolvedAt: new Date(),
+      })
+      .where(eq(anomalyAlerts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAnomalyAlert(id: string): Promise<void> {
+    await db.delete(anomalyAlerts).where(eq(anomalyAlerts.id, id));
+  }
+
+  // Quick actions dashboard aggregation
+  async getQuickActionsCounts(): Promise<{
+    pendingQuotes: number;
+    overdueInvoices: number;
+    pendingReviews: number;
+    todaysBookings: number;
+    atRiskCustomers: number;
+    unreadMessages: number;
+    openAlerts: number;
+  }> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const result = await db.execute(sql`
+      SELECT
+        (SELECT COUNT(*) FROM ${quotes} WHERE status = 'pending') as pending_quotes,
+        (SELECT COUNT(*) FROM ${invoices} WHERE due_date < now() AND status != 'paid') as overdue_invoices,
+        (SELECT COUNT(*) FROM ${reviews} WHERE status = 'pending') as pending_reviews,
+        (SELECT COUNT(*) FROM ${bookings} WHERE date = ${today}) as todays_bookings,
+        (SELECT COUNT(*) FROM ${customers} WHERE churn_risk IN ('medium', 'high')) as at_risk_customers,
+        (SELECT COUNT(*) FROM ${contactMessages} WHERE status = 'new') as unread_messages,
+        (SELECT COUNT(*) FROM ${anomalyAlerts} WHERE status = 'open') as open_alerts
+    `);
+
+    const row = result.rows[0] as any;
+    return {
+      pendingQuotes: Number(row.pending_quotes) || 0,
+      overdueInvoices: Number(row.overdue_invoices) || 0,
+      pendingReviews: Number(row.pending_reviews) || 0,
+      todaysBookings: Number(row.todays_bookings) || 0,
+      atRiskCustomers: Number(row.at_risk_customers) || 0,
+      unreadMessages: Number(row.unread_messages) || 0,
+      openAlerts: Number(row.open_alerts) || 0,
+    };
+  }
+
+  // Message operations enhancement
+  async updateContactMessage(id: string, message: Partial<InsertContactMessage>): Promise<ContactMessage | undefined> {
+    const [updated] = await db
+      .update(contactMessages)
+      .set(message)
+      .where(eq(contactMessages.id, id))
+      .returning();
+    return updated;
+  }
+
+  async assignContactMessage(id: string, employeeId: string): Promise<ContactMessage | undefined> {
+    const [updated] = await db
+      .update(contactMessages)
+      .set({
+        assignedTo: employeeId,
+        status: "in_progress",
+      })
+      .where(eq(contactMessages.id, id))
+      .returning();
+    return updated;
+  }
+
+  async replyToContactMessage(id: string, replyMessage: string, userId: string): Promise<ContactMessage | undefined> {
+    const [updated] = await db
+      .update(contactMessages)
+      .set({
+        replyMessage,
+        status: "replied",
+        repliedAt: new Date(),
+      })
+      .where(eq(contactMessages.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getUnreadMessages(): Promise<ContactMessage[]> {
+    return await db
+      .select()
+      .from(contactMessages)
+      .where(eq(contactMessages.status, "new"))
+      .orderBy(desc(contactMessages.createdAt));
+  }
+
+  // Customer operations enhancement
+  async updateCustomerTags(customerId: string, tags: string[]): Promise<Customer | undefined> {
+    const [updated] = await db
+      .update(customers)
+      .set({ tags })
+      .where(eq(customers.id, customerId))
+      .returning();
+    return updated;
+  }
+
+  async autoTagCustomer(customerId: string): Promise<Customer | undefined> {
+    const customer = await this.getCustomer(customerId);
+    if (!customer) return undefined;
+
+    const tags: string[] = [];
+
+    if (customer.totalBookings >= 5) {
+      tags.push("vip");
+    }
+
+    if (customer.churnRisk === "medium" || customer.churnRisk === "high") {
+      tags.push("at-risk");
+    }
+
+    const daysSinceCreated = Math.floor(
+      (Date.now() - new Date(customer.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysSinceCreated <= 30) {
+      tags.push("new");
+    }
+
+    if (customer.referralCode) {
+      const referrals = await this.getReferralsByReferrer(customerId);
+      const creditedReferrals = referrals.filter(r => r.status === "credited");
+      if (creditedReferrals.length >= 3) {
+        tags.push("referral-champion");
+      }
+    }
+
+    const uniqueTags = Array.from(new Set(tags));
+    return await this.updateCustomerTags(customerId, uniqueTags);
+  }
+
+  async getCustomersByTag(tag: string): Promise<Customer[]> {
+    return await db
+      .select()
+      .from(customers)
+      .where(sql`${tag} = ANY(${customers.tags})`);
+  }
+
+  // Employee availability operations
+  async getSuggestedEmployees(date: string, timeSlot: string): Promise<Employee[]> {
+    const allEmployees = await this.getActiveEmployees();
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayOfWeek = dayNames[new Date(date).getDay()] as 
+      'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+    return allEmployees.filter((emp) => {
+      if (!emp.availability) return false;
+      
+      const dayAvailability = emp.availability[dayOfWeek];
+      if (!dayAvailability?.available) return false;
+
+      if (emp.vacationDays?.includes(date)) return false;
+
+      return true;
+    });
+  }
+
+  async getEmployeeWorkload(employeeId: string, startDate: string, endDate: string): Promise<{ totalBookings: number; bookings: Booking[] }> {
+    const workloadBookings = await db
+      .select()
+      .from(bookings)
+      .where(
+        sql`${employeeId} = ANY(${bookings.assignedEmployeeIds}) AND ${bookings.date} >= ${startDate} AND ${bookings.date} <= ${endDate}`
+      )
+      .orderBy(bookings.date);
+
+    return {
+      totalBookings: workloadBookings.length,
+      bookings: workloadBookings,
+    };
   }
 }
 

@@ -44,6 +44,7 @@ import AdminPromoCodes from "@/pages/AdminPromoCodes";
 import AdminServiceAreas from "@/pages/AdminServiceAreas";
 import AdminRecurringBookings from "@/pages/AdminRecurringBookings";
 import AdminAnalytics from "@/pages/AdminAnalytics";
+import AdminAlerts from "@/pages/AdminAlerts";
 import EmployeeLogin from "@/pages/EmployeeLogin";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
 import EmployeeBookings from "@/pages/EmployeeBookings";
@@ -228,6 +229,9 @@ function Router() {
       </Route>
       <Route path="/admin/analytics">
         <ProtectedRoute component={AdminAnalytics} />
+      </Route>
+      <Route path="/admin/alerts">
+        <ProtectedRoute component={AdminAlerts} />
       </Route>
       <Route component={NotFound} />
       </Switch>

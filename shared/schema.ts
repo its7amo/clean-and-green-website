@@ -679,3 +679,37 @@ export const insertAnomalyAlertSchema = createInsertSchema(anomalyAlerts).omit({
 
 export type InsertAnomalyAlert = z.infer<typeof insertAnomalyAlertSchema>;
 export type AnomalyAlert = typeof anomalyAlerts.$inferSelect;
+
+// Additional validation schemas for new admin features
+export const assignMessageSchema = z.object({
+  employeeId: z.string().min(1, "Employee ID is required"),
+});
+
+export const replyMessageSchema = z.object({
+  replyMessage: z.string().min(1, "Reply message is required"),
+});
+
+export const updateCustomerTagsSchema = z.object({
+  tags: z.array(z.string()),
+});
+
+export const suggestEmployeesSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  timeSlot: z.string().min(1, "Time slot is required"),
+});
+
+// Strict enum validation for anomaly alerts
+export const createAnomalyAlertSchema = insertAnomalyAlertSchema.extend({
+  type: z.enum(["bulk_promo_creation", "large_invoice_change", "mass_cancellations", "bulk_deletions"]),
+  severity: z.enum(["low", "medium", "high"]).default("medium"),
+  status: z.enum(["open", "acknowledged", "resolved"]).default("open"),
+});
+
+// Update message status with enum validation
+export const updateContactMessageSchema = z.object({
+  status: z.enum(["new", "in_progress", "replied", "closed", "spam"]).optional(),
+  assignedTo: z.string().optional(),
+  replyMessage: z.string().optional(),
+}).refine(data => Object.keys(data).length > 0, {
+  message: "At least one field must be provided",
+});
