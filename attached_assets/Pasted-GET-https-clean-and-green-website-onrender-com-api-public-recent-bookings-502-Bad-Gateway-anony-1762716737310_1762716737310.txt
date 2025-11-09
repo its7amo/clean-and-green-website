@@ -1,0 +1,101 @@
+GET https://clean-and-green-website.onrender.com/api/public/recent-bookings 502 (Bad Gateway)
+(anonymous) @ index-C3WI_kZG.js:48
+s @ index-C3WI_kZG.js:48
+m @ index-C3WI_kZG.js:48
+start @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+Ly @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+refetch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+batch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+await in (anonymous)
+(anonymous) @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+r @ index-C3WI_kZG.js:48Understand this error
+index-C3WI_kZG.js:48  GET https://clean-and-green-website.onrender.com/api/public/banner-settings 502 (Bad Gateway)
+(anonymous) @ index-C3WI_kZG.js:48
+s @ index-C3WI_kZG.js:48
+m @ index-C3WI_kZG.js:48
+start @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+Ly @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+refetch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+batch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+await in (anonymous)
+(anonymous) @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+r @ index-C3WI_kZG.js:48Understand this error
+index-C3WI_kZG.js:48  GET https://clean-and-green-website.onrender.com/api/setup/required 502 (Bad Gateway)
+(anonymous) @ index-C3WI_kZG.js:48
+s @ index-C3WI_kZG.js:48
+m @ index-C3WI_kZG.js:48
+start @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+Ly @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+refetch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+batch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+await in (anonymous)
+(anonymous) @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+r @ index-C3WI_kZG.js:48Understand this error
+index-C3WI_kZG.js:48  GET https://clean-and-green-website.onrender.com/api/service-areas 502 (Bad Gateway)
+(anonymous) @ index-C3WI_kZG.js:48
+s @ index-C3WI_kZG.js:48
+m @ index-C3WI_kZG.js:48
+start @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+Ly @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+refetch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+batch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+await in (anonymous)
+(anonymous) @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+r @ index-C3WI_kZG.js:48Understand this error
+index-C3WI_kZG.js:48  GET https://clean-and-green-website.onrender.com/api/available-slots/2025-11-10 502 (Bad Gateway)
+(anonymous) @ index-C3WI_kZG.js:48
+s @ index-C3WI_kZG.js:48
+m @ index-C3WI_kZG.js:48
+start @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+Ly @ index-C3WI_kZG.js:48
+fetch @ index-C3WI_kZG.js:48
+refetch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+batch @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+await in (anonymous)
+(anonymous) @ index-C3WI_kZG.js:48
+onFocus @ index-C3WI_kZG.js:48
+(anonymous) @ index-C3WI_kZG.js:48
+r @ index-C3WI_kZG.js:48Understand this error
+index-C3WI_kZG.js:48  GET https://clean-and-green-website.onrender.com/api/services 502 (Bad Gateway)
