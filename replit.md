@@ -2,7 +2,7 @@
 
 ## Overview
 
-Clean and Green is a production-ready professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests. The platform features a comprehensive admin dashboard for management of bookings, quotes, business analytics, customer interactions, team operations, and a tiered referral program ($10/$15/$20 rewards). Recently expanded with 6 admin intelligence features fully implemented (November 2025): Customer Churn Risk Scoring with win-back campaigns, Smart Anomaly Alerts for fraud/mistake detection, Message Status Tracking (new/in_progress/replied/closed/spam), Customer Segmentation (VIP/At-risk/New/Referral champions auto-tags), Quick Actions Dashboard (7 actionable metrics), and Business Settings Intelligence Controls (14 configurable fields). The system includes PWA functionality, automated email/SMS notifications, and is fully deployed to Render.com with proper production environment configuration.
+Clean and Green is a production-ready professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests. The platform features a comprehensive admin dashboard for management of bookings, quotes, business analytics, customer interactions, team operations, and a tiered referral program ($10/$15/$20 rewards). Recently expanded with 6 admin intelligence features fully implemented (November 2025): Customer Churn Risk Scoring with win-back campaigns, Smart Anomaly Alerts for fraud/mistake detection, Message Status Tracking (new/in_progress/replied/closed/spam), Customer Segmentation (VIP/At-risk/New/Referral champions auto-tags), Quick Actions Dashboard (7 actionable metrics), and Business Settings Intelligence Controls (14 configurable fields). The admin interface features a reorganized collapsible sidebar with 6 logical groups (Overview, Operations, People, Communication, Marketing, Configuration), a unified Intelligence Dashboard showing critical business metrics, and a global search component (cmd+k shortcut) that searches across bookings, customers, and quotes with relevance ranking. The system includes PWA functionality, automated email/SMS notifications, and is fully deployed to Render.com with proper production environment configuration.
 
 ## User Preferences
 
@@ -47,7 +47,12 @@ Passport.js with a Local Strategy and Express sessions (stored in PostgreSQL via
 
 **Public Pages**: Home (with promo banner, recent bookings, stats, featured gallery), Services, About, Contact, Booking, Quote, Customer Portal, Invoice Payment, Reviews, Privacy Policy, Terms of Service.
 
-**Admin Pages**: Dashboard (with Quick Actions widget), Analytics, Anomaly Alerts, Bookings, Calendar View, Recurring Bookings, Quotes, Invoices, Promo Codes, Service Areas, Employees, Customer Profiles (with CLV, churn risk, tags, notes, history), Messages (with status tracking: new/in_progress/replied/closed/spam, employee assignment, quick reply), Reviews, Newsletter, Team Management, Business Settings (with intelligence feature controls).
+**Admin Pages**: Dashboard (with Intelligence Dashboard showing critical metrics), Analytics, Anomaly Alerts, Bookings, Calendar View, Recurring Bookings, Quotes, Invoices, Promo Codes, Service Areas, Employees (with tabbed form interface: Basic Info, Schedule & Availability, Vacation Days), Customer Profiles (with CLV, churn risk, tags, notes, history), Messages (with status tracking: new/in_progress/replied/closed/spam, employee assignment, quick reply), Reviews, Newsletter, Team Management, Business Settings (with intelligence feature controls).
+
+**Admin Features**: 
+- **Navigation**: Collapsible sidebar with 6 logical groups (Overview, Operations, People, Communication, Marketing, Configuration)
+- **Global Search**: Cmd+K/Ctrl+K keyboard shortcut searching across bookings, customers, and quotes with relevance ranking
+- **Intelligence Dashboard**: Consolidated view of Churn Risk alerts, Anomaly alerts, Customer Segments, Message Status, and Business Intelligence metrics with 30-second auto-refresh
 
 **Employee Pages**: Employee Login, Employee Dashboard.
 
