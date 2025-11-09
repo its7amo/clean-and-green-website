@@ -158,7 +158,7 @@ export default function AdminRecurringBookings() {
       propertySize: booking.propertySize,
       frequency: booking.frequency,
       preferredTimeSlot: booking.preferredTimeSlot,
-      startDate: booking.startDate,
+      startDate: booking.startDate ? format(new Date(booking.startDate), "yyyy-MM-dd") : "",
       nextOccurrence: booking.nextOccurrence ? format(new Date(booking.nextOccurrence), "yyyy-MM-dd") : "",
       status: booking.status,
     });

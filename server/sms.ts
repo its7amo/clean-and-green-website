@@ -19,6 +19,11 @@ if (accountSid && authToken && twilioPhoneNumber) {
  * to E.164 format: "+14054735908"
  */
 function normalizePhoneNumber(phone: string): string {
+  // If it already starts with +, assume it's in E.164 format
+  if (phone.startsWith('+')) {
+    return phone;
+  }
+
   // Remove all non-digit characters
   const digits = phone.replace(/\D/g, '');
   
@@ -26,17 +31,10 @@ function normalizePhoneNumber(phone: string): string {
   if (digits.length === 10) {
     return `+1${digits}`;
   }
-  
   // If it's 11 digits starting with 1, add +
   if (digits.length === 11 && digits.startsWith('1')) {
     return `+${digits}`;
   }
-  
-  // If it already starts with +, return as-is
-  if (phone.startsWith('+')) {
-    return phone;
-  }
-  
   // Otherwise assume it needs +1 prefix
   return `+1${digits}`;
 }

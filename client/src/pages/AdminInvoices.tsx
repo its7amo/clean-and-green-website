@@ -358,15 +358,14 @@ export default function AdminInvoices() {
       
       // Use actualPrice if set (for promo code bookings), otherwise use service basePrice
       if (booking.actualPrice) {
-        // Actual price already has discount recalculated - use it directly
-        const finalAmountInDollars = Math.max(0, (booking.actualPrice - discountInCents) / 100);
-        form.setValue("amount", finalAmountInDollars);
+        // Use the pre-discount actual price for the 'amount' field
+        const amountInDollars = booking.actualPrice / 100;
+        form.setValue("amount", amountInDollars);
+        form.setValue("discount", discountInCents / 100);
         
         toast({
           title: "Booking loaded",
-          description: booking.promoCode 
-            ? `Using actual price $${(booking.actualPrice / 100).toFixed(2)} with promo discount $${(discountInCents / 100).toFixed(2)}`
-            : "Booking information loaded successfully",
+          description: `Using actual price $${amountInDollars.toFixed(2)} with promo discount $${(discountInCents / 100).toFixed(2)}`,
         });
       } else if (booking.promoCode && !booking.actualPrice) {
         // Has promo code but no actual price set - clear amount and require admin to set actual price first
@@ -380,12 +379,13 @@ export default function AdminInvoices() {
         // No promo code - use service base price if available
         const service = services.find(s => s.name.toLowerCase().includes(booking.service.toLowerCase()));
         if (service && service.basePrice > 0) {
-          const finalAmountInDollars = Math.max(0, (service.basePrice - discountInCents) / 100);
-          form.setValue("amount", finalAmountInDollars);
+          const amountInDollars = service.basePrice / 100;
+          form.setValue("amount", amountInDollars);
+          form.setValue("discount", discountInCents / 100);
           
           toast({
             title: "Booking loaded",
-            description: "Booking information loaded successfully",
+            description: `Using base price $${amountInDollars.toFixed(2)}`,
           });
         } else {
           // Service not found - leave amount blank for manual entry

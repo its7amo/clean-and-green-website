@@ -1,14 +1,13 @@
-import { useState } from "react";
+import { useState, useReducer, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check, AlertTriangle, MapPin, Loader2, Clock, Home, Building2, Zap, Shield, Star } from "lucide-react";
+import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check, AlertTriangle, MapPin, Loader2, Clock, Home, Building2, Zap, Shield, Star, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -19,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const timeSlots = ["8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 
@@ -28,6 +28,61 @@ const propertySizes = [
   { value: "Large (2000-3000 sq ft)", label: "Large", icon: Building2, description: "2,000-3,000 sq ft" },
   { value: "Extra Large (> 3000 sq ft)", label: "Extra Large", icon: Building2, description: "> 3,000 sq ft" }
 ];
+
+const initialState = {
+  service: "",
+  propertySize: "",
+  date: undefined as Date | undefined,
+  timeSlot: "",
+  name: "",
+  email: "",
+  phone: "",
+  address: "",
+  paymentMethodId: "",
+  agreedToCancellationPolicy: false,
+  promoCode: "",
+  promoCodeId: null as string | null,
+  promoCodeDiscount: 0,
+  referralCode: "",
+  referralCodeValid: false,
+  referralReferrerName: "",
+  referralDiscountAmount: 0,
+  isRecurring: false,
+  recurringFrequency: "weekly" as "weekly" | "biweekly" | "monthly",
+  recurringEndDate: undefined as Date | undefined,
+};
+
+type FormState = typeof initialState;
+
+type FormAction =
+  | { type: 'UPDATE_FIELD'; field: keyof FormState; value: any }
+  | { type: 'SET_PROMO'; id: string | null; discount: number }
+  | { type: 'SET_REFERRAL'; valid: boolean; name: string; discount: number }
+  | { type: 'RESET' };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case 'UPDATE_FIELD':
+      // When date changes, reset the time slot
+      if (action.field === 'date') {
+        return { ...state, date: action.value, timeSlot: "" };
+      }
+      return { ...state, [action.field]: action.value };
+    case 'SET_PROMO':
+      return { ...state, promoCodeId: action.id, promoCodeDiscount: action.discount };
+    case 'SET_REFERRAL':
+      return {
+        ...state,
+        referralCodeValid: action.valid,
+        referralReferrerName: action.name,
+        referralDiscountAmount: action.discount,
+      };
+    case 'RESET':
+      return initialState;
+    default:
+      return state;
+  }
+}
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY 
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
@@ -98,29 +153,10 @@ export function BookingForm() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
   const [zipCodeValid, setZipCodeValid] = useState<boolean | null>(null);
-  const [extractedZipCode, setExtractedZipCode] = useState<string>("");
-  const [formData, setFormData] = useState({
-    service: "",
-    propertySize: "",
-    date: undefined as Date | undefined,
-    timeSlot: "",
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    paymentMethodId: "",
-    agreedToCancellationPolicy: false,
-    promoCode: "",
-    promoCodeId: null as string | null,
-    promoCodeDiscount: 0,
-    referralCode: "",
-    referralCodeValid: false,
-    referralReferrerName: "",
-    referralDiscountAmount: 0,
-    isRecurring: false,
-    recurringFrequency: "weekly" as "weekly" | "biweekly" | "monthly",
-    recurringEndDate: undefined as Date | undefined,
-  });
+  const [state, dispatch] = useReducer(formReducer, initialState);
+  const { formData } = { formData: state }; // Keep formData for easier refactoring
+
+  const debouncedAddress = useDebounce(formData.address, 500);
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"],
@@ -145,30 +181,31 @@ export function BookingForm() {
     enabled: !!formData.date,
   });
 
+  useEffect(() => {
+    const zip = extractZipCode(debouncedAddress);
+    if (zip && zip.length === 5) {
+      checkZipCodeMutation.mutate(zip);
+    } else {
+      setZipCodeValid(null);
+    }
+  }, [debouncedAddress]);
+
+  useEffect(() => {
+    // When the user reaches the payment step, fetch a new SetupIntent client secret
+    if (step === 4) {
+      fetchSetupIntentMutation.mutate();
+    }
+  }, [step]);
+
   const getYesterdayMidnight = () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(23, 59, 59, 999);
     return yesterday;
   };
-
-  const extractZipCode = (address: string): string => {
-    const zipMatch = address.match(/\b\d{5}\b/);
-    return zipMatch ? zipMatch[0] : "";
-  };
-
-  const updateFormData = (field: string, value: any) => {
-    setFormData({ ...formData, [field]: value });
-    
-    if (field === "address") {
-      const zip = extractZipCode(value);
-      setExtractedZipCode(zip);
-      if (zip && zip.length === 5) {
-        checkZipCodeMutation.mutate(zip);
-      } else {
-        setZipCodeValid(null);
-      }
-    }
+  
+  const updateFormData = (field: keyof FormState, value: any) => {
+    dispatch({ type: 'UPDATE_FIELD', field, value });
   };
 
   const createBookingMutation = useMutation({
@@ -182,6 +219,7 @@ export function BookingForm() {
     },
     onSuccess: () => {
       setBookingSubmitted(true);
+      dispatch({ type: 'RESET' });
       toast({
         title: "Booking Confirmed!",
         description: "We've received your booking request. We'll contact you shortly to confirm.",
@@ -238,14 +276,14 @@ export function BookingForm() {
     },
     onSuccess: (data: { valid: boolean; promoCode?: any; discountAmount?: number }) => {
       if (data.valid && data.promoCode) {
-        updateFormData("promoCodeId", data.promoCode.id);
-        updateFormData("promoCodeDiscount", data.discountAmount || 0);
+        dispatch({ type: 'SET_PROMO', id: data.promoCode.id, discount: data.discountAmount || 0 });
         toast({
           title: "Promo Code Applied",
           description: `You'll receive $${((data.discountAmount || 0) / 100).toFixed(2)} off!`,
         });
       } else {
-        throw new Error("Invalid promo code");
+        // Use a more specific error from the server if available
+        throw new Error((data as any).message || "Invalid promo code");
       }
     },
     onError: () => {
@@ -266,18 +304,14 @@ export function BookingForm() {
       return await res.json();
     },
     onSuccess: (data: { valid: boolean; referrerName: string; discountAmount: number }) => {
-      updateFormData("referralCodeValid", data.valid);
-      updateFormData("referralReferrerName", data.referrerName);
-      updateFormData("referralDiscountAmount", data.discountAmount);
+      dispatch({ type: 'SET_REFERRAL', valid: data.valid, name: data.referrerName, discount: data.discountAmount });
       toast({
         title: "Referral Code Applied",
         description: `You'll receive $${(data.discountAmount / 100).toFixed(2)} off from ${data.referrerName}!`,
       });
     },
     onError: () => {
-      updateFormData("referralCodeValid", false);
-      updateFormData("referralReferrerName", "");
-      updateFormData("referralDiscountAmount", 0);
+      dispatch({ type: 'SET_REFERRAL', valid: false, name: "", discount: 0 });
       toast({
         title: "Invalid Referral Code",
         description: "The referral code you entered is not valid.",
@@ -285,6 +319,11 @@ export function BookingForm() {
       });
     },
   });
+
+  const extractZipCode = (address: string): string => {
+    const zipMatch = address.match(/\b\d{5}\b/);
+    return zipMatch ? zipMatch[0] : "";
+  };
 
   const handleSubmit = () => {
     if (!formData.paymentMethodId) {
@@ -370,7 +409,7 @@ export function BookingForm() {
       <div className="mb-12">
         <div className="flex items-center justify-between relative">
           {/* Progress Line */}
-          <div className="absolute top-5 left-0 right-0 h-0.5 bg-border -z-10">
+          <div className="absolute top-5 left-0 right-0 h-0.5 bg-border -z-10" data-testid="progress-line-bg">
             <div 
               className="h-full bg-primary transition-all duration-500"
               style={{ width: `${((step - 1) / 3) * 100}%` }}
@@ -384,7 +423,7 @@ export function BookingForm() {
             
             return (
               <div key={s.number} className="flex flex-col items-center gap-2 flex-1">
-                <div 
+                <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                     isCompleted 
                       ? "bg-primary text-primary-foreground" 
@@ -392,6 +431,7 @@ export function BookingForm() {
                       ? "bg-primary text-primary-foreground shadow-lg scale-110" 
                       : "bg-muted text-muted-foreground"
                   }`}
+                  data-testid={`step-indicator-${s.number}`}
                 >
                   {isCompleted ? (
                     <Check className="h-5 w-5" />
@@ -527,7 +567,7 @@ export function BookingForm() {
                   <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5" data-testid="text-min-lead-info">
                     <Clock className="h-3 w-3" />
                     Book at least {settings?.minLeadHours || 12} hours in advance
-                  </p>
+                  </p> 
                 </div>
 
                 <div>
@@ -739,15 +779,15 @@ export function BookingForm() {
                   className={zipCodeValid === false ? "border-destructive" : ""}
                   data-testid="input-address"
                 />
-                {extractedZipCode && zipCodeValid === false && (
+                {debouncedAddress && zipCodeValid === false && (
                   <Alert variant="destructive" data-testid="alert-zip-not-served">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      Zip code {extractedZipCode} is not in our service area. We may not be able to fulfill your request.
+                      Zip code {extractZipCode(debouncedAddress)} is not in our service area. We may not be able to fulfill your request.
                     </AlertDescription>
                   </Alert>
                 )}
-                {extractedZipCode && zipCodeValid === true && (
+                {debouncedAddress && zipCodeValid === true && (
                   <p className="text-sm text-primary flex items-center gap-1.5" data-testid="text-zip-valid">
                     <Check className="h-4 w-4" />
                     Great! We serve your area
@@ -789,7 +829,7 @@ export function BookingForm() {
 
               {referralSettings?.enabled && (
                 <div>
-                  <Label htmlFor="referral-code" className="text-sm font-semibold mb-3 block">Referral Code (Optional)</Label>
+                  <Label htmlFor="referral-code" className="text-sm font-semibold mb-3 block flex items-center gap-2"><Gift className="h-4 w-4 text-primary"/>Referral Code (Optional)</Label>
                   <div className="flex gap-2">
                     <Input
                       id="referral-code"
@@ -903,9 +943,6 @@ export function BookingForm() {
             <Button
               size="lg"
               onClick={() => {
-                if (step === 3) {
-                  fetchSetupIntentMutation.mutate();
-                }
                 setStep(step + 1);
               }}
               disabled={
