@@ -110,14 +110,13 @@ export default function CustomerPortal() {
 
   const updatePreferencesMutation = useMutation({
     mutationFn: async (data: {
-      notificationPreferences?: any;
-      savedPreferences?: any;
+      emailNotifications?: boolean;
+      smsNotifications?: boolean;
+      reminderPreference?: string;
+      specialRequests?: string[];
+      savedAddresses?: Array<{ id: string; label: string; address: string; isDefault: boolean }>;
     }) => {
-      return await apiRequest(`/api/customer-portal/preferences`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: searchEmail, ...data }),
-      });
+      return await apiRequest("PUT", `/api/customer-portal/preferences?email=${searchEmail}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customer-portal/customer", searchEmail] });
@@ -130,9 +129,7 @@ export default function CustomerPortal() {
 
   const pauseRecurringMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/customer-portal/recurring-bookings/${id}/pause`, {
-        method: "POST",
-      });
+      return await apiRequest("POST", `/api/customer-portal/recurring-bookings/${id}/pause`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customer-portal/recurring-bookings", searchEmail] });
@@ -142,9 +139,7 @@ export default function CustomerPortal() {
 
   const resumeRecurringMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/customer-portal/recurring-bookings/${id}/resume`, {
-        method: "POST",
-      });
+      return await apiRequest("POST", `/api/customer-portal/recurring-bookings/${id}/resume`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customer-portal/recurring-bookings", searchEmail] });
@@ -221,29 +216,28 @@ export default function CustomerPortal() {
   const loyaltyPoints = customer?.loyaltyPoints || 0;
   const loyaltyTier = loyaltyPoints >= 500 ? "Platinum" : loyaltyPoints >= 250 ? "Gold" : loyaltyPoints >= 100 ? "Silver" : "Bronze";
 
-  const notificationPreferences = customer?.notificationPreferences || {
-    emailBookingConfirmation: true,
-    emailReminders: true,
-    emailPromotions: true,
-    smsReminders: false,
-    smsPromotions: false,
-  };
+  const emailNotifications = customer?.emailNotifications ?? true;
+  const smsNotifications = customer?.smsNotifications ?? true;
+  const reminderPreference = customer?.reminderPreference || "24h";
 
-  const handleNotificationToggle = (key: string, value: boolean) => {
+  const handleNotificationToggle = (key: "emailNotifications" | "smsNotifications" | "reminderPreference", value: boolean | string) => {
     updatePreferencesMutation.mutate({
-      notificationPreferences: {
-        ...notificationPreferences,
-        [key]: value,
-      },
+      [key]: value,
     });
   };
 
   const handleSavePreferences = () => {
+    const addressList = savedAddresses.split("\n").filter(a => a.trim());
+    const formattedAddresses = addressList.map((addr, idx) => ({
+      id: `addr-${idx}`,
+      label: `Address ${idx + 1}`,
+      address: addr.trim(),
+      isDefault: idx === 0,
+    }));
+
     updatePreferencesMutation.mutate({
-      savedPreferences: {
-        specialRequests,
-        savedAddresses: savedAddresses.split("\n").filter(a => a.trim()),
-      },
+      specialRequests: specialRequests.split("\n").filter(r => r.trim()),
+      savedAddresses: formattedAddresses,
     });
   };
 
@@ -573,7 +567,7 @@ export default function CustomerPortal() {
                                   {review.status}
                                 </Badge>
                               </div>
-                              <p className="text-sm">{review.reviewText}</p>
+                              <p className="text-sm">{review.comment}</p>
                               <p className="text-xs text-muted-foreground mt-2">
                                 {format(new Date(review.createdAt), "MMM d, yyyy")}
                               </p>
@@ -753,62 +747,42 @@ export default function CustomerPortal() {
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Email - Booking Confirmations</p>
-                          <p className="text-sm text-muted-foreground">Receive confirmation emails for new bookings</p>
+                          <p className="font-medium">Email Notifications</p>
+                          <p className="text-sm text-muted-foreground">Receive all notifications via email (confirmations, reminders, updates)</p>
                         </div>
                         <Switch
-                          checked={notificationPreferences.emailBookingConfirmation}
-                          onCheckedChange={(checked) => handleNotificationToggle("emailBookingConfirmation", checked)}
-                          data-testid="switch-email-confirmations"
+                          checked={emailNotifications}
+                          onCheckedChange={(checked) => handleNotificationToggle("emailNotifications", checked)}
+                          data-testid="switch-email-notifications"
                         />
                       </div>
                       <Separator />
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Email - Appointment Reminders</p>
-                          <p className="text-sm text-muted-foreground">Get reminded 24 hours before your appointment</p>
+                          <p className="font-medium">SMS Notifications</p>
+                          <p className="text-sm text-muted-foreground">Receive all notifications via text message</p>
                         </div>
                         <Switch
-                          checked={notificationPreferences.emailReminders}
-                          onCheckedChange={(checked) => handleNotificationToggle("emailReminders", checked)}
-                          data-testid="switch-email-reminders"
+                          checked={smsNotifications}
+                          onCheckedChange={(checked) => handleNotificationToggle("smsNotifications", checked)}
+                          data-testid="switch-sms-notifications"
                         />
                       </div>
                       <Separator />
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Email - Promotions & Updates</p>
-                          <p className="text-sm text-muted-foreground">Stay updated on special offers and news</p>
-                        </div>
-                        <Switch
-                          checked={notificationPreferences.emailPromotions}
-                          onCheckedChange={(checked) => handleNotificationToggle("emailPromotions", checked)}
-                          data-testid="switch-email-promotions"
-                        />
-                      </div>
-                      <Separator />
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">SMS - Appointment Reminders</p>
-                          <p className="text-sm text-muted-foreground">Receive text reminders for appointments</p>
-                        </div>
-                        <Switch
-                          checked={notificationPreferences.smsReminders}
-                          onCheckedChange={(checked) => handleNotificationToggle("smsReminders", checked)}
-                          data-testid="switch-sms-reminders"
-                        />
-                      </div>
-                      <Separator />
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">SMS - Promotions</p>
-                          <p className="text-sm text-muted-foreground">Receive promotional text messages</p>
-                        </div>
-                        <Switch
-                          checked={notificationPreferences.smsPromotions}
-                          onCheckedChange={(checked) => handleNotificationToggle("smsPromotions", checked)}
-                          data-testid="switch-sms-promotions"
-                        />
+                      <div>
+                        <Label htmlFor="reminder-preference" className="font-medium">Reminder Timing</Label>
+                        <p className="text-sm text-muted-foreground mb-2">How far in advance would you like appointment reminders?</p>
+                        <select
+                          id="reminder-preference"
+                          value={reminderPreference}
+                          onChange={(e) => handleNotificationToggle("reminderPreference", e.target.value)}
+                          className="w-full p-2 border rounded-md"
+                          data-testid="select-reminder-preference"
+                        >
+                          <option value="24h">24 hours before</option>
+                          <option value="48h">48 hours before</option>
+                          <option value="72h">72 hours before</option>
+                        </select>
                       </div>
                     </CardContent>
                   </Card>
@@ -886,7 +860,7 @@ export default function CustomerPortal() {
                               data-testid={`message-${message.id}`}
                             >
                               <div className="flex items-start justify-between mb-2">
-                                <p className="font-semibold">{message.subject || "General Inquiry"}</p>
+                                <p className="font-semibold">Message from {message.name}</p>
                                 <Badge variant={message.status === "replied" ? "default" : "secondary"}>
                                   {message.status}
                                 </Badge>
