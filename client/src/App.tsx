@@ -143,6 +143,7 @@ function Router() {
       <Route path="/terms" component={TermsOfService} />
       <Route path="/manage-booking/:token" component={ManageBooking} />
       <Route path="/portal" component={CustomerPortal} />
+      <Route path="/customer-portal" component={CustomerPortal} />
       <Route path="/pay-invoice/:id" component={PayInvoice} />
       <Route path="/employee/login" component={EmployeeLogin} />
       <Route path="/employee/dashboard" component={EmployeeDashboard} />
