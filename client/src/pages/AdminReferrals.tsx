@@ -55,6 +55,12 @@ type ReferralSettings = {
   tier1Amount: number;
   tier2Amount: number;
   tier3Amount: number;
+  fraudDetectionEnabled: boolean;
+  blockSameAddress: boolean;
+  blockSamePhoneNumber: boolean;
+  blockSameIpAddress: boolean;
+  maxReferralsPerDay: number;
+  maxReferralsPerWeek: number;
 };
 
 type CustomerCredit = {
@@ -73,6 +79,10 @@ export default function AdminReferrals() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerCredit | null>(null);
   const [creditAdjustment, setCreditAdjustment] = useState(0);
   const [programEnabled, setProgramEnabled] = useState(true);
+  const [fraudDetectionEnabled, setFraudDetectionEnabled] = useState(true);
+  const [blockSameAddress, setBlockSameAddress] = useState(true);
+  const [blockSamePhone, setBlockSamePhone] = useState(true);
+  const [blockSameIp, setBlockSameIp] = useState(true);
 
   // Fetch referral stats
   const { data: stats } = useQuery<ReferralStats>({
@@ -98,6 +108,10 @@ export default function AdminReferrals() {
   useEffect(() => {
     if (settings) {
       setProgramEnabled(settings.enabled);
+      setFraudDetectionEnabled(settings.fraudDetectionEnabled !== false);
+      setBlockSameAddress(settings.blockSameAddress !== false);
+      setBlockSamePhone(settings.blockSamePhoneNumber !== false);
+      setBlockSameIp(settings.blockSameIpAddress !== false);
     }
   }, [settings]);
 
@@ -114,6 +128,12 @@ export default function AdminReferrals() {
       tier1Reward?: number;
       tier2Reward?: number;
       tier3Reward?: number;
+      fraudDetectionEnabled?: boolean;
+      blockSameAddress?: boolean;
+      blockSamePhoneNumber?: boolean;
+      blockSameIpAddress?: boolean;
+      maxReferralsPerDay?: number;
+      maxReferralsPerWeek?: number;
     }) => {
       await apiRequest("PATCH", "/api/admin/referral-settings", data);
     },
@@ -184,6 +204,12 @@ export default function AdminReferrals() {
       tier1Reward: Math.round(Number(formData.get("tier1Reward")) * 100),
       tier2Reward: Math.round(Number(formData.get("tier2Reward")) * 100),
       tier3Reward: Math.round(Number(formData.get("tier3Reward")) * 100),
+      fraudDetectionEnabled: fraudDetectionEnabled,
+      blockSameAddress: blockSameAddress,
+      blockSamePhoneNumber: blockSamePhone,
+      blockSameIpAddress: blockSameIp,
+      maxReferralsPerDay: Number(formData.get("maxReferralsPerDay")) || 3,
+      maxReferralsPerWeek: Number(formData.get("maxReferralsPerWeek")) || 10,
     });
   };
 
@@ -611,6 +637,114 @@ export default function AdminReferrals() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">3rd+ referral</p>
+                </div>
+              </div>
+
+              {/* Fraud Protection Settings */}
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-semibold text-sm">Fraud Protection Settings</h4>
+                
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="fraud-detection-enabled" className="text-base">Enable Fraud Detection</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically detect and block suspicious referral activity
+                    </p>
+                  </div>
+                  <Switch
+                    id="fraud-detection-enabled"
+                    checked={fraudDetectionEnabled}
+                    onCheckedChange={setFraudDetectionEnabled}
+                    data-testid="switch-fraud-detection"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="block-same-address" className="text-sm font-medium">Block Same Address</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Prevent same address from being referred twice
+                      </p>
+                    </div>
+                    <Switch
+                      id="block-same-address"
+                      checked={blockSameAddress}
+                      onCheckedChange={setBlockSameAddress}
+                      data-testid="switch-block-address"
+                      disabled={!fraudDetectionEnabled}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="block-same-phone" className="text-sm font-medium">Block Same Phone</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Prevent same phone number from being referred twice
+                      </p>
+                    </div>
+                    <Switch
+                      id="block-same-phone"
+                      checked={blockSamePhone}
+                      onCheckedChange={setBlockSamePhone}
+                      data-testid="switch-block-phone"
+                      disabled={!fraudDetectionEnabled}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="block-same-ip" className="text-sm font-medium">Block Same IP</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Detect multiple referrals from same location
+                      </p>
+                    </div>
+                    <Switch
+                      id="block-same-ip"
+                      checked={blockSameIp}
+                      onCheckedChange={setBlockSameIp}
+                      data-testid="switch-block-ip"
+                      disabled={!fraudDetectionEnabled}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="maxReferralsPerDay">Max Referrals Per Day</Label>
+                    <Input
+                      id="maxReferralsPerDay"
+                      name="maxReferralsPerDay"
+                      type="number"
+                      min="1"
+                      max="100"
+                      defaultValue={settings?.maxReferralsPerDay || 3}
+                      data-testid="input-max-daily"
+                      disabled={!fraudDetectionEnabled}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Maximum uses of a referral code per day
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="maxReferralsPerWeek">Max Referrals Per Week</Label>
+                    <Input
+                      id="maxReferralsPerWeek"
+                      name="maxReferralsPerWeek"
+                      type="number"
+                      min="1"
+                      max="500"
+                      defaultValue={settings?.maxReferralsPerWeek || 10}
+                      data-testid="input-max-weekly"
+                      disabled={!fraudDetectionEnabled}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Maximum uses of a referral code per week
+                    </p>
+                  </div>
                 </div>
               </div>
 

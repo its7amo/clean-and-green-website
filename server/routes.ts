@@ -132,14 +132,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               severity: fraudCheck.severity || 'high',
               title: 'Referral Fraud Attempt Blocked',
               description: `Blocked referral booking: ${fraudCheck.reason}`,
-              payload: {
+              payload: JSON.stringify({
                 email: validatedData.email,
                 phone: validatedData.phone,
                 address: validatedData.address,
                 referralCode: req.body.referralCode,
-                ipAddress,
+                ipAddress: ipAddress || null,
                 reason: fraudCheck.reason,
-              },
+              }) as any,
             });
           } catch (alertError) {
             console.error("Failed to create fraud anomaly alert:", alertError);
@@ -153,8 +153,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Handle promo code if provided
-      let promoCodeData: { promoCode?: string; discountAmount?: number } = {};
+      // Handle referral code if provided
+      let referralData: { 
+        referralCode?: string; 
+        discountAmount?: number;
+        referrerId?: string;
+        referralTier?: number;
+      } = {};
+      
+      if (req.body.referralCode) {
+        // Validate referral code and get referrer
+        const referrer = await storage.validateReferralCode(req.body.referralCode.toUpperCase());
+        if (referrer) {
+          const settings = await storage.getReferralSettings();
+          if (settings?.enabled) {
+            // Calculate tier and discount amount
+            const tierInfo = await storage.calculateReferralTier(referrer.id);
+            
+            referralData = {
+              referralCode: req.body.referralCode.toUpperCase(),
+              discountAmount: tierInfo.amount,
+              referrerId: referrer.id,
+              referralTier: tierInfo.tier,
+            };
+          }
+        }
+      }
+      
+      // Handle promo code if provided (promo codes and referrals are separate)
+      let promoCodeData: { promoCode?: string; promoCodeDiscount?: number } = {};
       if (req.body.promoCodeId) {
         const promoCode = await storage.getPromoCode(req.body.promoCodeId);
         if (promoCode) {
@@ -173,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           promoCodeData = {
             promoCode: promoCode.code,
-            discountAmount: discountAmount,
+            promoCodeDiscount: discountAmount,
           };
           // Increment promo code usage
           await storage.incrementPromoCodeUsage(promoCode.id);
@@ -188,10 +215,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.address
       );
       
-      // Create booking with customer link, leadType, and IP address
+      // Combine both discounts (referral + promo code)
+      const totalDiscountAmount = (referralData.discountAmount || 0) + (promoCodeData.promoCodeDiscount || 0);
+      
+      // Create booking with customer link, leadType, IP address, and referral data
       const booking = await storage.createBooking({
         ...validatedData,
-        ...promoCodeData,
+        promoCode: promoCodeData.promoCode,
+        discountAmount: totalDiscountAmount, // Total of both discounts
+        referralCode: referralData.referralCode, // Save referral code on booking
         customerId: customer.id,
         leadType: 'web', // Public endpoint = web lead
         ipAddress, // Store IP for fraud tracking
@@ -199,6 +231,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Increment customer booking count
       await storage.incrementCustomerBookings(customer.id);
+
+      // Create referral record if referral code was used
+      if (referralData.referralCode && referralData.referrerId && referralData.referralTier) {
+        try {
+          await storage.createReferral({
+            referrerId: referralData.referrerId,
+            referredId: customer.id,
+            referralCode: referralData.referralCode,
+            bookingId: booking.id,
+            tier: referralData.referralTier,
+            creditAmount: referralData.discountAmount || 0,
+            status: 'pending', // Will be updated to 'completed' then 'credited' by scheduler
+          });
+        } catch (referralError) {
+          console.error("Failed to create referral record:", referralError);
+          // Don't fail the booking if referral creation fails
+        }
+      }
 
       // Create recurring booking if requested
       if (req.body.isRecurring && validatedData.date && validatedData.timeSlot) {
@@ -293,8 +343,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertBookingSchema.parse(req.body);
       
+      // Handle referral code if provided
+      let referralData: { 
+        referralCode?: string; 
+        discountAmount?: number;
+        referrerId?: string;
+        referralTier?: number;
+      } = {};
+      
+      if (req.body.referralCode) {
+        const referrer = await storage.validateReferralCode(req.body.referralCode.toUpperCase());
+        if (referrer) {
+          const settings = await storage.getReferralSettings();
+          if (settings?.enabled) {
+            const tierInfo = await storage.calculateReferralTier(referrer.id);
+            
+            referralData = {
+              referralCode: req.body.referralCode.toUpperCase(),
+              discountAmount: tierInfo.amount,
+              referrerId: referrer.id,
+              referralTier: tierInfo.tier,
+            };
+          }
+        }
+      }
+      
       // Handle promo code if provided
-      let promoCodeData: { promoCode?: string; discountAmount?: number } = {};
+      let promoCodeData: { promoCode?: string; promoCodeDiscount?: number } = {};
       if (req.body.promoCodeId) {
         const promoCode = await storage.getPromoCode(req.body.promoCodeId);
         if (promoCode) {
@@ -313,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           promoCodeData = {
             promoCode: promoCode.code,
-            discountAmount: discountAmount,
+            promoCodeDiscount: discountAmount,
           };
           // Increment promo code usage
           await storage.incrementPromoCodeUsage(promoCode.id);
@@ -328,16 +403,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.address
       );
       
+      // Combine both discounts
+      const totalDiscountAmount = (referralData.discountAmount || 0) + (promoCodeData.promoCodeDiscount || 0);
+      
       // Create booking with customer link and leadType='phone'
       const booking = await storage.createBooking({
         ...validatedData,
-        ...promoCodeData,
+        promoCode: promoCodeData.promoCode,
+        discountAmount: totalDiscountAmount,
+        referralCode: referralData.referralCode,
         customerId: customer.id,
         leadType: 'phone', // Manual creation = phone lead
       });
       
       // Increment customer booking count
       await storage.incrementCustomerBookings(customer.id);
+
+      // Create referral record if referral code was used
+      if (referralData.referralCode && referralData.referrerId && referralData.referralTier) {
+        try {
+          await storage.createReferral({
+            referrerId: referralData.referrerId,
+            referredId: customer.id,
+            referralCode: referralData.referralCode,
+            bookingId: booking.id,
+            tier: referralData.referralTier,
+            creditAmount: referralData.discountAmount || 0,
+            status: 'pending',
+          });
+        } catch (referralError) {
+          console.error("Failed to create referral record:", referralError);
+        }
+      }
       
       // Log activity
       await logActivity({
