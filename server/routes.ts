@@ -2535,6 +2535,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/reviews/:id/status", isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!status || !["approved", "rejected", "pending"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be 'approved', 'rejected', or 'pending'" });
+      }
+      
+      const review = await storage.updateReviewStatus(req.params.id, status);
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+      res.json(review);
+    } catch (error) {
+      console.error("Error updating review status:", error);
+      res.status(500).json({ error: "Failed to update review status" });
+    }
+  });
+
   app.patch("/api/reviews/:id/approve", isAuthenticated, async (req, res) => {
     try {
       const review = await storage.updateReviewStatus(req.params.id, "approved");
