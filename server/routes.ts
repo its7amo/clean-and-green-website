@@ -1389,6 +1389,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/quotes/:id/photos", isAuthenticated, async (req, res) => {
+    try {
+      const quote = await storage.getQuote(req.params.id);
+      if (!quote) {
+        return res.status(404).json({ error: "Quote not found" });
+      }
+      const photos = await storage.getQuotePhotosByQuote(req.params.id);
+      res.json(photos);
+    } catch (error) {
+      console.error("Error fetching quote photos:", error);
+      res.status(500).json({ error: "Failed to fetch quote photos" });
+    }
+  });
+
   app.patch("/api/quotes/:id/status", isAuthenticated, async (req, res) => {
     try {
       // Extended schema for quote approval with booking details
