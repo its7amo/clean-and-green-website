@@ -51,6 +51,12 @@ const settingsFormSchema = z.object({
   anomalyDeletionThreshold: z.number().min(1).optional(),
   anomalyDeletionMinutes: z.number().min(1).optional(),
   quickReplies: z.string().optional(),
+  // Scheduling & Booking Controls
+  minLeadHours: z.number().min(0).optional(),
+  maxBookingsPerSlot: z.number().min(1).optional(),
+  requireBookingApproval: z.boolean(),
+  customerDedupEnabled: z.boolean(),
+  customerMergeAlertEnabled: z.boolean(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -99,6 +105,12 @@ export default function AdminSettings() {
       anomalyDeletionThreshold: 20,
       anomalyDeletionMinutes: 10,
       quickReplies: "",
+      // Scheduling & Booking Controls
+      minLeadHours: 12,
+      maxBookingsPerSlot: 3,
+      requireBookingApproval: true,
+      customerDedupEnabled: true,
+      customerMergeAlertEnabled: true,
     },
   });
 
@@ -141,6 +153,12 @@ export default function AdminSettings() {
         anomalyDeletionThreshold: settings.anomalyDeletionThreshold ?? 20,
         anomalyDeletionMinutes: settings.anomalyDeletionMinutes ?? 10,
         quickReplies: settings.quickReplies?.join("\n") || "",
+        // Scheduling & Booking Controls
+        minLeadHours: settings.minLeadHours ?? 12,
+        maxBookingsPerSlot: settings.maxBookingsPerSlot ?? 3,
+        requireBookingApproval: settings.requireBookingApproval ?? true,
+        customerDedupEnabled: settings.customerDedupEnabled ?? true,
+        customerMergeAlertEnabled: settings.customerMergeAlertEnabled ?? true,
       });
     }
   }, [settings, form]);
@@ -1010,6 +1028,137 @@ export default function AdminSettings() {
                                 Predefined reply templates for messages. Enter one per line.
                               </FormDescription>
                               <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-medium">Scheduling & Booking Controls</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Configure booking requirements, capacity limits, and customer management features
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="minLeadHours"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Minimum Lead Time (hours)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  min="0"
+                                  onChange={(e) => field.onChange(Number(e.target.value))}
+                                  data-testid="input-min-lead-hours"
+                                  placeholder="12"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                How far in advance customers must book (e.g., 12 hours)
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="maxBookingsPerSlot"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Maximum Bookings Per Time Slot</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  min="1"
+                                  onChange={(e) => field.onChange(Number(e.target.value))}
+                                  data-testid="input-max-bookings-per-slot"
+                                  placeholder="3"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                How many bookings can be in the same time window
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="requireBookingApproval"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">
+                                  Require Admin Approval for New Bookings
+                                </FormLabel>
+                                <FormDescription>
+                                  New bookings will stay 'pending' until manually approved
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  data-testid="switch-require-approval"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="customerDedupEnabled"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">
+                                  Enable Customer Deduplication
+                                </FormLabel>
+                                <FormDescription>
+                                  Automatically match existing customers to prevent duplicates
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  data-testid="switch-customer-dedup"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="customerMergeAlertEnabled"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">
+                                  Create Merge Alerts
+                                </FormLabel>
+                                <FormDescription>
+                                  Alert when potential duplicate customers are detected
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  data-testid="switch-merge-alerts"
+                                />
+                              </FormControl>
                             </FormItem>
                           )}
                         />

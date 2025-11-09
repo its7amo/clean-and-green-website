@@ -7,8 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check, AlertTriangle, MapPin } from "lucide-react";
-import { format } from "date-fns";
+import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check, AlertTriangle, MapPin, Loader2 } from "lucide-react";
+import { format, addHours } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -130,6 +130,20 @@ export function BookingForm() {
     queryKey: ["/api/service-areas"],
   });
 
+  const { data: availability, isLoading: loadingSlots } = useQuery<{
+    slots: Array<{ timeSlot: string; available: number; capacity: number }>;
+  }>({
+    queryKey: ["/api/available-slots", formData.date ? format(formData.date, "yyyy-MM-dd") : ""],
+    enabled: !!formData.date,
+  });
+
+  const getYesterdayMidnight = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(23, 59, 59, 999);
+    return yesterday;
+  };
+
   const extractZipCode = (address: string): string => {
     const zipMatch = address.match(/\b\d{5}\b/);
     return zipMatch ? zipMatch[0] : "";
@@ -152,6 +166,10 @@ export function BookingForm() {
   const createBookingMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest("POST", "/api/bookings", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw error;
+      }
       return await res.json();
     },
     onSuccess: () => {
@@ -164,10 +182,11 @@ export function BookingForm() {
         setLocation("/");
       }, 3000);
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "There was an error submitting your booking. Please try again.";
       toast({
         title: "Booking Failed",
-        description: "There was an error submitting your booking. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -432,25 +451,62 @@ export function BookingForm() {
                     mode="single"
                     selected={formData.date}
                     onSelect={(date) => updateFormData("date", date)}
+                    disabled={(date) => date <= getYesterdayMidnight()}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
+              <p className="text-sm text-muted-foreground" data-testid="text-min-lead-info">
+                Must be at least {settings?.minLeadHours || 12} hours from now
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label>Preferred Time</Label>
+              {loadingSlots && formData.date && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Checking availability...</span>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-2">
-                {timeSlots.map((time) => (
-                  <Button
-                    key={time}
-                    variant={formData.timeSlot === time ? "default" : "outline"}
-                    onClick={() => updateFormData("timeSlot", time)}
-                    data-testid={`button-time-${time}`}
-                  >
-                    {time}
-                  </Button>
-                ))}
+                {timeSlots.map((time, index) => {
+                  const slotAvailability = availability?.slots?.find(
+                    (slot) => slot.timeSlot === time
+                  );
+                  const isFullyBooked = slotAvailability ? slotAvailability.available === 0 : false;
+                  const showAvailability = formData.date && slotAvailability;
+
+                  return (
+                    <div key={time} className="space-y-1">
+                      <Button
+                        variant={formData.timeSlot === time ? "default" : "outline"}
+                        onClick={() => !isFullyBooked && updateFormData("timeSlot", time)}
+                        disabled={isFullyBooked}
+                        className="w-full"
+                        data-testid={`button-time-${time}`}
+                      >
+                        {time}
+                      </Button>
+                      {showAvailability && (
+                        <p
+                          className={`text-xs text-center ${
+                            isFullyBooked
+                              ? "text-destructive font-medium"
+                              : slotAvailability.available <= 1
+                              ? "text-orange-600 font-medium"
+                              : "text-muted-foreground"
+                          }`}
+                          data-testid={`text-availability-${index}`}
+                        >
+                          {isFullyBooked
+                            ? "Fully booked"
+                            : `${slotAvailability.available}/${slotAvailability.capacity} available`}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

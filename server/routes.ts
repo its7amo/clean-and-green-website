@@ -36,6 +36,9 @@ import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { sendQuoteNotification, sendBookingNotification, sendCustomerBookingConfirmation, sendBookingUnderReviewEmail, sendCustomerQuoteConfirmation, sendBookingChangeNotification, sendContactMessageNotification, resend, escapeHtml } from "./email";
 import { sendBookingConfirmationSMS, sendInvoicePaymentLinkSMS, sendEmployeeAssignmentSMS } from "./sms";
 import { logActivity, getUserContext } from "./activityLogger";
+import { validateNotPastDate, validateMinimumLeadTime, checkSlotCapacity, getAvailableSlots } from "./bookingValidation";
+import { findMatchingCustomer, createMergeAlert } from "./customerDedup";
+import { pool } from "./db";
 import Stripe from "stripe";
 
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -153,6 +156,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Fetch business settings for validation
+      const settings = await storage.getBusinessSettings();
+      const minLeadHours = settings?.minLeadHours || 12;
+      const maxBookingsPerSlot = settings?.maxBookingsPerSlot || 3;
+      
+      // Validate booking is not in the past
+      const pastDateCheck = validateNotPastDate(validatedData.date, validatedData.timeSlot);
+      if (!pastDateCheck.isValid) {
+        return res.status(400).json({ error: pastDateCheck.error });
+      }
+      
+      // Validate minimum lead time
+      const leadTimeCheck = validateMinimumLeadTime(validatedData.date, validatedData.timeSlot, minLeadHours);
+      if (!leadTimeCheck.isValid) {
+        return res.status(400).json({ error: leadTimeCheck.error });
+      }
+      
+      // Check slot capacity
+      const capacityCheck = await checkSlotCapacity(pool, validatedData.date, validatedData.timeSlot, maxBookingsPerSlot);
+      if (!capacityCheck.isAvailable) {
+        return res.status(400).json({ error: capacityCheck.error });
+      }
+      
       // Handle referral code if provided
       let referralData: { 
         referralCode?: string; 
@@ -207,13 +233,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Find or create customer (deduplication)
-      const customer = await storage.findOrCreateCustomer(
-        validatedData.name,
-        validatedData.email,
-        validatedData.phone,
-        validatedData.address
-      );
+      // Customer deduplication logic
+      let customer;
+      
+      if (settings?.customerDedupEnabled) {
+        const match = await findMatchingCustomer(
+          pool,
+          validatedData.email,
+          validatedData.phone,
+          validatedData.address
+        );
+        
+        if (match.matchFound && match.customerId) {
+          customer = await storage.getCustomer(match.customerId);
+          
+          // Create merge alert if enabled and high/medium confidence
+          if (settings.customerMergeAlertEnabled && match.confidence !== 'low') {
+            // Note: bookingId will be updated after booking creation
+            await createMergeAlert(
+              pool,
+              match.matchType || 'email',
+              match.matchedFields || [],
+              match.customerId,
+              { 
+                name: validatedData.name, 
+                email: validatedData.email, 
+                phone: validatedData.phone, 
+                address: validatedData.address 
+              },
+              'booking',
+              '', // Will be filled with booking ID after creation
+              match.confidence
+            );
+          }
+        }
+      }
+      
+      // If no match found or deduplication disabled, find or create customer
+      if (!customer) {
+        customer = await storage.findOrCreateCustomer(
+          validatedData.name,
+          validatedData.email,
+          validatedData.phone,
+          validatedData.address
+        );
+      }
       
       // Combine both discounts (referral + promo code)
       const totalDiscountAmount = (referralData.discountAmount || 0) + (promoCodeData.promoCodeDiscount || 0);
@@ -239,7 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             referrerId: referralData.referrerId,
             referredCustomerId: customer.id,
             referralCode: referralData.referralCode,
-            bookingId: booking.id,
+            referredBookingId: booking.id,
             tier: referralData.referralTier,
             creditAmount: referralData.discountAmount || 0,
             status: 'pending', // Will be updated to 'completed' then 'credited' by scheduler
@@ -343,6 +407,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertBookingSchema.parse(req.body);
       
+      // Fetch business settings for validation
+      const settings = await storage.getBusinessSettings();
+      const minLeadHours = settings?.minLeadHours || 12;
+      const maxBookingsPerSlot = settings?.maxBookingsPerSlot || 3;
+      
+      // Validate booking is not in the past
+      const pastDateCheck = validateNotPastDate(validatedData.date, validatedData.timeSlot);
+      if (!pastDateCheck.isValid) {
+        return res.status(400).json({ error: pastDateCheck.error });
+      }
+      
+      // Validate minimum lead time
+      const leadTimeCheck = validateMinimumLeadTime(validatedData.date, validatedData.timeSlot, minLeadHours);
+      if (!leadTimeCheck.isValid) {
+        return res.status(400).json({ error: leadTimeCheck.error });
+      }
+      
+      // Check slot capacity
+      const capacityCheck = await checkSlotCapacity(pool, validatedData.date, validatedData.timeSlot, maxBookingsPerSlot);
+      if (!capacityCheck.isAvailable) {
+        return res.status(400).json({ error: capacityCheck.error });
+      }
+      
       // Handle referral code if provided
       let referralData: { 
         referralCode?: string; 
@@ -426,7 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             referrerId: referralData.referrerId,
             referredCustomerId: customer.id,
             referralCode: referralData.referralCode,
-            bookingId: booking.id,
+            referredBookingId: booking.id,
             tier: referralData.referralTier,
             creditAmount: referralData.discountAmount || 0,
             status: 'pending',
@@ -1070,11 +1157,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return `${hours.toString().padStart(2, '0')}:${minutes}`;
   }
 
+  // Public endpoint to get available slots for a specific date
+  app.get("/api/available-slots", async (req, res) => {
+    try {
+      const { date } = req.query;
+      
+      // Validate required date parameter
+      if (!date || typeof date !== 'string') {
+        return res.status(400).json({ error: "Date parameter is required" });
+      }
+      
+      // Validate date format (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(date)) {
+        return res.status(400).json({ error: "Invalid date format. Expected YYYY-MM-DD" });
+      }
+      
+      // Fetch business settings to get maxBookingsPerSlot
+      const settings = await storage.getBusinessSettings();
+      const maxBookingsPerSlot = settings?.maxBookingsPerSlot || 3; // Default to 3 if not set
+      
+      // Define all possible time slots
+      const allTimeSlots = [
+        "9:00 AM - 11:00 AM",
+        "11:00 AM - 1:00 PM",
+        "1:00 PM - 3:00 PM",
+        "3:00 PM - 5:00 PM"
+      ];
+      
+      // Get available slots using the bookingValidation function
+      const slots = await getAvailableSlots(
+        pool,
+        date,
+        maxBookingsPerSlot,
+        allTimeSlots
+      );
+      
+      // Transform response to match frontend expectations
+      const transformedSlots = slots.map(s => ({
+        timeSlot: s.slot,
+        available: s.available,
+        capacity: s.total
+      }));
+      
+      res.json({ slots: transformedSlots });
+    } catch (error) {
+      console.error("Error fetching available slots:", error);
+      res.status(500).json({ error: "Failed to fetch available slots" });
+    }
+  });
+
   // Quote routes (public submissions, protected admin actions)
   app.post("/api/quotes", async (req, res) => {
     try {
       const validatedData = insertQuoteSchema.parse(req.body);
-      const quote = await storage.createQuote(validatedData);
+      
+      // Get business settings for deduplication
+      const settings = await storage.getBusinessSettings();
+      
+      // Customer deduplication logic
+      let customer;
+      
+      if (settings?.customerDedupEnabled) {
+        const match = await findMatchingCustomer(
+          pool,
+          validatedData.email,
+          validatedData.phone,
+          validatedData.address
+        );
+        
+        if (match.matchFound && match.customerId) {
+          customer = await storage.getCustomer(match.customerId);
+          
+          // Create merge alert if enabled and high/medium confidence
+          if (settings.customerMergeAlertEnabled && match.confidence !== 'low') {
+            // Note: quoteId will be updated after quote creation
+            await createMergeAlert(
+              pool,
+              match.matchType || 'email',
+              match.matchedFields || [],
+              match.customerId,
+              { 
+                name: validatedData.name, 
+                email: validatedData.email, 
+                phone: validatedData.phone, 
+                address: validatedData.address 
+              },
+              'quote',
+              '', // Will be filled with quote ID after creation
+              match.confidence
+            );
+          }
+        }
+      }
+      
+      // If no match found or deduplication disabled, find or create customer
+      if (!customer) {
+        customer = await storage.findOrCreateCustomer(
+          validatedData.name,
+          validatedData.email,
+          validatedData.phone,
+          validatedData.address
+        );
+      }
+      
+      // Create quote with customer link
+      const quote = await storage.createQuote({
+        ...validatedData,
+        customerId: customer.id,
+      });
+      
+      // Increment customer quote count
+      await storage.incrementCustomerQuotes(customer.id);
       
       // Send email notifications (async, don't block response)
       (async () => {
@@ -1145,16 +1339,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/quotes/:id/status", isAuthenticated, async (req, res) => {
     try {
-      const validatedData = quoteStatusSchema.parse(req.body);
-      const quote = await storage.updateQuoteStatus(req.params.id, validatedData.status);
+      // Extended schema for quote approval with booking details
+      const quoteApprovalSchema = z.object({
+        status: z.enum(["pending", "approved", "rejected", "completed"]),
+        date: z.string().optional(),
+        timeSlot: z.string().optional(),
+      });
+      
+      const validatedData = quoteApprovalSchema.parse(req.body);
+      
+      // Get the quote first
+      const quote = await storage.getQuote(req.params.id);
       if (!quote) {
         return res.status(404).json({ error: "Quote not found" });
       }
-      res.json(quote);
+      
+      // If approving the quote, convert it to a booking
+      if (validatedData.status === "approved") {
+        // Require date and timeSlot for approval
+        if (!validatedData.date || !validatedData.timeSlot) {
+          return res.status(400).json({ 
+            error: "Date and time slot are required when approving a quote" 
+          });
+        }
+        
+        // Fetch business settings for validation and status determination
+        const settings = await storage.getBusinessSettings();
+        const minLeadHours = settings?.minLeadHours || 12;
+        const maxBookingsPerSlot = settings?.maxBookingsPerSlot || 3;
+        
+        // Validate booking is not in the past
+        const pastDateCheck = validateNotPastDate(validatedData.date, validatedData.timeSlot);
+        if (!pastDateCheck.isValid) {
+          return res.status(400).json({ error: pastDateCheck.error });
+        }
+        
+        // Validate minimum lead time
+        const leadTimeCheck = validateMinimumLeadTime(validatedData.date, validatedData.timeSlot, minLeadHours);
+        if (!leadTimeCheck.isValid) {
+          return res.status(400).json({ error: leadTimeCheck.error });
+        }
+        
+        // Check slot capacity
+        const capacityCheck = await checkSlotCapacity(pool, validatedData.date, validatedData.timeSlot, maxBookingsPerSlot);
+        if (!capacityCheck.isAvailable) {
+          return res.status(400).json({ error: capacityCheck.error });
+        }
+        
+        // Handle customer linking
+        let customer;
+        
+        // 1. If quote has customerId, use it
+        if (quote.customerId) {
+          customer = await storage.getCustomer(quote.customerId);
+        }
+        
+        // 2. If no customerId or customer not found, apply deduplication if enabled
+        if (!customer && settings?.customerDedupEnabled) {
+          const match = await findMatchingCustomer(
+            pool,
+            quote.email,
+            quote.phone,
+            quote.address
+          );
+          
+          if (match.matchFound && match.customerId) {
+            customer = await storage.getCustomer(match.customerId);
+            
+            // Create merge alert if enabled and high/medium confidence
+            if (settings.customerMergeAlertEnabled && match.confidence !== 'low') {
+              await createMergeAlert(
+                pool,
+                match.matchType || 'email',
+                match.matchedFields || [],
+                match.customerId,
+                { 
+                  name: quote.name, 
+                  email: quote.email, 
+                  phone: quote.phone, 
+                  address: quote.address 
+                },
+                'quote',
+                quote.id,
+                match.confidence
+              );
+            }
+          }
+        }
+        
+        // 3. If still no customer, find or create one
+        if (!customer) {
+          customer = await storage.findOrCreateCustomer(
+            quote.name,
+            quote.email,
+            quote.phone,
+            quote.address
+          );
+        }
+        
+        // Determine booking status based on requireBookingApproval setting
+        const bookingStatus = settings?.requireBookingApproval ? "pending" : "confirmed";
+        
+        // Create booking from quote
+        const booking = await storage.createBooking({
+          customerId: customer.id,
+          leadType: 'quote', // This came from a quote
+          service: quote.serviceType,
+          propertySize: quote.propertySize,
+          date: validatedData.date,
+          timeSlot: validatedData.timeSlot,
+          name: quote.name,
+          email: quote.email,
+          phone: quote.phone,
+          address: quote.address,
+          status: bookingStatus,
+        });
+        
+        // Increment customer booking count
+        await storage.incrementCustomerBookings(customer.id);
+        
+        // Update quote status to approved
+        const updatedQuote = await storage.updateQuoteStatus(req.params.id, "approved");
+        
+        // Send confirmation email to customer (async, don't block response)
+        (async () => {
+          try {
+            if (bookingStatus === "confirmed") {
+              await sendCustomerBookingConfirmation({
+                bookingId: booking.id,
+                managementToken: booking.managementToken,
+                name: booking.name,
+                email: booking.email,
+                phone: booking.phone,
+                address: booking.address,
+                serviceType: booking.service,
+                propertySize: booking.propertySize,
+                date: booking.date,
+                timeSlot: booking.timeSlot,
+              });
+            } else {
+              // Send "under review" email
+              await sendBookingUnderReviewEmail({
+                bookingId: booking.id,
+                managementToken: booking.managementToken,
+                name: booking.name,
+                email: booking.email,
+                phone: booking.phone,
+                address: booking.address,
+                serviceType: booking.service,
+                propertySize: booking.propertySize,
+                date: booking.date,
+                timeSlot: booking.timeSlot,
+              });
+            }
+          } catch (emailError) {
+            console.error("Failed to send booking confirmation email:", emailError);
+          }
+        })();
+        
+        return res.json({ 
+          quote: updatedQuote, 
+          booking,
+          message: `Quote approved and converted to ${bookingStatus} booking` 
+        });
+      }
+      
+      // For non-approval status updates, just update the quote status
+      const updatedQuote = await storage.updateQuoteStatus(req.params.id, validatedData.status);
+      res.json(updatedQuote);
     } catch (error) {
       console.error("Error updating quote status:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid status value", details: error.errors });
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to update quote status" });
     }
