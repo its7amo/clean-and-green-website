@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
@@ -20,7 +21,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 
 export default function ManageBooking() {
   const [, params] = useRoute("/manage-booking/:token");
@@ -28,6 +29,7 @@ export default function ManageBooking() {
   const { toast } = useToast();
   const [date, setDate] = useState<Date>();
   const [timeSlot, setTimeSlot] = useState("");
+  const [customerNotes, setCustomerNotes] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [acknowledgeFee, setAcknowledgeFee] = useState(false);
 
@@ -43,6 +45,18 @@ export default function ManageBooking() {
     },
   });
 
+  // Fetch available slots when date changes
+  const { data: availableSlots, isLoading: slotsLoading } = useQuery({
+    queryKey: ['/api/available-slots', date ? format(date, "yyyy-MM-dd") : null],
+    enabled: !!date,
+    queryFn: async () => {
+      const res = await fetch(`/api/available-slots?date=${format(date!, "yyyy-MM-dd")}`);
+      if (!res.ok) throw new Error("Failed to fetch available slots");
+      const data = await res.json();
+      return data.availableSlots || [];
+    },
+  });
+
   useEffect(() => {
     if (booking) {
       setDate(parseISO(booking.date));
@@ -55,20 +69,21 @@ export default function ManageBooking() {
       const res = await apiRequest("PATCH", `/api/bookings/manage/${token}`, {
         date: date ? format(date, "yyyy-MM-dd") : undefined,
         timeSlot,
+        customerNotes,
       });
       return res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Booking Rescheduled",
-        description: "Your booking has been successfully rescheduled. You'll receive a confirmation email shortly.",
+        title: "Reschedule Request Submitted",
+        description: "Your reschedule request has been submitted for review. You'll receive an email once it's approved.",
       });
       setTimeout(() => setLocation("/"), 2000);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to reschedule booking. Please try again.",
+        description: error.message || "Failed to submit reschedule request. Please try again.",
         variant: "destructive",
       });
     },
@@ -131,13 +146,27 @@ export default function ManageBooking() {
     );
   }
 
-  const timeSlots = [
-    "8:00 AM - 10:00 AM",
-    "10:00 AM - 12:00 PM",
-    "12:00 PM - 2:00 PM",
-    "2:00 PM - 4:00 PM",
-    "4:00 PM - 6:00 PM",
-  ];
+  if (booking.status === "pending_reschedule") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Reschedule Request Pending</CardTitle>
+            <CardDescription>Your reschedule request is currently under review.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Under Review</AlertTitle>
+              <AlertDescription>
+                You'll receive an email notification once your reschedule request has been reviewed.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -160,31 +189,67 @@ export default function ManageBooking() {
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="font-semibold mb-4">Reschedule Booking</h3>
+              <h3 className="font-semibold mb-4">Request Reschedule</h3>
+              
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Approval Required</AlertTitle>
+                <AlertDescription>
+                  Reschedule requests require approval from our team. You'll receive an email notification once your request has been reviewed.
+                </AlertDescription>
+              </Alert>
+              
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Select New Date</label>
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={(newDate) => {
+                      setDate(newDate);
+                      setTimeSlot(""); // Reset time slot when date changes
+                    }}
                     disabled={(date) => date < new Date()}
                     className="rounded-md border"
                     data-testid="calendar-reschedule"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Select New Time</label>
-                  <Select value={timeSlot} onValueChange={setTimeSlot}>
-                    <SelectTrigger data-testid="select-timeslot">
-                      <SelectValue placeholder="Choose a time slot" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((slot) => (
-                        <SelectItem key={slot} value={slot}>{slot}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <label className="text-sm font-medium mb-2 block">Select New Time Slot</label>
+                  {date && slotsLoading && (
+                    <p className="text-sm text-muted-foreground">Loading available slots...</p>
+                  )}
+                  {date && !slotsLoading && availableSlots && availableSlots.length === 0 && (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        No time slots are available for this date. Please select a different date.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {date && !slotsLoading && availableSlots && availableSlots.length > 0 && (
+                    <Select value={timeSlot} onValueChange={setTimeSlot}>
+                      <SelectTrigger data-testid="select-timeslot">
+                        <SelectValue placeholder="Choose a time slot" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableSlots.map((slot: string) => (
+                          <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Reason for Reschedule (Optional)</label>
+                  <Textarea
+                    value={customerNotes}
+                    onChange={(e) => setCustomerNotes(e.target.value)}
+                    placeholder="Let us know why you need to reschedule..."
+                    className="resize-none"
+                    rows={3}
+                    data-testid="textarea-customer-notes"
+                  />
                 </div>
                 <Button 
                   onClick={() => rescheduleMutation.mutate()} 
@@ -192,7 +257,7 @@ export default function ManageBooking() {
                   className="w-full"
                   data-testid="button-reschedule"
                 >
-                  {rescheduleMutation.isPending ? "Rescheduling..." : "Reschedule Booking"}
+                  {rescheduleMutation.isPending ? "Submitting Request..." : "Submit Reschedule Request"}
                 </Button>
               </div>
             </div>
