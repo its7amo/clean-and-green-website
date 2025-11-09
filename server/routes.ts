@@ -42,12 +42,17 @@ import { findMatchingCustomer, createMergeAlert } from "./customerDedup";
 import { pool } from "./db";
 import Stripe from "stripe";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn('Warning: STRIPE_SECRET_KEY not set. Payment features will not work.');
+// Use production key in production, fall back to testing key in development
+const stripeSecretKey = process.env.NODE_ENV === 'production' 
+  ? process.env.STRIPE_SECRET_KEY
+  : (process.env.STRIPE_SECRET_KEY || process.env.TESTING_STRIPE_SECRET_KEY);
+
+if (!stripeSecretKey) {
+  console.warn('Warning: No Stripe secret key found. Payment features will not work.');
 }
 
-const stripe = process.env.STRIPE_SECRET_KEY 
-  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+const stripe = stripeSecretKey 
+  ? new Stripe(stripeSecretKey)
   : null;
 
 const bookingStatusSchema = z.object({
