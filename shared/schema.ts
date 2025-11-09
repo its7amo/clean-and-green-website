@@ -765,3 +765,35 @@ export const intelligenceOverviewSchema = z.object({
 });
 
 export type IntelligenceOverview = z.infer<typeof intelligenceOverviewSchema>;
+
+// Global Search Results schema
+export const globalSearchResultSchema = z.object({
+  bookings: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    service: z.string(),
+    date: z.string(),
+    status: z.string(),
+    phone: z.string().nullable(),
+  })),
+  customers: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    phone: z.string().nullable(),
+    totalBookings: z.number(),
+    lastBooking: z.string().nullable(),
+  })),
+  quotes: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    service: z.string(),
+    status: z.string(),
+    createdAt: z.string(),
+    phone: z.string().nullable(),
+  })),
+});
+
+export type GlobalSearchResult = z.infer<typeof globalSearchResultSchema>;

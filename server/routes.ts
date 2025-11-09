@@ -5485,6 +5485,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Global search endpoint
+  app.get("/api/global-search", isAuthenticated, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    try {
+      const query = req.query.q as string;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      if (!query || query.trim().length < 2) {
+        return res.json({ bookings: [], customers: [], quotes: [] });
+      }
+
+      const results = await storage.globalSearch(query, limit);
+      res.json(results);
+    } catch (error) {
+      console.error("Error performing global search:", error);
+      res.status(500).json({ error: "Failed to perform search" });
+    }
+  });
+
   // Message enhancement endpoints
   app.patch("/api/messages/:id", isAuthenticated, async (req, res) => {
     try {

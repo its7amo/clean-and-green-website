@@ -56,6 +56,7 @@ import {
   Cog,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const menuGroups = [
   {
@@ -232,7 +233,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col flex-1 overflow-hidden">
           <header className="flex items-center justify-between p-4 border-b bg-background">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <ThemeToggle />
+            <div className="flex items-center gap-4">
+              <GlobalSearch />
+              <ThemeToggle />
+            </div>
           </header>
 
           <main className="flex-1 overflow-y-auto p-6">

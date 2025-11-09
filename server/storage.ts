@@ -52,6 +52,7 @@ import {
   type AnomalyAlert,
   type InsertAnomalyAlert,
   type IntelligenceOverview,
+  type GlobalSearchResult,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -315,6 +316,9 @@ export interface IStorage {
 
   // Intelligence Dashboard overview aggregation
   getIntelligenceOverview(): Promise<IntelligenceOverview>;
+
+  // Global search across bookings, customers, and quotes
+  globalSearch(query: string, limit?: number): Promise<GlobalSearchResult>;
 
   // Message operations enhancement
   updateContactMessage(id: string, message: Partial<InsertContactMessage>): Promise<ContactMessage | undefined>;
@@ -1524,6 +1528,127 @@ export class DbStorage implements IStorage {
         autoTaggingEnabled: settings?.enableAutoTagging || false,
       },
       lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  // Global search across bookings, customers, and quotes
+  async globalSearch(query: string, limit: number = 10): Promise<GlobalSearchResult> {
+    if (!query || query.trim().length < 2) {
+      return { bookings: [], customers: [], quotes: [] };
+    }
+
+    const trimmedQuery = query.trim();
+    const searchPattern = `%${trimmedQuery}%`;
+    const perEntityLimit = Math.ceil(limit / 3);
+
+    const [bookingResults, customerResults, quoteResults] = await Promise.all([
+      db
+        .select({
+          id: bookings.id,
+          name: bookings.name,
+          email: bookings.email,
+          service: bookings.service,
+          date: bookings.date,
+          status: bookings.status,
+          phone: bookings.phone,
+          relevance: sql<number>`
+            CASE
+              WHEN LOWER(${bookings.email}) = LOWER(${trimmedQuery}) THEN 3
+              WHEN LOWER(${bookings.name}) = LOWER(${trimmedQuery}) THEN 2
+              ELSE 1
+            END
+          `.as('relevance'),
+        })
+        .from(bookings)
+        .where(
+          sql`${bookings.name} ILIKE ${searchPattern} 
+              OR ${bookings.email} ILIKE ${searchPattern} 
+              OR ${bookings.phone} ILIKE ${searchPattern}
+              OR ${bookings.service} ILIKE ${searchPattern}`
+        )
+        .orderBy(sql`relevance DESC, ${bookings.date} DESC`)
+        .limit(perEntityLimit),
+
+      db
+        .select({
+          id: customers.id,
+          name: customers.name,
+          email: customers.email,
+          phone: customers.phone,
+          totalBookings: customers.totalBookings,
+          lastBooking: customers.lastBooking,
+          relevance: sql<number>`
+            CASE
+              WHEN LOWER(${customers.email}) = LOWER(${trimmedQuery}) THEN 3
+              WHEN LOWER(${customers.name}) = LOWER(${trimmedQuery}) THEN 2
+              ELSE 1
+            END
+          `.as('relevance'),
+        })
+        .from(customers)
+        .where(
+          sql`${customers.name} ILIKE ${searchPattern} 
+              OR ${customers.email} ILIKE ${searchPattern} 
+              OR ${customers.phone} ILIKE ${searchPattern}`
+        )
+        .orderBy(sql`relevance DESC, ${customers.lastBooking} DESC NULLS LAST`)
+        .limit(perEntityLimit),
+
+      db
+        .select({
+          id: quotes.id,
+          name: quotes.name,
+          email: quotes.email,
+          service: quotes.service,
+          status: quotes.status,
+          createdAt: quotes.createdAt,
+          phone: quotes.phone,
+          relevance: sql<number>`
+            CASE
+              WHEN LOWER(${quotes.email}) = LOWER(${trimmedQuery}) THEN 3
+              WHEN LOWER(${quotes.name}) = LOWER(${trimmedQuery}) THEN 2
+              ELSE 1
+            END
+          `.as('relevance'),
+        })
+        .from(quotes)
+        .where(
+          sql`${quotes.name} ILIKE ${searchPattern} 
+              OR ${quotes.email} ILIKE ${searchPattern} 
+              OR ${quotes.phone} ILIKE ${searchPattern}
+              OR ${quotes.service} ILIKE ${searchPattern}`
+        )
+        .orderBy(sql`relevance DESC, ${quotes.createdAt} DESC`)
+        .limit(perEntityLimit),
+    ]);
+
+    return {
+      bookings: bookingResults.map(b => ({
+        id: b.id,
+        name: b.name,
+        email: b.email,
+        service: b.service,
+        date: b.date.toISOString(),
+        status: b.status,
+        phone: b.phone,
+      })),
+      customers: customerResults.map(c => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        totalBookings: c.totalBookings,
+        lastBooking: c.lastBooking?.toISOString() || null,
+      })),
+      quotes: quoteResults.map(q => ({
+        id: q.id,
+        name: q.name,
+        email: q.email,
+        service: q.service,
+        status: q.status,
+        createdAt: q.createdAt.toISOString(),
+        phone: q.phone,
+      })),
     };
   }
 
