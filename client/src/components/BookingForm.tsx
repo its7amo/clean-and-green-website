@@ -99,14 +99,35 @@ function PaymentMethodForm({ onSuccess }: { onSuccess: (pmId: string) => void })
     e.preventDefault();
 
     if (!stripe || !elements) {
+      console.error("Stripe not loaded");
+      setError("Payment system not ready. Please refresh the page.");
       return;
     }
 
+    console.log("Starting payment submission...");
     setProcessing(true);
     setError(null);
 
+    const timeoutId = setTimeout(() => {
+      console.error("Payment processing timeout");
+      setError("Payment processing is taking too long. Please check your internet connection and try again.");
+      setProcessing(false);
+    }, 30000); // 30 second timeout
+
     try {
-      const { error: submitError, setupIntent } = await stripe.confirmSetup({
+      console.log("Submitting payment elements...");
+      const { error: submitError } = await elements.submit();
+      
+      if (submitError) {
+        clearTimeout(timeoutId);
+        console.error("Elements submit error:", submitError);
+        setError(submitError.message || "Failed to validate payment information");
+        setProcessing(false);
+        return;
+      }
+
+      console.log("Confirming setup...");
+      const { error: confirmError, setupIntent } = await stripe.confirmSetup({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/booking-success`,
@@ -114,23 +135,27 @@ function PaymentMethodForm({ onSuccess }: { onSuccess: (pmId: string) => void })
         redirect: 'if_required',
       });
 
-      if (submitError) {
-        console.error("Stripe setup error:", submitError);
-        setError(submitError.message || "Failed to process payment method");
+      clearTimeout(timeoutId);
+
+      if (confirmError) {
+        console.error("Stripe confirm error:", confirmError);
+        setError(confirmError.message || "Failed to process payment method");
         setProcessing(false);
         return;
       }
 
       if (setupIntent?.payment_method) {
+        console.log("Payment method confirmed:", setupIntent.payment_method);
         onSuccess(setupIntent.payment_method as string);
       } else {
-        console.error("No payment method returned from Stripe");
-        setError("Payment setup failed - no payment method returned");
+        console.error("No payment method in setupIntent:", setupIntent);
+        setError("Payment setup failed - please try again");
         setProcessing(false);
       }
     } catch (err: any) {
-      console.error("Payment processing exception:", err);
-      setError(err.message || "An unexpected error occurred");
+      clearTimeout(timeoutId);
+      console.error("Payment exception:", err);
+      setError(err.message || "An unexpected error occurred. Please try again.");
       setProcessing(false);
     }
   };
