@@ -58,7 +58,9 @@ export async function runMigrations() {
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_invoice_change_percent INTEGER DEFAULT 80;
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_cancellation_threshold INTEGER DEFAULT 10;
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_cancellation_hours INTEGER DEFAULT 24;
-      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS quick_reply_templates JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_deletion_threshold INTEGER DEFAULT 20;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS anomaly_deletion_minutes INTEGER DEFAULT 10;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS quick_replies JSONB;
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_churn_risk_scoring BOOLEAN DEFAULT true;
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_win_back_campaigns BOOLEAN DEFAULT true;
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_anomaly_detection BOOLEAN DEFAULT true;

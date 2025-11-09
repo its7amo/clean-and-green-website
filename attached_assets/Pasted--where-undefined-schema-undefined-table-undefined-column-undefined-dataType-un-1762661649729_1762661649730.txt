@@ -1,0 +1,203 @@
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+Error checking for reminders: error: column "anomaly_deletion_threshold" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getBusinessSettings (file:///opt/render/project/src/dist/index.js:885:24)
+    at async checkAndSendReminders (file:///opt/render/project/src/dist/index.js:8080:22) {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1044',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://clean-and-green-website.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+4:13:24 AM [express] GET /api/setup/required 200 in 14ms :: {"required":false}
+4:13:24 AM [express] GET /api/public/stats 200 in 20ms :: {"homesClean":0,"averageRating":5,"ecoFrie…
+4:13:24 AM [express] GET /api/reviews/approved 200 in 30ms :: []
+Error fetching settings: error: column "anomaly_deletion_threshold" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getBusinessSettings (file:///opt/render/project/src/dist/index.js:885:24)
+    at async file:///opt/render/project/src/dist/index.js:3987:24 {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1044',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:13:25 AM [express] GET /api/settings 500 in 118ms :: {"error":"Failed to fetch settings"}
+4:13:25 AM [express] GET /api/public/featured-photos 200 in 167ms :: []
+4:13:25 AM [express] GET /api/public/active-promo 200 in 248ms :: {"id":"fc9eed8a-50de-4643-9e3d-c91…
+Error fetching banner settings: error: column "anomaly_deletion_threshold" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getBusinessSettings (file:///opt/render/project/src/dist/index.js:885:24)
+    at async file:///opt/render/project/src/dist/index.js:6591:24 {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1044',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:13:25 AM [express] GET /api/public/banner-settings 500 in 196ms :: {"error":"Failed to fetch banne…
+4:13:25 AM [express] GET /api/services 200 in 193ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+Error fetching stats settings: error: column "anomaly_deletion_threshold" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getBusinessSettings (file:///opt/render/project/src/dist/index.js:885:24)
+    at async file:///opt/render/project/src/dist/index.js:6606:24 {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1044',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:13:25 AM [express] GET /api/public/stats-settings 500 in 273ms :: {"error":"Failed to fetch stats …
+Error fetching stats settings: error: column "anomaly_deletion_threshold" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getBusinessSettings (file:///opt/render/project/src/dist/index.js:885:24)
+    at async file:///opt/render/project/src/dist/index.js:6606:24 {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1044',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:13:28 AM [express] GET /api/reviews/approved 200 in 36ms :: []
+4:13:28 AM [express] GET /api/public/stats-settings 500 in 36ms :: {"error":"Failed to fetch stats s…
+Error fetching banner settings: error: column "anomaly_deletion_threshold" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getBusinessSettings (file:///opt/render/project/src/dist/index.js:885:24)
+    at async file:///opt/render/project/src/dist/index.js:6591:24 {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1044',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:13:28 AM [express] GET /api/public/banner-settings 500 in 132ms :: {"error":"Failed to fetch banne…
+4:13:28 AM [express] GET /api/services 200 in 129ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+4:13:29 AM [express] GET /api/setup/required 200 in 198ms :: {"required":false}
+4:13:29 AM [express] GET /api/public/featured-photos 200 in 194ms :: []
+4:13:29 AM [express] GET /api/public/active-promo 200 in 240ms :: {"id":"fc9eed8a-50de-4643-9e3d-c91…
+4:13:29 AM [express] GET /api/public/stats 200 in 100ms :: {"homesClean":0,"averageRating":5,"ecoFri…
+Error fetching settings: error: column "anomaly_deletion_threshold" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DbStorage.getBusinessSettings (file:///opt/render/project/src/dist/index.js:885:24)
+    at async file:///opt/render/project/src/dist/index.js:3987:24 {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '1044',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+4:13:29 AM [express] GET /api/settings 500 in 198ms :: {"error":"Failed to fetch settings"}
