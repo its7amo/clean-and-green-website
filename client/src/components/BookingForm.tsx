@@ -158,6 +158,10 @@ export function BookingForm() {
 
   const debouncedAddress = useDebounce(formData.address, 500);
 
+  const updateFormData = (field: keyof FormState, value: any) => {
+    dispatch({ type: 'UPDATE_FIELD', field, value });
+  };
+
   const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"],
   });
