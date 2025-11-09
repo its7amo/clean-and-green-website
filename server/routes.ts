@@ -49,9 +49,14 @@ const stripeSecretKey = process.env.NODE_ENV === 'production'
 
 if (!stripeSecretKey) {
   console.warn('Warning: No Stripe secret key found. Payment features will not work.');
+} else if (stripeSecretKey.startsWith('pk_')) {
+  console.error('❌ ERROR: Stripe key is PUBLISHABLE (pk_*) but should be SECRET (sk_*)');
+  console.error('   Please check STRIPE_SECRET_KEY or TESTING_STRIPE_SECRET_KEY environment variable');
+} else {
+  console.log('✓ Stripe initialized with secret key');
 }
 
-const stripe = stripeSecretKey 
+const stripe = stripeSecretKey && !stripeSecretKey.startsWith('pk_')
   ? new Stripe(stripeSecretKey)
   : null;
 
