@@ -50,6 +50,13 @@ export function GlobalSearch() {
     setLocation(path);
   };
 
+  // Reset query when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+    }
+  }, [open]);
+
   const totalResults =
     (data?.bookings?.length || 0) +
     (data?.customers?.length || 0) +
@@ -78,7 +85,7 @@ export function GlobalSearch() {
         onValueChange={setQuery}
         data-testid="input-global-search"
       />
-      <CommandList>
+      <CommandList key={`${debouncedQuery}-${totalResults}`}>
         {!showResults && (
           <CommandEmpty data-testid="search-empty-state">
             Type at least 2 characters to search
