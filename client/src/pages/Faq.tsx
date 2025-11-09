@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CallToAction } from "@/components/CallToAction";
+import { PromoBanner } from "@/components/PromoBanner";
 import {
   Accordion,
   AccordionContent,
@@ -22,6 +23,7 @@ export default function Faq() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <PromoBanner />
       <Header />
       <main className="flex-1">
         <section className="py-16 md:py-24 bg-muted/30">

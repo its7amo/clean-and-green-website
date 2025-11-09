@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { PromoBanner } from "@/components/PromoBanner";
 import { useQuery } from "@tanstack/react-query";
 import type { BusinessSettings } from "@shared/schema";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ export default function TermsOfService() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <PromoBanner />
       <Header />
       <main className="flex-1 py-16 md:py-24">
         <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
