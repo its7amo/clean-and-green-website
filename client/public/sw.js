@@ -1,7 +1,5 @@
-const CACHE_NAME = 'clean-green-v1';
+const CACHE_NAME = 'clean-green-v2'; // Increment version to force update
 const urlsToCache = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
@@ -15,25 +13,48 @@ self.addEventListener('install', (event) => {
         return cache.addAll(urlsToCache);
       })
   );
+  // Force the waiting service worker to become the active service worker
+  self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // NETWORK FIRST strategy for everything (fixes F5 cache issue)
+  // Always try to fetch fresh data from network
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request).then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
+        // Only cache successful responses (not API errors)
+        if (response && response.status === 200) {
+          // Don't cache API responses or HTML pages (they change frequently)
+          const shouldCache = !url.pathname.startsWith('/api') && 
+                             !url.pathname.endsWith('.html') &&
+                             url.pathname !== '/';
+          
+          if (shouldCache) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
               cache.put(event.request, responseToCache);
             });
-          return response;
+          }
+        }
+        return response;
+      })
+      .catch(() => {
+        // If network fails, try cache as fallback (offline support)
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // If not in cache either, return offline page or error
+          return new Response('Offline - please check your connection', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({
+              'Content-Type': 'text/plain'
+            })
+          });
         });
       })
   );
@@ -52,4 +73,6 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  // Force the active service worker to take control immediately
+  return self.clients.claim();
 });
