@@ -237,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           await storage.createReferral({
             referrerId: referralData.referrerId,
-            referredId: customer.id,
+            referredCustomerId: customer.id,
             referralCode: referralData.referralCode,
             bookingId: booking.id,
             tier: referralData.referralTier,
@@ -424,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           await storage.createReferral({
             referrerId: referralData.referrerId,
-            referredId: customer.id,
+            referredCustomerId: customer.id,
             referralCode: referralData.referralCode,
             bookingId: booking.id,
             tier: referralData.referralTier,
