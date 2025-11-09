@@ -103,6 +103,29 @@ export async function runMigrations() {
     await pool.query(employeeColumns);
     console.log('✓ Employee scheduling columns added/verified');
     
+    // Create anomaly_alerts table if it doesn't exist
+    console.log('Creating anomaly_alerts table...');
+    const anomalyAlertsTable = `
+      CREATE TABLE IF NOT EXISTS anomaly_alerts (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        type TEXT NOT NULL,
+        severity TEXT NOT NULL DEFAULT 'medium',
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        payload JSONB,
+        triggered_by VARCHAR REFERENCES users(id),
+        status TEXT NOT NULL DEFAULT 'open',
+        acknowledged_by VARCHAR REFERENCES users(id),
+        acknowledged_at TIMESTAMP,
+        resolved_by VARCHAR REFERENCES users(id),
+        resolved_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT now()
+      );
+    `;
+    
+    await pool.query(anomalyAlertsTable);
+    console.log('✓ Anomaly alerts table created/verified');
+    
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;
