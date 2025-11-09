@@ -108,6 +108,9 @@ function PaymentMethodForm({ onSuccess }: { onSuccess: (pmId: string) => void })
     try {
       const { error: submitError, setupIntent } = await stripe.confirmSetup({
         elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/booking-success`,
+        },
         redirect: 'if_required',
       });
 
