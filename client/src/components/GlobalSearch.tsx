@@ -92,13 +92,13 @@ export function GlobalSearch() {
         onValueChange={setQuery}
         data-testid="input-global-search"
       />
-      <CommandList className="max-h-[400px]">{/* Force immediate rendering */}
+      <CommandList>
         {!showResults && (
           <CommandEmpty data-testid="search-empty-state">
             Type at least 2 characters to search
           </CommandEmpty>
         )}
-        {showResults && isLoading && !data && (
+        {showResults && isLoading && (
           <CommandEmpty data-testid="search-loading">
             <div className="flex items-center justify-center gap-2 py-6">
               <Search className="h-4 w-4 animate-spin" />
@@ -106,11 +106,11 @@ export function GlobalSearch() {
             </div>
           </CommandEmpty>
         )}
-        {showResults && !isLoading && data && totalResults === 0 && (
+        {showResults && !isLoading && totalResults === 0 && (
           <CommandEmpty data-testid="search-no-results">No results found</CommandEmpty>
         )}
 
-        {data?.bookings && data.bookings.length > 0 && (
+        {showResults && data?.bookings && data.bookings.length > 0 && (
           <>
             <CommandGroup heading="Bookings">
               {data.bookings.map((booking) => (
@@ -138,7 +138,7 @@ export function GlobalSearch() {
           </>
         )}
 
-        {data?.customers && data.customers.length > 0 && (
+        {showResults && data?.customers && data.customers.length > 0 && (
           <>
             <CommandGroup heading="Customers">
               {data.customers.map((customer) => (
@@ -162,7 +162,7 @@ export function GlobalSearch() {
           </>
         )}
 
-        {data?.quotes && data.quotes.length > 0 && (
+        {showResults && data?.quotes && data.quotes.length > 0 && (
           <CommandGroup heading="Quotes">
             {data.quotes.map((quote) => (
               <CommandItem
