@@ -49,13 +49,21 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      refetchIntervalInBackground: false,
       staleTime: 0,
       gcTime: 0,
       refetchOnMount: "always",
       retry: false,
+      networkMode: "always",
     },
     mutations: {
       retry: false,
+      networkMode: "always",
+      onSuccess: () => {
+        // After ANY mutation, invalidate ALL queries to force fresh data
+        queryClient.invalidateQueries();
+      },
     },
   },
 });
