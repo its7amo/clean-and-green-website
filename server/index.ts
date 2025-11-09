@@ -121,23 +121,33 @@ app.use((req, res, next) => {
     console.warn('Warning: Could not initialize referral settings:', error);
   }
 
-  // Start review email scheduler (checks every hour for invoices paid 24h ago)
-  startReviewEmailScheduler();
+  // In production, schedulers should be run via Render Cron Jobs (not in web process)
+  // This prevents duplicate jobs when Render scales to multiple instances
+  // In development, run schedulers directly for convenience
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('⚙️  Starting schedulers in development mode...');
+    
+    // Start review email scheduler (checks every hour for invoices paid 24h ago)
+    startReviewEmailScheduler();
 
-  // Start appointment reminder scheduler (sends SMS/email 24h before booking)
-  startReminderScheduler();
+    // Start appointment reminder scheduler (sends SMS/email 24h before booking)
+    startReminderScheduler();
 
-  // Start recurring booking scheduler (auto-creates bookings from recurring schedules)
-  startRecurringBookingScheduler();
+    // Start recurring booking scheduler (auto-creates bookings from recurring schedules)
+    startRecurringBookingScheduler();
 
-  // Start follow-up email scheduler (sends 30-day follow-up emails)
-  startFollowUpScheduler();
+    // Start follow-up email scheduler (sends 30-day follow-up emails)
+    startFollowUpScheduler();
 
-  // Start overdue invoice reminder scheduler (sends payment reminders at 3, 7, and 14 days overdue)
-  startOverdueInvoiceReminder();
+    // Start overdue invoice reminder scheduler (sends payment reminders at 3, 7, and 14 days overdue)
+    startOverdueInvoiceReminder();
 
-  // Start referral program scheduler (auto-credits referrers, generates codes)
-  startReferralScheduler();
+    // Start referral program scheduler (auto-credits referrers, generates codes)
+    startReferralScheduler();
+  } else {
+    console.log('⚙️  Production mode: Schedulers disabled in web process');
+    console.log('   Configure Render Cron Jobs to call /api/cron/* endpoints');
+  }
 
   const server = await registerRoutes(app);
 

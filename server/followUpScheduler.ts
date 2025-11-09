@@ -12,7 +12,7 @@ export function startFollowUpScheduler() {
   setInterval(checkAndSendFollowUps, FOLLOW_UP_INTERVAL);
 }
 
-async function checkAndSendFollowUps() {
+export async function checkAndSendFollowUps() {
   try {
     // Check if follow-up emails are enabled
     const settings = await storage.getBusinessSettings();

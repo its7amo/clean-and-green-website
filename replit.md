@@ -78,8 +78,37 @@ Passport.js with a Local Strategy and Express sessions (stored in PostgreSQL via
 
 ### Build & Deployment
 
-**Development**: Uses Vite for frontend HMR and an Express development server.
-**Production**: Deployed on Render.com with automated GitHub integration. The build process involves `npm install && npm run build`, followed by `npm start`. Vite builds the React frontend, esbuild bundles the Express backend, and static files are served from `dist/public`. Environment variables for production include `APP_URL`, `DATABASE_URL`, `SESSION_SECRET`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER`.
+**Development**: Uses Vite for frontend HMR and an Express development server. Schedulers run directly via `setInterval()` in the main web process.
+
+**Production**: Deployed on Render.com with automated GitHub integration. The build process involves `npm install && npm run build`, followed by `npm start`. Vite builds the React frontend, esbuild bundles the Express backend, and static files are served from `dist/public`. 
+
+**Production Environment Variables**: `APP_URL`, `DATABASE_URL`, `SESSION_SECRET`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`, `CRON_SECRET`.
+
+### Scheduler Architecture
+
+**Critical Production Configuration**: Schedulers are **disabled** in production web processes to prevent duplicate executions when scaling. Instead, they run via **Render Cron Jobs** calling secured HTTP endpoints.
+
+**6 Cron Job Endpoints** (`/api/cron/*`):
+1. **`/api/cron/review-emails`** (hourly) - Sends review requests 24h after service completion
+2. **`/api/cron/appointment-reminders`** (hourly) - Sends SMS/email reminders 24h before appointments
+3. **`/api/cron/recurring-bookings`** (hourly) - Creates bookings from recurring schedules
+4. **`/api/cron/follow-up-emails`** (daily) - Sends win-back emails 30 days post-service
+5. **`/api/cron/payment-reminders`** (hourly) - Sends overdue invoice reminders (3/7/14 days)
+6. **`/api/cron/referral-credits`** (every 5 min) - Processes referral rewards
+
+**Security**: All endpoints require `X-Cron-Secret` header matching `CRON_SECRET` environment variable in production. Development mode bypasses authentication for local testing.
+
+**Implementation Files**:
+- `server/index.ts` - Conditionally starts schedulers only in development
+- `server/routes.ts` - Cron endpoints with authentication (lines 112-204)
+- `server/reviewEmailScheduler.ts` - Exports `checkAndSendReviewEmails()`
+- `server/reminderScheduler.ts` - Exports `checkAndSendRemindersNow()`
+- `server/recurringBookingScheduler.ts` - Exports `processRecurringBookingsNow()`
+- `server/followUpScheduler.ts` - Exports `checkAndSendFollowUps()`
+- `server/referralScheduler.ts` - Exports `processReferralCredits()`
+- `server/schedulers/overdueInvoiceReminder.ts` - Exports `checkAndSendOverdueReminders()`
+
+**Setup Documentation**: See `RENDER_CRON_SETUP.md` for complete Render Cron Jobs configuration guide including schedules, curl commands, and troubleshooting.
 
 ## External Dependencies
 

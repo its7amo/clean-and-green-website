@@ -13,7 +13,7 @@ export function startReferralScheduler() {
   setInterval(generateMissingReferralCodes, 15 * 60 * 1000);
 }
 
-async function processReferralCredits() {
+export async function processReferralCredits() {
   try {
     const settings = await storage.getReferralSettings();
     if (!settings?.enabled) {

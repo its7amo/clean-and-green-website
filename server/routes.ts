@@ -106,6 +106,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cron job endpoints for Render - these run the schedulers without duplicates
+  // Configure in Render Dashboard: Settings > Cron Jobs
+  // Security: These endpoints should only be called by Render Cron Jobs
+  // Set CRON_SECRET in Render environment variables and pass as header: X-Cron-Secret
+  const verifyCronSecret = (req: any, res: any): boolean => {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      // In development, allow without secret
+      if (process.env.NODE_ENV !== 'production') {
+        return true;
+      }
+      res.status(500).json({ error: "CRON_SECRET not configured" });
+      return false;
+    }
+    const providedSecret = req.headers['x-cron-secret'];
+    if (providedSecret !== cronSecret) {
+      res.status(401).json({ error: "Unauthorized: Invalid cron secret" });
+      return false;
+    }
+    return true;
+  };
+
+  app.post("/api/cron/review-emails", async (req, res) => {
+    if (!verifyCronSecret(req, res)) return;
+    try {
+      const { checkAndSendReviewEmails } = await import("./reviewEmailScheduler");
+      await checkAndSendReviewEmails();
+      res.json({ success: true, message: "Review emails processed" });
+    } catch (error) {
+      console.error("Error processing review emails:", error);
+      res.status(500).json({ error: "Failed to process review emails" });
+    }
+  });
+
+  app.post("/api/cron/appointment-reminders", async (req, res) => {
+    if (!verifyCronSecret(req, res)) return;
+    try {
+      const { checkAndSendRemindersNow } = await import("./reminderScheduler");
+      await checkAndSendRemindersNow();
+      res.json({ success: true, message: "Appointment reminders processed" });
+    } catch (error) {
+      console.error("Error processing appointment reminders:", error);
+      res.status(500).json({ error: "Failed to process appointment reminders" });
+    }
+  });
+
+  app.post("/api/cron/recurring-bookings", async (req, res) => {
+    if (!verifyCronSecret(req, res)) return;
+    try {
+      const { processRecurringBookingsNow } = await import("./recurringBookingScheduler");
+      await processRecurringBookingsNow();
+      res.json({ success: true, message: "Recurring bookings processed" });
+    } catch (error) {
+      console.error("Error processing recurring bookings:", error);
+      res.status(500).json({ error: "Failed to process recurring bookings" });
+    }
+  });
+
+  app.post("/api/cron/follow-up-emails", async (req, res) => {
+    if (!verifyCronSecret(req, res)) return;
+    try {
+      const { checkAndSendFollowUps } = await import("./followUpScheduler");
+      await checkAndSendFollowUps();
+      res.json({ success: true, message: "Follow-up emails processed" });
+    } catch (error) {
+      console.error("Error processing follow-up emails:", error);
+      res.status(500).json({ error: "Failed to process follow-up emails" });
+    }
+  });
+
+  app.post("/api/cron/payment-reminders", async (req, res) => {
+    if (!verifyCronSecret(req, res)) return;
+    try {
+      const { checkAndSendOverdueReminders } = await import("./schedulers/overdueInvoiceReminder");
+      await checkAndSendOverdueReminders();
+      res.json({ success: true, message: "Payment reminders processed" });
+    } catch (error) {
+      console.error("Error processing payment reminders:", error);
+      res.status(500).json({ error: "Failed to process payment reminders" });
+    }
+  });
+
+  app.post("/api/cron/referral-credits", async (req, res) => {
+    if (!verifyCronSecret(req, res)) return;
+    try {
+      const { processReferralCredits } = await import("./referralScheduler");
+      await processReferralCredits();
+      res.json({ success: true, message: "Referral credits processed" });
+    } catch (error) {
+      console.error("Error processing referral credits:", error);
+      res.status(500).json({ error: "Failed to process referral credits" });
+    }
+  });
+
   // Booking routes (public submissions, protected admin actions)
   app.post("/api/bookings", async (req, res) => {
     try {
