@@ -366,10 +366,11 @@ export function BookingForm() {
     return zipMatch ? zipMatch[0] : "";
   };
 
-  const handleSubmit = () => {
-    console.log("handleSubmit called, paymentMethodId:", formData.paymentMethodId);
+  const handleSubmit = (paymentMethodId?: string) => {
+    const pmId = paymentMethodId || formData.paymentMethodId;
+    console.log("handleSubmit called, paymentMethodId:", pmId);
     
-    if (!formData.paymentMethodId) {
+    if (!pmId) {
       console.error("No payment method ID, aborting booking");
       return;
     }
@@ -383,7 +384,7 @@ export function BookingForm() {
       email: formData.email,
       phone: formData.phone,
       address: formData.address,
-      paymentMethodId: formData.paymentMethodId,
+      paymentMethodId: pmId,
       promoCodeId: formData.promoCodeId,
       referralCode: formData.referralCodeValid ? formData.referralCode : null,
       isRecurring: formData.isRecurring,
@@ -956,8 +957,8 @@ export function BookingForm() {
               <div className="border-t pt-6">
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentMethodForm onSuccess={(pmId) => {
-                    updateFormData("paymentMethodId", pmId);
-                    handleSubmit();
+                    console.log("Payment success, passing pmId to handleSubmit:", pmId);
+                    handleSubmit(pmId);
                   }} />
                 </Elements>
               </div>
