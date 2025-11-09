@@ -170,6 +170,27 @@ export async function runMigrations() {
     await pool.query(schedulingColumns);
     console.log('✓ Scheduling control columns added/verified');
     
+    // Create reschedule_requests table if it doesn't exist
+    console.log('Creating reschedule_requests table...');
+    const rescheduleRequestsTable = `
+      CREATE TABLE IF NOT EXISTS reschedule_requests (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        booking_id VARCHAR NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        requested_date TEXT NOT NULL,
+        requested_time_slot TEXT NOT NULL,
+        customer_notes TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        decision_by VARCHAR REFERENCES users(id),
+        decision_at TIMESTAMP,
+        decision_reason TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT now(),
+        updated_at TIMESTAMP NOT NULL DEFAULT now()
+      );
+    `;
+    
+    await pool.query(rescheduleRequestsTable);
+    console.log('✓ Reschedule requests table created/verified');
+    
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;
