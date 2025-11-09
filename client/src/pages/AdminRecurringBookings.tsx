@@ -159,7 +159,7 @@ export default function AdminRecurringBookings() {
       frequency: booking.frequency,
       preferredTimeSlot: booking.preferredTimeSlot,
       startDate: booking.startDate,
-      nextOccurrence: format(new Date(booking.nextOccurrence), "yyyy-MM-dd"),
+      nextOccurrence: booking.nextOccurrence ? format(new Date(booking.nextOccurrence), "yyyy-MM-dd") : "",
       status: booking.status,
     });
     setIsDialogOpen(true);
@@ -474,7 +474,7 @@ export default function AdminRecurringBookings() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {format(new Date(booking.nextOccurrence), "MMM d, yyyy")}
+                          {booking.nextOccurrence ? format(new Date(booking.nextOccurrence), "MMM d, yyyy") : "Not set"}
                         </div>
                       </TableCell>
                       <TableCell>
