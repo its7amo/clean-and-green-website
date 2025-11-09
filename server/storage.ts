@@ -55,6 +55,8 @@ import {
   type GlobalSearchResult,
   type QuotePhoto,
   type InsertQuotePhoto,
+  type RescheduleRequest,
+  type InsertRescheduleRequest,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -85,6 +87,7 @@ import {
   referralSettings,
   anomalyAlerts,
   quotePhotos,
+  rescheduleRequests,
 } from "@shared/schema";
 import { eq, desc, sql, or } from "drizzle-orm";
 
@@ -105,6 +108,15 @@ export interface IStorage {
   updateBooking(id: string, booking: Partial<InsertBooking>): Promise<Booking | undefined>;
   updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
   deleteBooking(id: string): Promise<void>;
+
+  // Reschedule request operations
+  createRescheduleRequest(request: InsertRescheduleRequest): Promise<RescheduleRequest>;
+  getRescheduleRequests(): Promise<RescheduleRequest[]>;
+  getRescheduleRequest(id: string): Promise<RescheduleRequest | undefined>;
+  getRescheduleRequestsByBooking(bookingId: string): Promise<RescheduleRequest[]>;
+  getPendingRescheduleRequests(): Promise<RescheduleRequest[]>;
+  updateRescheduleRequestStatus(id: string, status: string, decisionBy: string, decisionReason?: string): Promise<RescheduleRequest | undefined>;
+  deleteRescheduleRequest(id: string): Promise<void>;
 
   // Quote operations
   createQuote(quote: InsertQuote): Promise<Quote>;
@@ -435,6 +447,56 @@ export class DbStorage implements IStorage {
 
   async deleteBooking(id: string): Promise<void> {
     await db.delete(bookings).where(eq(bookings.id, id));
+  }
+
+  // Reschedule request operations
+  async createRescheduleRequest(request: InsertRescheduleRequest): Promise<RescheduleRequest> {
+    const result = await db.insert(rescheduleRequests).values(request).returning();
+    return result[0];
+  }
+
+  async getRescheduleRequests(): Promise<RescheduleRequest[]> {
+    return await db.select().from(rescheduleRequests).orderBy(desc(rescheduleRequests.createdAt));
+  }
+
+  async getRescheduleRequest(id: string): Promise<RescheduleRequest | undefined> {
+    const result = await db.select().from(rescheduleRequests).where(eq(rescheduleRequests.id, id));
+    return result[0];
+  }
+
+  async getRescheduleRequestsByBooking(bookingId: string): Promise<RescheduleRequest[]> {
+    return await db.select().from(rescheduleRequests)
+      .where(eq(rescheduleRequests.bookingId, bookingId))
+      .orderBy(desc(rescheduleRequests.createdAt));
+  }
+
+  async getPendingRescheduleRequests(): Promise<RescheduleRequest[]> {
+    return await db.select().from(rescheduleRequests)
+      .where(eq(rescheduleRequests.status, 'pending'))
+      .orderBy(desc(rescheduleRequests.createdAt));
+  }
+
+  async updateRescheduleRequestStatus(
+    id: string, 
+    status: string, 
+    decisionBy: string, 
+    decisionReason?: string
+  ): Promise<RescheduleRequest | undefined> {
+    const result = await db.update(rescheduleRequests)
+      .set({ 
+        status, 
+        decisionBy, 
+        decisionReason,
+        decisionAt: sql`now()`,
+        updatedAt: sql`now()`
+      })
+      .where(eq(rescheduleRequests.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteRescheduleRequest(id: string): Promise<void> {
+    await db.delete(rescheduleRequests).where(eq(rescheduleRequests.id, id));
   }
 
   async createQuote(quote: InsertQuote): Promise<Quote> {
