@@ -99,7 +99,7 @@ export const bookings = pgTable("bookings", {
   email: text("email").notNull(),
   phone: text("phone").notNull(),
   address: text("address").notNull(),
-  status: text("status").notNull().default("pending"),
+  status: text("status").notNull().default("pending"), // pending, confirmed, completed, cancelled, pending_reschedule
   completedDate: timestamp("completed_date"),
   reviewEmailSent: boolean("review_email_sent").notNull().default(false),
   managementToken: varchar("management_token").notNull().default(sql`gen_random_uuid()`),
@@ -119,6 +119,21 @@ export const bookings = pgTable("bookings", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Reschedule requests table - tracks customer reschedule attempts
+export const rescheduleRequests = pgTable("reschedule_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookingId: varchar("booking_id").notNull().references(() => bookings.id, { onDelete: "cascade" }),
+  requestedDate: text("requested_date").notNull(),
+  requestedTimeSlot: text("requested_time_slot").notNull(),
+  customerNotes: text("customer_notes"),
+  status: text("status").notNull().default("pending"), // pending, approved, denied, cancelled
+  decisionBy: varchar("decision_by").references(() => users.id),
+  decisionAt: timestamp("decision_at"),
+  decisionReason: text("decision_reason"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
 export const insertBookingSchema = createInsertSchema(bookings).omit({
   id: true,
   createdAt: true,
@@ -127,6 +142,15 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
 
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type Booking = typeof bookings.$inferSelect;
+
+export const insertRescheduleRequestSchema = createInsertSchema(rescheduleRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertRescheduleRequest = z.infer<typeof insertRescheduleRequestSchema>;
+export type RescheduleRequest = typeof rescheduleRequests.$inferSelect;
 
 export const quotes = pgTable("quotes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
