@@ -22,7 +22,7 @@ export function GlobalSearch() {
   const debouncedQuery = useDebouncedValue(query, 250);
   const [, setLocation] = useLocation();
 
-  const { data, isLoading } = useQuery<GlobalSearchResult>({
+  const { data, isLoading, refetch } = useQuery<GlobalSearchResult>({
     queryKey: debouncedQuery.trim().length >= 2 
       ? [`/api/global-search?q=${encodeURIComponent(debouncedQuery)}`]
       : ["/api/global-search-disabled"],
@@ -31,6 +31,13 @@ export function GlobalSearch() {
     refetchOnWindowFocus: false,
     refetchInterval: false,
   });
+
+  // Force refetch when debounced query changes
+  useEffect(() => {
+    if (debouncedQuery.trim().length >= 2) {
+      refetch();
+    }
+  }, [debouncedQuery, refetch]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -85,13 +92,13 @@ export function GlobalSearch() {
         onValueChange={setQuery}
         data-testid="input-global-search"
       />
-      <CommandList key={`${debouncedQuery}-${totalResults}`}>
+      <CommandList className="max-h-[400px]">{/* Force immediate rendering */}
         {!showResults && (
           <CommandEmpty data-testid="search-empty-state">
             Type at least 2 characters to search
           </CommandEmpty>
         )}
-        {showResults && isLoading && (
+        {showResults && isLoading && !data && (
           <CommandEmpty data-testid="search-loading">
             <div className="flex items-center justify-center gap-2 py-6">
               <Search className="h-4 w-4 animate-spin" />
@@ -99,7 +106,7 @@ export function GlobalSearch() {
             </div>
           </CommandEmpty>
         )}
-        {showResults && !isLoading && totalResults === 0 && (
+        {showResults && !isLoading && data && totalResults === 0 && (
           <CommandEmpty data-testid="search-no-results">No results found</CommandEmpty>
         )}
 
