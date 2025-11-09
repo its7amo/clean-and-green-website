@@ -1,0 +1,92 @@
+Available at your primary URL https://clean-and-green-website.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+4:43:35 AM [express] GET /api/setup/required 200 in 59ms :: {"required":false}
+4:43:35 AM [express] GET /api/public/banner-settings 200 in 77ms :: {"enabled":true,"customMessage":…
+4:43:35 AM [express] GET /api/public/active-promo 200 in 168ms :: {"id":"fc9eed8a-50de-4643-9e3d-c91…
+4:43:35 AM [express] GET /api/public/stats-settings 200 in 164ms :: {"enabled":false}
+4:43:36 AM [express] GET /api/settings 200 in 434ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7",…
+4:43:36 AM [express] GET /api/services 200 in 466ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+4:43:36 AM [express] GET /api/reviews/approved 200 in 469ms :: []
+4:43:36 AM [express] GET /api/public/stats 200 in 633ms :: {"homesClean":0,"averageRating":5,"ecoFri…
+4:43:36 AM [express] GET /api/public/featured-photos 200 in 693ms :: []
+4:43:38 AM [express] GET /api/public/featured-photos 200 in 10ms :: []
+4:43:38 AM [express] GET /api/public/stats-settings 200 in 67ms :: {"enabled":false}
+4:43:38 AM [express] GET /api/setup/required 200 in 63ms :: {"required":false}
+4:43:38 AM [express] GET /api/settings 200 in 64ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","…
+4:43:38 AM [express] GET /api/reviews/approved 200 in 8ms :: []
+4:43:38 AM [express] GET /api/public/stats 200 in 11ms :: {"homesClean":0,"averageRating":5,"ecoFrie…
+4:43:38 AM [express] GET /api/services 200 in 7ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c","…
+4:43:38 AM [express] GET /api/public/active-promo 200 in 5ms :: {"id":"fc9eed8a-50de-4643-9e3d-c9149…
+4:43:38 AM [express] GET /api/public/banner-settings 200 in 8ms :: {"enabled":true,"customMessage":"…
+4:43:43 AM [express] GET /api/setup/required 200 in 8ms :: {"required":false}
+4:43:43 AM [express] GET /api/public/featured-photos 200 in 13ms :: []
+4:43:43 AM [express] GET /api/public/stats-settings 200 in 72ms :: {"enabled":false}
+4:43:43 AM [express] GET /api/public/banner-settings 200 in 66ms :: {"enabled":true,"customMessage":…
+4:43:43 AM [express] GET /api/settings 200 in 77ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","…
+4:43:43 AM [express] GET /api/reviews/approved 200 in 84ms :: []
+4:43:43 AM [express] GET /api/public/active-promo 200 in 14ms :: {"id":"fc9eed8a-50de-4643-9e3d-c914…
+4:43:43 AM [express] GET /api/services 200 in 100ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+4:43:43 AM [express] GET /api/public/stats 200 in 108ms :: {"homesClean":0,"averageRating":5,"ecoFri…
+4:43:47 AM [express] GET /api/setup/required 200 in 14ms :: {"required":false}
+4:43:47 AM [express] GET /api/auth/user 200 in 6ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:43:48 AM [express] GET /api/auth/user 200 in 8ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:43:48 AM [express] GET /api/quotes 200 in 30ms :: []
+4:43:48 AM [express] GET /api/employees 200 in 29ms :: []
+4:43:48 AM [express] GET /api/bookings 200 in 32ms :: []
+Error fetching intelligence overview: error: operator does not exist: text[] @> jsonb
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getIntelligenceOverview (file:///opt/render/project/src/dist/index.js:1577:24)
+    at async file:///opt/render/project/src/dist/index.js:7674:24 {
+  length: 201,
+  severity: 'ERROR',
+  code: '42883',
+  detail: undefined,
+  hint: 'No operator matches the given name and argument types. You might need to add explicit type casts.',
+  position: '666',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_oper.c',
+  line: '635',
+  routine: 'op_error'
+}
+4:43:48 AM [express] GET /api/quick-actions 200 in 124ms :: {"pendingQuotes":0,"overdueInvoices":0,"…
+4:43:48 AM [express] GET /api/intelligence-overview 500 in 128ms :: {"error":"Failed to fetch intell…
+4:43:52 AM [express] GET /api/setup/required 200 in 6ms :: {"required":false}
+4:43:52 AM [express] GET /api/auth/user 200 in 6ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:43:52 AM [express] GET /api/bookings 200 in 8ms :: []
+4:43:52 AM [express] GET /api/quick-actions 200 in 8ms :: {"pendingQuotes":0,"overdueInvoices":0,"pe…
+Error fetching intelligence overview: error: operator does not exist: text[] @> jsonb
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getIntelligenceOverview (file:///opt/render/project/src/dist/index.js:1577:24)
+    at async file:///opt/render/project/src/dist/index.js:7674:24 {
+  length: 201,
+  severity: 'ERROR',
+  code: '42883',
+  detail: undefined,
+  hint: 'No operator matches the given name and argument types. You might need to add explicit type casts.',
+  position: '666',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_oper.c',
+  line: '635',
+  routine: 'op_error'
+}
+4:43:52 AM [express] GET /api/intelligence-overview 500 in 9ms :: {"error":"Failed to fetch intellig…
+4:43:52 AM [express] GET /api/auth/user 200 in 7ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:43:53 AM [express] GET /api/quotes 200 in 67ms :: []
+4:43:53 AM [express] GET /api/employees 200 in 95ms :: []

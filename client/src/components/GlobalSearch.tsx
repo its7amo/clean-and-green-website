@@ -19,7 +19,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const debouncedQuery = useDebouncedValue(query, 250);
+  const debouncedQuery = useDebouncedValue(query, 600);
   const [, setLocation] = useLocation();
 
   const { data, isLoading } = useQuery<GlobalSearchResult>({
