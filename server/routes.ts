@@ -1524,10 +1524,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(quote);
     } catch (error) {
       console.error("Error creating quote:", error);
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+      console.error("Error message:", error instanceof Error ? error.message : String(error));
+      
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid quote data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create quote" });
+      
+      // Return more details in development/testing
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ 
+        error: "Failed to create quote",
+        details: errorMessage,
+        hasPhotos: !!req.body.photos
+      });
     }
   });
 
