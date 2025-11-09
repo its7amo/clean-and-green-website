@@ -2,7 +2,7 @@
 
 ## Overview
 
-Clean and Green is a production-ready professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests. The platform features a comprehensive admin dashboard for management of bookings, quotes, business analytics, customer interactions, team operations, and a fully functional tiered referral program ($10/$15/$20 rewards) with comprehensive fraud protection. **Critical referral bug fixed (Nov 9, 2025)**: Referral codes now properly apply discounts to bookings, create referral records immediately, and work identically across both public and admin manual booking endpoints. Recently expanded with 6 admin intelligence features fully implemented (November 2025): Customer Churn Risk Scoring with win-back campaigns, Smart Anomaly Alerts for fraud/mistake detection, Message Status Tracking (new/in_progress/replied/closed/spam), Customer Segmentation (VIP/At-risk/New/Referral champions auto-tags), Quick Actions Dashboard (7 actionable metrics), and Business Settings Intelligence Controls (14 configurable fields). The referral program includes multi-signal fraud detection preventing abuse through duplicate address/phone/IP detection and velocity limits (max 3/day, 10/week configurable - fully exposed in admin UI), automatically creating anomaly alerts for suspicious patterns. The admin interface features a reorganized collapsible sidebar with 6 logical groups (Overview, Operations, People, Communication, Marketing, Configuration), a unified Intelligence Dashboard showing critical business metrics, and a global search component (cmd+k shortcut) that searches across bookings, customers, and quotes with relevance ranking. The system includes PWA functionality, automated email/SMS notifications, and is fully deployed to Render.com with proper production environment configuration.
+Clean and Green is a production-ready professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests. The platform features a comprehensive admin dashboard for management of bookings, quotes, business analytics, customer interactions, team operations, and a fully functional tiered referral program ($10/$15/$20 rewards) with comprehensive fraud protection. **Critical referral bug fixed (Nov 9, 2025)**: Referral codes now properly apply discounts to bookings, create referral records immediately, and work identically across both public and admin manual booking endpoints. **Booking Management System (Nov 9, 2025)**: Comprehensive booking approval workflow (all bookings default to "pending" status), booking validation (past date prevention, configurable minimum lead time default 12 hours, slot capacity limits default 3 per slot), customer deduplication system (SQL-normalized matching on email/phone/address with confidence scoring and merge alerts), enhanced quote-to-booking conversion (proper customer linking, full validation chain), and live availability checking API. Recently expanded with 6 admin intelligence features fully implemented (November 2025): Customer Churn Risk Scoring with win-back campaigns, Smart Anomaly Alerts for fraud/mistake detection, Message Status Tracking (new/in_progress/replied/closed/spam), Customer Segmentation (VIP/At-risk/New/Referral champions auto-tags), Quick Actions Dashboard (7 actionable metrics), and Business Settings Intelligence Controls (19 configurable fields including scheduling controls). The referral program includes multi-signal fraud detection preventing abuse through duplicate address/phone/IP detection and velocity limits (max 3/day, 10/week configurable - fully exposed in admin UI), automatically creating anomaly alerts for suspicious patterns. The admin interface features a reorganized collapsible sidebar with 6 logical groups (Overview, Operations, People, Communication, Marketing, Configuration), a unified Intelligence Dashboard showing critical business metrics, and a global search component (cmd+k shortcut) that searches across bookings, customers, and quotes with relevance ranking. The system includes PWA functionality, automated email/SMS notifications, and is fully deployed to Render.com with proper production environment configuration.
 
 ## User Preferences
 
@@ -36,8 +36,27 @@ PostgreSQL (Neon for serverless deployment) is the database, managed with Drizzl
 - **Referral Credits**: Manages customer credit balances.
 - **Referral Settings**: Global referral program configuration.
 - **Anomaly Alerts**: Fraud and mistake detection system tracking bulk operations and suspicious activities.
-- **Business Settings**: Customizable templates and intelligence feature configuration (win-back campaigns, churn risk thresholds, anomaly detection settings, quick reply templates).
+- **Business Settings**: Customizable templates and intelligence feature configuration (win-back campaigns, churn risk thresholds, anomaly detection settings, quick reply templates, scheduling controls: minLeadHours, maxBookingsPerSlot, requireBookingApproval, customerDedupEnabled, customerMergeAlertEnabled).
 Zod schemas are generated from Drizzle tables for validation and type inference. All new admin intelligence endpoints include strict Zod validation with enum constraints for security.
+
+### Booking & Quote Management
+
+**Booking Approval Workflow**: All bookings default to "pending" status requiring admin approval (configurable via `requireBookingApproval` in Business Settings). Admin can approve/reject bookings from the Bookings page.
+
+**Booking Validation System** (`server/bookingValidation.ts`):
+- **Past Date Prevention**: Blocks bookings for dates/times in the past
+- **Minimum Lead Time**: Configurable advance booking requirement (default 12 hours, set via `minLeadHours` in Business Settings)
+- **Slot Capacity Control**: Limits concurrent bookings per time slot (default 3, set via `maxBookingsPerSlot` in Business Settings)
+- **Available Slots API**: GET `/api/available-slots` returns real-time slot availability with capacity indicators
+
+**Customer Deduplication System** (`server/customerDedup.ts`):
+- SQL-normalized matching on email, phone, and address (case-insensitive, whitespace-trimmed)
+- Confidence scoring: high (email match), medium (phone+address match), low (address-only match)
+- Automatic merge alert creation for medium/high confidence matches (24-hour deduplication window)
+- Optional toggle via `customerDedupEnabled` and `customerMergeAlertEnabled` in Business Settings
+- Integrated into booking creation, quote creation, and quote-to-booking conversion
+
+**Quote-to-Booking Conversion**: Enhanced to properly link existing customers, apply deduplication if enabled, run full validation chain (past date, lead time, capacity), and create bookings with correct status based on approval settings.
 
 ### Authentication & Authorization
 
