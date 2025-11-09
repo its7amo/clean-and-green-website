@@ -3948,6 +3948,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reschedule request management routes
+  app.get("/api/admin/reschedule-requests", isAuthenticated, async (_req, res) => {
+    try {
+      const requests = await storage.getRescheduleRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching reschedule requests:", error);
+      res.status(500).json({ error: "Failed to fetch reschedule requests" });
+    }
+  });
+
+  app.patch("/api/admin/reschedule-requests/:id/approve", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const decisionReasonSchema = z.object({
+        reason: z.string().optional(),
+      });
+      const { reason } = decisionReasonSchema.parse(req.body);
+      
+      // Get the reschedule request
+      const request = await storage.getRescheduleRequest(id);
+      if (!request) {
+        return res.status(404).json({ error: "Reschedule request not found" });
+      }
+      
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Reschedule request is not pending" });
+      }
+      
+      // Get the booking
+      const booking = await storage.getBooking(request.bookingId);
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Update the booking with new date/time
+      await storage.updateBooking(booking.id, {
+        date: request.requestedDate,
+        timeSlot: request.requestedTimeSlot,
+        status: 'confirmed', // Confirm the booking after reschedule
+      });
+      
+      // Update reschedule request status
+      const userId = (req.user as User).id;
+      await storage.updateRescheduleRequestStatus(
+        id,
+        'approved',
+        userId,
+        reason
+      );
+      
+      // Log activity
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'rescheduleRequest',
+        entityId: id,
+        entityName: `Approved reschedule for ${booking.name}`,
+      });
+      
+      // Send email notifications (async, don't block response)
+      (async () => {
+        try {
+          // TODO: Send reschedule approved email to customer
+          console.log('Reschedule request approved:', id);
+        } catch (emailError) {
+          console.error("Failed to send reschedule approved notification:", emailError);
+        }
+      })();
+      
+      res.json({ message: "Reschedule request approved successfully" });
+    } catch (error) {
+      console.error("Error approving reschedule request:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to approve reschedule request" });
+    }
+  });
+
+  app.patch("/api/admin/reschedule-requests/:id/deny", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const decisionReasonSchema = z.object({
+        reason: z.string().min(1, "Reason is required when denying"),
+      });
+      const { reason } = decisionReasonSchema.parse(req.body);
+      
+      // Get the reschedule request
+      const request = await storage.getRescheduleRequest(id);
+      if (!request) {
+        return res.status(404).json({ error: "Reschedule request not found" });
+      }
+      
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Reschedule request is not pending" });
+      }
+      
+      // Get the booking
+      const booking = await storage.getBooking(request.bookingId);
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Revert booking status back to its previous state
+      await storage.updateBookingStatus(booking.id, 'confirmed');
+      
+      // Update reschedule request status
+      const userId = (req.user as User).id;
+      await storage.updateRescheduleRequestStatus(
+        id,
+        'denied',
+        userId,
+        reason
+      );
+      
+      // Log activity
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'rescheduleRequest',
+        entityId: id,
+        entityName: `Denied reschedule for ${booking.name}`,
+      });
+      
+      // Send email notifications (async, don't block response)
+      (async () => {
+        try {
+          // TODO: Send reschedule denied email to customer
+          console.log('Reschedule request denied:', id);
+        } catch (emailError) {
+          console.error("Failed to send reschedule denied notification:", emailError);
+        }
+      })();
+      
+      res.json({ message: "Reschedule request denied successfully" });
+    } catch (error) {
+      console.error("Error denying reschedule request:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to deny reschedule request" });
+    }
+  });
+
   app.delete("/api/quotes/:id", isAuthenticated, async (req, res) => {
     try {
       await storage.deleteQuote(req.params.id);
