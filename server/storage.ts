@@ -51,6 +51,7 @@ import {
   type InsertReferralSettings,
   type AnomalyAlert,
   type InsertAnomalyAlert,
+  type IntelligenceOverview,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -311,6 +312,9 @@ export interface IStorage {
     unreadMessages: number;
     openAlerts: number;
   }>;
+
+  // Intelligence Dashboard overview aggregation
+  getIntelligenceOverview(): Promise<IntelligenceOverview>;
 
   // Message operations enhancement
   updateContactMessage(id: string, message: Partial<InsertContactMessage>): Promise<ContactMessage | undefined>;
@@ -1420,6 +1424,106 @@ export class DbStorage implements IStorage {
       atRiskCustomers: Number(row.at_risk_customers) || 0,
       unreadMessages: Number(row.unread_messages) || 0,
       openAlerts: Number(row.open_alerts) || 0,
+    };
+  }
+
+  // Intelligence Dashboard overview aggregation
+  async getIntelligenceOverview(): Promise<IntelligenceOverview> {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneWeekAgoStr = oneWeekAgo.toISOString();
+
+    const result = await db.execute(sql`
+      SELECT
+        (SELECT COUNT(*) FROM ${customers} WHERE churn_risk = 'high') as high_risk,
+        (SELECT COUNT(*) FROM ${customers} WHERE churn_risk = 'medium') as medium_risk,
+        (SELECT COUNT(*) FROM ${customers} WHERE churn_risk IN ('high', 'medium')) as total_at_risk,
+        (SELECT COUNT(*) FROM ${customers} WHERE churn_risk IN ('high', 'medium') AND updated_at >= ${oneWeekAgoStr}) as last_week_at_risk,
+        (SELECT COUNT(*) FROM ${anomalyAlerts} WHERE status = 'open') as open_alerts,
+        (SELECT COUNT(*) FROM ${anomalyAlerts} WHERE status = 'open' AND severity = 'high') as high_severity_alerts,
+        (SELECT COUNT(*) FROM ${customers} WHERE 'vip' = ANY(tags)) as vip_customers,
+        (SELECT COUNT(*) FROM ${customers} WHERE 'at-risk' = ANY(tags)) as at_risk_tagged,
+        (SELECT COUNT(*) FROM ${customers} WHERE 'new' = ANY(tags)) as new_customers,
+        (SELECT COUNT(*) FROM ${customers} WHERE 'referral-champion' = ANY(tags)) as referral_champions,
+        (SELECT COUNT(*) FROM ${contactMessages} WHERE status = 'new') as new_messages,
+        (SELECT COUNT(*) FROM ${contactMessages} WHERE status = 'in_progress') as in_progress_messages,
+        (SELECT COUNT(*) FROM ${contactMessages} WHERE status IN ('new', 'in_progress')) as total_unresolved,
+        (SELECT COUNT(*) FROM ${quotes} WHERE status = 'pending') as pending_quotes,
+        (SELECT COUNT(*) FROM ${invoices} WHERE due_date < now() AND status != 'paid') as overdue_invoices,
+        (SELECT COUNT(*) FROM ${reviews} WHERE status = 'pending') as pending_reviews,
+        (SELECT COUNT(*) FROM ${bookings} WHERE status = 'pending') as pending_bookings
+    `);
+
+    const row = result.rows[0] as any;
+    
+    const highRisk = Number(row.high_risk) || 0;
+    const mediumRisk = Number(row.medium_risk) || 0;
+    const totalAtRisk = Number(row.total_at_risk) || 0;
+    const lastWeekAtRisk = Number(row.last_week_at_risk) || 0;
+    
+    let trend: 'up' | 'down' | 'stable' = 'stable';
+    if (totalAtRisk > lastWeekAtRisk) {
+      trend = 'up';
+    } else if (totalAtRisk < lastWeekAtRisk) {
+      trend = 'down';
+    }
+
+    const recentAlerts = await db
+      .select()
+      .from(anomalyAlerts)
+      .where(eq(anomalyAlerts.status, 'open'))
+      .orderBy(desc(anomalyAlerts.createdAt))
+      .limit(5);
+
+    const settings = await this.getBusinessSettings();
+
+    return {
+      churnRisk: {
+        highRiskCount: highRisk,
+        mediumRiskCount: mediumRisk,
+        totalAtRisk,
+        trend,
+        lastWeekCount: lastWeekAtRisk,
+      },
+      anomalies: {
+        openCount: Number(row.open_alerts) || 0,
+        highSeverityCount: Number(row.high_severity_alerts) || 0,
+        recentAlerts: recentAlerts.map(alert => ({
+          id: alert.id,
+          type: alert.type as "bulk_promo_creation" | "large_invoice_change" | "mass_cancellations" | "bulk_deletions",
+          severity: alert.severity as "low" | "medium" | "high",
+          title: alert.title,
+          createdAt: alert.createdAt.toISOString(),
+        })),
+      },
+      segments: {
+        vipCount: Number(row.vip_customers) || 0,
+        atRiskCount: Number(row.at_risk_tagged) || 0,
+        newCount: Number(row.new_customers) || 0,
+        referralChampionsCount: Number(row.referral_champions) || 0,
+      },
+      messageStatus: {
+        newCount: Number(row.new_messages) || 0,
+        inProgressCount: Number(row.in_progress_messages) || 0,
+        totalUnresolved: Number(row.total_unresolved) || 0,
+        avgResponseTime: null,
+      },
+      quickActions: {
+        unreadMessages: Number(row.new_messages) || 0,
+        pendingQuotes: Number(row.pending_quotes) || 0,
+        pendingBookings: Number(row.pending_bookings) || 0,
+        atRiskCustomers: totalAtRisk,
+        openAlerts: Number(row.open_alerts) || 0,
+        pendingReviews: Number(row.pending_reviews) || 0,
+        overdueInvoices: Number(row.overdue_invoices) || 0,
+      },
+      businessSettings: {
+        winBackCampaignsEnabled: settings?.enableWinBackCampaigns || false,
+        churnRiskThreshold: settings?.churnRiskDays || 30,
+        anomalyDetectionEnabled: settings?.enableAnomalyDetection || false,
+        autoTaggingEnabled: settings?.enableAutoTagging || false,
+      },
+      lastUpdated: new Date().toISOString(),
     };
   }
 

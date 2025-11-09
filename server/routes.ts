@@ -5473,6 +5473,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Intelligence Dashboard overview endpoint
+  app.get("/api/intelligence-overview", isAuthenticated, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    try {
+      const overview = await storage.getIntelligenceOverview();
+      res.json(overview);
+    } catch (error) {
+      console.error("Error fetching intelligence overview:", error);
+      res.status(500).json({ error: "Failed to fetch intelligence overview" });
+    }
+  });
+
   // Message enhancement endpoints
   app.patch("/api/messages/:id", isAuthenticated, async (req, res) => {
     try {

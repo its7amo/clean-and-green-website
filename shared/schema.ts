@@ -713,3 +713,55 @@ export const updateContactMessageSchema = z.object({
 }).refine(data => Object.keys(data).length > 0, {
   message: "At least one field must be provided",
 });
+
+// Intelligence Overview Response Type for consolidated dashboard widgets
+export const intelligenceOverviewSchema = z.object({
+  churnRisk: z.object({
+    highRiskCount: z.number(),
+    mediumRiskCount: z.number(),
+    totalAtRisk: z.number(),
+    trend: z.enum(['up', 'down', 'stable']),
+    lastWeekCount: z.number(),
+  }),
+  anomalies: z.object({
+    openCount: z.number(),
+    highSeverityCount: z.number(),
+    recentAlerts: z.array(z.object({
+      id: z.string(),
+      type: z.enum(["bulk_promo_creation", "large_invoice_change", "mass_cancellations", "bulk_deletions"]),
+      severity: z.enum(["low", "medium", "high"]),
+      title: z.string(),
+      createdAt: z.string(),
+    })).max(5),
+  }),
+  segments: z.object({
+    vipCount: z.number(),
+    atRiskCount: z.number(),
+    newCount: z.number(),
+    referralChampionsCount: z.number(),
+  }),
+  messageStatus: z.object({
+    newCount: z.number(),
+    inProgressCount: z.number(),
+    totalUnresolved: z.number(),
+    avgResponseTime: z.number().nullable(),
+  }),
+  quickActions: z.object({
+    unreadMessages: z.number(),
+    pendingQuotes: z.number(),
+    pendingBookings: z.number(),
+    atRiskCustomers: z.number(),
+    openAlerts: z.number(),
+    pendingReviews: z.number(),
+    overdueInvoices: z.number(),
+  }),
+  businessSettings: z.object({
+    winBackCampaignsEnabled: z.boolean(),
+    churnRiskThreshold: z.number(),
+    anomalyDetectionEnabled: z.boolean(),
+    autoTaggingEnabled: z.boolean(),
+  }),
+  lastUpdated: z.string(),
+});
+
+export type IntelligenceOverview = z.infer<typeof intelligenceOverviewSchema>;
