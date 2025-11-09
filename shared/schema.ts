@@ -187,6 +187,20 @@ export const customers = pgTable("customers", {
   totalBookings: integer("total_bookings").notNull().default(0),
   totalQuotes: integer("total_quotes").notNull().default(0),
   totalInvoices: integer("total_invoices").notNull().default(0),
+  // Customer Portal features
+  emailNotifications: boolean("email_notifications").notNull().default(true),
+  smsNotifications: boolean("sms_notifications").notNull().default(true),
+  reminderPreference: text("reminder_preference").default("24h"), // 24h, 48h, 72h
+  savedAddresses: jsonb("saved_addresses").$type<Array<{
+    id: string;
+    label: string;
+    address: string;
+    isDefault: boolean;
+  }>>(),
+  specialRequests: text("special_requests").array(), // Saved frequently used special requests
+  preferredEmployees: text("preferred_employees").array(), // Employee IDs
+  loyaltyPoints: integer("loyalty_points").notNull().default(0),
+  loyaltyTier: text("loyalty_tier").default("bronze"), // bronze, silver, gold, platinum
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });

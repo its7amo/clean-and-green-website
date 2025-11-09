@@ -325,6 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public endpoint for customers to view their bookings by email
   app.get("/api/bookings/customer/:email", async (req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       const email = req.params.email;
       if (!email || !email.includes("@")) {
         return res.status(400).json({ error: "Valid email required" });
@@ -334,6 +335,183 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching customer bookings:", error);
       res.status(500).json({ error: "Failed to fetch bookings" });
+    }
+  });
+
+  // Customer Portal: Dashboard data
+  app.get("/api/customer/portal-dashboard/:email", async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      const email = req.params.email;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      
+      const customer = await storage.getCustomerByEmail(email);
+      const bookings = await storage.getBookingsByEmail(email);
+      const upcomingBookings = bookings.filter(b => 
+        new Date(b.date) >= new Date() && b.status !== 'cancelled'
+      ).slice(0, 3);
+      
+      const completedBookings = bookings.filter(b => b.status === 'completed');
+      const totalSpent = completedBookings.reduce((sum, b) => sum + (b.actualPrice || 0), 0);
+      
+      res.json({
+        customer,
+        stats: {
+          totalBookings: bookings.length,
+          completedBookings: completedBookings.length,
+          upcomingBookings: upcomingBookings.length,
+          totalSpent,
+          loyaltyPoints: customer?.loyaltyPoints || 0,
+          loyaltyTier: customer?.loyaltyTier || 'bronze',
+          customerSince: customer?.createdAt,
+        },
+        upcomingBookings,
+      });
+    } catch (error) {
+      console.error("Error fetching customer portal dashboard:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
+
+  // Customer Portal: Get customer invoices
+  app.get("/api/customer/invoices/:email", async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      const email = req.params.email;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      
+      const customer = await storage.getCustomerByEmail(email);
+      if (!customer) {
+        return res.json([]);
+      }
+      
+      const invoices = await storage.getInvoicesByCustomerId(customer.id);
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching customer invoices:", error);
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
+
+  // Customer Portal: Get customer recurring bookings
+  app.get("/api/customer/recurring-bookings/:email", async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      const email = req.params.email;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      
+      const recurringBookings = await storage.getRecurringBookingsByEmail(email);
+      res.json(recurringBookings);
+    } catch (error) {
+      console.error("Error fetching customer recurring bookings:", error);
+      res.status(500).json({ error: "Failed to fetch recurring bookings" });
+    }
+  });
+
+  // Customer Portal: Update notification preferences
+  app.patch("/api/customer/notification-preferences/:email", async (req, res) => {
+    try {
+      const email = req.params.email;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      
+      const schema = z.object({
+        emailNotifications: z.boolean().optional(),
+        smsNotifications: z.boolean().optional(),
+        reminderPreference: z.enum(['24h', '48h', '72h']).optional(),
+      });
+      
+      const validatedData = schema.parse(req.body);
+      const customer = await storage.updateCustomerByEmail(email, validatedData);
+      
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      
+      res.json(customer);
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update preferences" });
+    }
+  });
+
+  // Customer Portal: Update saved preferences
+  app.patch("/api/customer/saved-preferences/:email", async (req, res) => {
+    try {
+      const email = req.params.email;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      
+      const schema = z.object({
+        savedAddresses: z.array(z.object({
+          id: z.string(),
+          label: z.string(),
+          address: z.string(),
+          isDefault: z.boolean(),
+        })).optional(),
+        specialRequests: z.array(z.string()).optional(),
+        preferredEmployees: z.array(z.string()).optional(),
+      });
+      
+      const validatedData = schema.parse(req.body);
+      const customer = await storage.updateCustomerByEmail(email, validatedData);
+      
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      
+      res.json(customer);
+    } catch (error) {
+      console.error("Error updating saved preferences:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update preferences" });
+    }
+  });
+
+  // Customer Portal: Get customer reviews
+  app.get("/api/customer/reviews/:email", async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      const email = req.params.email;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      
+      const reviews = await storage.getReviewsByCustomerEmail(email);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching customer reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  // Customer Portal: Get customer messages/support history
+  app.get("/api/customer/messages/:email", async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      const email = req.params.email;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      
+      const messages = await storage.getMessagesByCustomerEmail(email);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching customer messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
 

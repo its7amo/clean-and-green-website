@@ -126,6 +126,22 @@ export async function runMigrations() {
     await pool.query(anomalyAlertsTable);
     console.log('✓ Anomaly alerts table created/verified');
     
+    // Add customer portal feature columns if they don't exist
+    console.log('Adding customer portal feature columns...');
+    const customerPortalColumns = `
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT true;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS sms_notifications BOOLEAN DEFAULT true;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS reminder_preference TEXT DEFAULT '24h';
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS saved_addresses JSONB;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS special_requests TEXT[];
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS preferred_employees TEXT[];
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_points INTEGER DEFAULT 0;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_tier TEXT DEFAULT 'bronze';
+    `;
+    
+    await pool.query(customerPortalColumns);
+    console.log('✓ Customer portal feature columns added/verified');
+    
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;

@@ -203,6 +203,7 @@ export interface IStorage {
   getCustomerByPhone(phone: string): Promise<Customer | undefined>;
   findOrCreateCustomer(name: string, email: string, phone: string, address?: string): Promise<Customer>;
   updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
+  updateCustomerByEmail(email: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
   deleteCustomer(id: string): Promise<void>;
   incrementCustomerBookings(id: string): Promise<void>;
   decrementCustomerBookings(id: string): Promise<void>;
@@ -210,6 +211,11 @@ export interface IStorage {
   decrementCustomerQuotes(id: string): Promise<void>;
   incrementCustomerInvoices(id: string): Promise<void>;
   decrementCustomerInvoices(id: string): Promise<void>;
+  // Customer portal specific
+  getInvoicesByCustomerId(customerId: string): Promise<Invoice[]>;
+  getRecurringBookingsByEmail(email: string): Promise<RecurringBooking[]>;
+  getReviewsByCustomerEmail(email: string): Promise<Review[]>;
+  getMessagesByCustomerEmail(email: string): Promise<ContactMessage[]>;
 
   // Activity log operations
   createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
@@ -799,6 +805,11 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
+  async updateCustomerByEmail(email: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined> {
+    const result = await db.update(customers).set({ ...customer, updatedAt: new Date() }).where(eq(customers.email, email)).returning();
+    return result[0];
+  }
+
   async deleteCustomer(id: string): Promise<void> {
     await db.delete(customers).where(eq(customers.id, id));
   }
@@ -837,6 +848,23 @@ export class DbStorage implements IStorage {
     await db.update(customers)
       .set({ totalInvoices: sql`GREATEST(${customers.totalInvoices} - 1, 0)` })
       .where(eq(customers.id, id));
+  }
+
+  // Customer portal specific methods
+  async getInvoicesByCustomerId(customerId: string): Promise<Invoice[]> {
+    return await db.select().from(invoices).where(eq(invoices.customerId, customerId)).orderBy(desc(invoices.createdAt));
+  }
+
+  async getRecurringBookingsByEmail(email: string): Promise<RecurringBooking[]> {
+    return await db.select().from(recurringBookings).where(eq(recurringBookings.email, email)).orderBy(desc(recurringBookings.createdAt));
+  }
+
+  async getReviewsByCustomerEmail(email: string): Promise<Review[]> {
+    return await db.select().from(reviews).where(eq(reviews.customerEmail, email)).orderBy(desc(reviews.createdAt));
+  }
+
+  async getMessagesByCustomerEmail(email: string): Promise<ContactMessage[]> {
+    return await db.select().from(contactMessages).where(eq(contactMessages.email, email)).orderBy(desc(contactMessages.createdAt));
   }
 
   // Activity log operations
