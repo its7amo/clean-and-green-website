@@ -23,13 +23,12 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
-// Disable caching for all API responses
+// Disable caching for ALL responses (API + static files)
+// This fixes the F5 cache issue where normal refresh shows old data
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api")) {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-  }
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   next();
 });
 
