@@ -259,10 +259,14 @@ export function BookingForm() {
 
   const createBookingMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("Creating booking with data:", data);
       const res = await apiRequest("POST", "/api/bookings", data);
-      return await res.json();
+      const result = await res.json();
+      console.log("Booking created successfully:", result);
+      return result;
     },
     onSuccess: () => {
+      console.log("Booking success callback");
       setBookingSubmitted(true);
       toast({
         title: "Booking Confirmed!",
@@ -270,6 +274,7 @@ export function BookingForm() {
       });
     },
     onError: (error: any) => {
+      console.error("Booking creation error:", error);
       toast({
         title: "Booking Failed",
         description: error.message || "Unable to complete booking. Please try again.",
@@ -362,7 +367,10 @@ export function BookingForm() {
   };
 
   const handleSubmit = () => {
+    console.log("handleSubmit called, paymentMethodId:", formData.paymentMethodId);
+    
     if (!formData.paymentMethodId) {
+      console.error("No payment method ID, aborting booking");
       return;
     }
 
@@ -383,6 +391,7 @@ export function BookingForm() {
       recurringEndDate: formData.isRecurring ? formData.recurringEndDate : null,
     };
 
+    console.log("Submitting booking:", bookingData);
     createBookingMutation.mutate(bookingData);
   };
 
