@@ -191,6 +191,22 @@ export async function runMigrations() {
     await pool.query(rescheduleRequestsTable);
     console.log('✓ Reschedule requests table created/verified');
     
+    // Create quote_photos table if it doesn't exist
+    console.log('Creating quote_photos table...');
+    const quotePhotosTable = `
+      CREATE TABLE IF NOT EXISTS quote_photos (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        quote_id VARCHAR NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+        photo_data TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        original_name TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT now()
+      );
+    `;
+    
+    await pool.query(quotePhotosTable);
+    console.log('✓ Quote photos table created/verified');
+    
     // Add message tracking columns to contact_messages
     console.log('Adding message tracking columns to contact_messages...');
     const contactMessageColumns = `
