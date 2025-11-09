@@ -45,12 +45,11 @@ const settingsFormSchema = z.object({
   churnRiskHighDays: z.number().min(1).optional(),
   churnRiskMediumDays: z.number().min(1).optional(),
   anomalyPromoCreationThreshold: z.number().min(1).optional(),
-  anomalyInvoiceChangeThreshold: z.number().min(1).optional(),
+  anomalyPromoCreationMinutes: z.number().min(1).optional(),
   anomalyCancellationThreshold: z.number().min(1).optional(),
+  anomalyCancellationHours: z.number().min(1).optional(),
   anomalyDeletionThreshold: z.number().min(1).optional(),
-  anomalyPromoCreationWindow: z.number().min(1).optional(),
-  anomalyInvoiceChangeWindow: z.number().min(1).optional(),
-  anomalyCancellationWindow: z.number().min(1).optional(),
+  anomalyDeletionMinutes: z.number().min(1).optional(),
   quickReplies: z.string().optional(),
 });
 
@@ -88,18 +87,17 @@ export default function AdminSettings() {
       promoBannerMessage: "",
       statsCounterEnabled: true,
       // Intelligence Features
-      winBackDiscountPercent: 10,
+      winBackDiscountPercent: 15,
       winBackEmailSubject: "",
       winBackEmailBody: "",
       churnRiskHighDays: 90,
       churnRiskMediumDays: 60,
       anomalyPromoCreationThreshold: 5,
-      anomalyInvoiceChangeThreshold: 1000,
-      anomalyCancellationThreshold: 3,
-      anomalyDeletionThreshold: 5,
-      anomalyPromoCreationWindow: 60,
-      anomalyInvoiceChangeWindow: 1440,
-      anomalyCancellationWindow: 60,
+      anomalyPromoCreationMinutes: 10,
+      anomalyCancellationThreshold: 10,
+      anomalyCancellationHours: 24,
+      anomalyDeletionThreshold: 20,
+      anomalyDeletionMinutes: 10,
       quickReplies: "",
     },
   });
@@ -131,18 +129,17 @@ export default function AdminSettings() {
         promoBannerMessage: settings.promoBannerMessage || "",
         statsCounterEnabled: settings.statsCounterEnabled ?? true,
         // Intelligence Features
-        winBackDiscountPercent: settings.winBackDiscountPercent ?? 10,
+        winBackDiscountPercent: settings.winBackDiscountPercent ?? 15,
         winBackEmailSubject: settings.winBackEmailSubject || "",
         winBackEmailBody: settings.winBackEmailBody || "",
         churnRiskHighDays: settings.churnRiskHighDays ?? 90,
         churnRiskMediumDays: settings.churnRiskMediumDays ?? 60,
         anomalyPromoCreationThreshold: settings.anomalyPromoCreationThreshold ?? 5,
-        anomalyInvoiceChangeThreshold: settings.anomalyInvoiceChangeThreshold ?? 1000,
-        anomalyCancellationThreshold: settings.anomalyCancellationThreshold ?? 3,
-        anomalyDeletionThreshold: settings.anomalyDeletionThreshold ?? 5,
-        anomalyPromoCreationWindow: settings.anomalyPromoCreationWindow ?? 60,
-        anomalyInvoiceChangeWindow: settings.anomalyInvoiceChangeWindow ?? 1440,
-        anomalyCancellationWindow: settings.anomalyCancellationWindow ?? 60,
+        anomalyPromoCreationMinutes: settings.anomalyPromoCreationMinutes ?? 10,
+        anomalyCancellationThreshold: settings.anomalyCancellationThreshold ?? 10,
+        anomalyCancellationHours: settings.anomalyCancellationHours ?? 24,
+        anomalyDeletionThreshold: settings.anomalyDeletionThreshold ?? 20,
+        anomalyDeletionMinutes: settings.anomalyDeletionMinutes ?? 10,
         quickReplies: settings.quickReplies?.join("\n") || "",
       });
     }
@@ -876,7 +873,7 @@ export default function AdminSettings() {
                           />
                           <FormField
                             control={form.control}
-                            name="anomalyPromoCreationWindow"
+                            name="anomalyPromoCreationMinutes"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Promo Creation Window (min)</FormLabel>
@@ -887,57 +884,11 @@ export default function AdminSettings() {
                                     min="1"
                                     onChange={(e) => field.onChange(Number(e.target.value))}
                                     data-testid="input-anomaly-promo-window"
-                                    placeholder="60"
+                                    placeholder="10"
                                   />
                                 </FormControl>
                                 <FormDescription>
-                                  Time window in minutes for promo creation monitoring (default: 60)
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="anomalyInvoiceChangeThreshold"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Invoice Change Amount ($)</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    type="number"
-                                    min="1"
-                                    onChange={(e) => field.onChange(Number(e.target.value))}
-                                    data-testid="input-anomaly-invoice-threshold"
-                                    placeholder="1000"
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  Invoice change amount in dollars before alert (default: $1000)
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="anomalyInvoiceChangeWindow"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Invoice Change Window (min)</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    type="number"
-                                    min="1"
-                                    onChange={(e) => field.onChange(Number(e.target.value))}
-                                    data-testid="input-anomaly-invoice-window"
-                                    placeholder="1440"
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  Time window in minutes for invoice change monitoring (default: 1440 = 24h)
+                                  Time window in minutes for promo creation monitoring (default: 10)
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
@@ -968,10 +919,10 @@ export default function AdminSettings() {
                           />
                           <FormField
                             control={form.control}
-                            name="anomalyCancellationWindow"
+                            name="anomalyCancellationHours"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Cancellation Window (min)</FormLabel>
+                                <FormLabel>Cancellation Window (hours)</FormLabel>
                                 <FormControl>
                                   <Input
                                     {...field}
@@ -979,11 +930,34 @@ export default function AdminSettings() {
                                     min="1"
                                     onChange={(e) => field.onChange(Number(e.target.value))}
                                     data-testid="input-anomaly-cancellation-window"
-                                    placeholder="60"
+                                    placeholder="24"
                                   />
                                 </FormControl>
                                 <FormDescription>
-                                  Time window in minutes for cancellation monitoring (default: 60)
+                                  Time window in hours for cancellation monitoring (default: 24)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="anomalyDeletionMinutes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Deletion Window (min)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-anomaly-deletion-window"
+                                    placeholder="10"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Time window in minutes for deletion monitoring (default: 10)
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
