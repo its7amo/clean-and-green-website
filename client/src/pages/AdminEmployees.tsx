@@ -346,7 +346,7 @@ export default function AdminEmployees() {
                 Add Employee
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
               <DialogHeader>
                 <DialogTitle>{editingEmployee ? "Edit" : "Add"} Employee</DialogTitle>
                 <DialogDescription>
@@ -354,207 +354,235 @@ export default function AdminEmployees() {
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} data-testid="input-name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" {...field} data-testid="input-email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} data-testid="input-phone" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password {editingEmployee && "(leave blank to keep current)"}</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} value={field.value || ""} data-testid="input-password" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <FormControl>
-                          <select 
-                            {...field} 
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            data-testid="select-role"
-                          >
-                            <option value="cleaner">Cleaner</option>
-                            <option value="supervisor">Supervisor</option>
-                            <option value="manager">Manager</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="active"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel>Active Status</FormLabel>
-                          <div className="text-sm text-muted-foreground">
-                            Employee can be assigned to bookings
-                          </div>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            data-testid="switch-active"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="space-y-4 border rounded-lg p-4">
-                    <h3 className="font-medium flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Weekly Availability
-                    </h3>
-                    {DAYS_OF_WEEK.map((day) => (
-                      <div key={day} className="flex items-center gap-4 flex-wrap">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+                  <Tabs defaultValue="basic" className="flex-1 flex flex-col overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="basic" data-testid="tab-basic">Basic Info</TabsTrigger>
+                      <TabsTrigger value="schedule" data-testid="tab-schedule">Schedule</TabsTrigger>
+                      <TabsTrigger value="vacation" data-testid="tab-vacation">Vacation</TabsTrigger>
+                    </TabsList>
+                    
+                    <div className="flex-1 overflow-y-auto mt-4">
+                      <TabsContent value="basic" className="space-y-4 mt-0">
                         <FormField
                           control={form.control}
-                          name={`availability.${day}.available`}
+                          name="name"
                           render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2">
+                            <FormItem>
+                              <FormLabel>Full Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} data-testid="input-name" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input type="email" {...field} data-testid="input-email" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Phone</FormLabel>
+                              <FormControl>
+                                <Input {...field} data-testid="input-phone" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password {editingEmployee && "(leave blank to keep current)"}</FormLabel>
+                              <FormControl>
+                                <Input type="password" {...field} value={field.value || ""} data-testid="input-password" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="role"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Role</FormLabel>
+                              <FormControl>
+                                <select 
+                                  {...field} 
+                                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                  data-testid="select-role"
+                                >
+                                  <option value="cleaner">Cleaner</option>
+                                  <option value="supervisor">Supervisor</option>
+                                  <option value="manager">Manager</option>
+                                </select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="active"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                              <div className="space-y-0.5">
+                                <FormLabel>Active Status</FormLabel>
+                                <div className="text-sm text-muted-foreground">
+                                  Employee can be assigned to bookings
+                                </div>
+                              </div>
                               <FormControl>
                                 <Switch
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  data-testid={`switch-${day}-available`}
-                                />
-                              </FormControl>
-                              <FormLabel className="capitalize min-w-[100px] !mt-0">
-                                {day}
-                              </FormLabel>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`availability.${day}.start`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center gap-2">
-                              <FormControl>
-                                <Input
-                                  type="time"
-                                  {...field}
-                                  disabled={!form.watch(`availability.${day}.available`)}
-                                  className="w-32"
-                                  data-testid={`input-${day}-start`}
+                                  data-testid="switch-active"
                                 />
                               </FormControl>
                             </FormItem>
                           )}
                         />
-                        <span className="text-muted-foreground">to</span>
-                        <FormField
-                          control={form.control}
-                          name={`availability.${day}.end`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center gap-2">
-                              <FormControl>
-                                <Input
-                                  type="time"
-                                  {...field}
-                                  disabled={!form.watch(`availability.${day}.available`)}
-                                  className="w-32"
-                                  data-testid={`input-${day}-end`}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                      </TabsContent>
 
-                  <div className="space-y-4 border rounded-lg p-4">
-                    <h3 className="font-medium">Vacation Days</h3>
-                    <div className="flex gap-2">
-                      <Input
-                        type="date"
-                        value={newVacationDate}
-                        onChange={(e) => setNewVacationDate(e.target.value)}
-                        data-testid="input-vacation-date"
-                      />
-                      <Button type="button" onClick={addVacationDay} data-testid="button-add-vacation">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {vacationDays.length > 0 && (
-                      <div className="space-y-2">
-                        {vacationDays.map((date) => (
-                          <div key={date} className="flex items-center justify-between bg-muted p-2 rounded">
-                            <span data-testid={`text-vacation-${date}`}>{new Date(date).toLocaleDateString()}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeVacationDay(date)}
-                              data-testid={`button-remove-vacation-${date}`}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                      <TabsContent value="schedule" className="space-y-4 mt-0">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Calendar className="h-5 w-5 text-primary" />
+                          <h3 className="font-semibold text-lg">Weekly Availability</h3>
+                        </div>
+                        {DAYS_OF_WEEK.map((day) => (
+                          <div key={day} className="flex items-center gap-4 flex-wrap p-3 rounded-lg border">
+                            <FormField
+                              control={form.control}
+                              name={`availability.${day}.available`}
+                              render={({ field }) => (
+                                <FormItem className="flex items-center space-x-2">
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      data-testid={`switch-${day}-available`}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="capitalize min-w-[100px] !mt-0 font-medium">
+                                    {day}
+                                  </FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`availability.${day}.start`}
+                              render={({ field }) => (
+                                <FormItem className="flex items-center gap-2">
+                                  <FormControl>
+                                    <Input
+                                      type="time"
+                                      {...field}
+                                      disabled={!form.watch(`availability.${day}.available`)}
+                                      className="w-32"
+                                      data-testid={`input-${day}-start`}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <span className="text-muted-foreground">to</span>
+                            <FormField
+                              control={form.control}
+                              name={`availability.${day}.end`}
+                              render={({ field }) => (
+                                <FormItem className="flex items-center gap-2">
+                                  <FormControl>
+                                    <Input
+                                      type="time"
+                                      {...field}
+                                      disabled={!form.watch(`availability.${day}.available`)}
+                                      className="w-32"
+                                      data-testid={`input-${day}-end`}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
                           </div>
                         ))}
-                      </div>
-                    )}
-                  </div>
+                      </TabsContent>
 
-                  <div className="flex gap-2 justify-end">
+                      <TabsContent value="vacation" className="space-y-4 mt-0">
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="font-semibold text-lg mb-2">Vacation Days</h3>
+                            <p className="text-sm text-muted-foreground mb-4">Add dates when this employee will be unavailable</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              type="date"
+                              value={newVacationDate}
+                              onChange={(e) => setNewVacationDate(e.target.value)}
+                              placeholder="Select a date"
+                              data-testid="input-vacation-date"
+                            />
+                            <Button type="button" onClick={addVacationDay} data-testid="button-add-vacation">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add
+                            </Button>
+                          </div>
+                          {vacationDays.length > 0 ? (
+                            <div className="space-y-2 mt-4">
+                              <p className="text-sm font-medium text-muted-foreground">{vacationDays.length} vacation day(s) scheduled</p>
+                              <div className="space-y-2">
+                                {vacationDays.map((date) => (
+                                  <div key={date} className="flex items-center justify-between bg-muted p-3 rounded-lg">
+                                    <span className="font-medium" data-testid={`text-vacation-${date}`}>
+                                      {new Date(date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeVacationDay(date)}
+                                      data-testid={`button-remove-vacation-${date}`}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                              No vacation days scheduled
+                            </div>
+                          )}
+                        </div>
+                      </TabsContent>
+                    </div>
+                  </Tabs>
+
+                  <DialogFooter className="mt-4 pt-4 border-t">
                     <Button type="button" variant="outline" onClick={handleDialogClose} data-testid="button-cancel">
                       Cancel
                     </Button>
                     <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit">
                       {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : editingEmployee ? "Update" : "Create"}
                     </Button>
-                  </div>
+                  </DialogFooter>
                 </form>
               </Form>
             </DialogContent>
