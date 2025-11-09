@@ -298,6 +298,11 @@ export const businessSettings = pgTable("business_settings", {
     label: string;
     message: string;
   }>>(),
+  minLeadHours: integer("min_lead_hours").notNull().default(12),
+  maxBookingsPerSlot: integer("max_bookings_per_slot").notNull().default(3),
+  requireBookingApproval: boolean("require_booking_approval").notNull().default(true),
+  customerDedupEnabled: boolean("customer_dedup_enabled").notNull().default(true),
+  customerMergeAlertEnabled: boolean("customer_merge_alert_enabled").notNull().default(true),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 

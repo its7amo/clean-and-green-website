@@ -157,6 +157,19 @@ export async function runMigrations() {
     await pool.query(fraudProtectionColumns);
     console.log('✓ Referral fraud protection columns added/verified');
     
+    // Add scheduling control columns to business_settings
+    console.log('Adding scheduling control columns...');
+    const schedulingColumns = `
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS min_lead_hours INTEGER DEFAULT 12;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS max_bookings_per_slot INTEGER DEFAULT 3;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS require_booking_approval BOOLEAN DEFAULT true;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS customer_dedup_enabled BOOLEAN DEFAULT true;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS customer_merge_alert_enabled BOOLEAN DEFAULT true;
+    `;
+    
+    await pool.query(schedulingColumns);
+    console.log('✓ Scheduling control columns added/verified');
+    
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;
