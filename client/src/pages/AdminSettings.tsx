@@ -10,6 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { BusinessSettings } from "@shared/schema";
@@ -464,7 +465,7 @@ export default function AdminSettings() {
                                 Enable Promo Banner
                               </FormLabel>
                               <FormDescription>
-                                Show active promo codes on the homepage
+                                Show active promo codes across your website
                               </FormDescription>
                             </div>
                             <FormControl>
@@ -483,21 +484,127 @@ export default function AdminSettings() {
                         name="promoBannerMessage"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Custom Banner Message (Optional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                data-testid="input-banner-message"
-                                placeholder="Leave empty to use auto-generated message from promo code"
-                              />
-                            </FormControl>
+                            <FormLabel>Banner Template</FormLabel>
+                            <Select
+                              value={(() => {
+                                try {
+                                  const config = JSON.parse(field.value || '{}');
+                                  return config.template || 'simple';
+                                } catch {
+                                  return 'simple';
+                                }
+                              })()}
+                              onValueChange={(template) => {
+                                try {
+                                  const currentConfig = JSON.parse(field.value || '{}');
+                                  field.onChange(JSON.stringify({ ...currentConfig, template }));
+                                } catch {
+                                  field.onChange(JSON.stringify({ template }));
+                                }
+                              }}
+                            >
+                              <FormControl>
+                                <SelectTrigger data-testid="select-banner-template">
+                                  <SelectValue placeholder="Choose a template" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="simple">Simple - Clean minimal design</SelectItem>
+                                <SelectItem value="gradient">Gradient - Colorful with patterns</SelectItem>
+                                <SelectItem value="cta">CTA Button - Includes call-to-action</SelectItem>
+                                <SelectItem value="animated">Animated - Eye-catching effects</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <FormDescription>
-                              Override the default banner text. Leave blank to show promo code details automatically.
+                              Choose how your promo banner looks
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
+                      {(() => {
+                        try {
+                          const config = JSON.parse(form.watch("promoBannerMessage") || '{}');
+                          if (config.template === 'cta') {
+                            return (
+                              <div className="space-y-4 border-l-4 border-primary pl-4">
+                                <p className="text-sm text-muted-foreground">CTA Button Settings</p>
+                                <FormField
+                                  control={form.control}
+                                  name="promoBannerMessage"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Button Text</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          value={(() => {
+                                            try {
+                                              const cfg = JSON.parse(field.value || '{}');
+                                              return cfg.ctaText || '';
+                                            } catch {
+                                              return '';
+                                            }
+                                          })()}
+                                          onChange={(e) => {
+                                            try {
+                                              const cfg = JSON.parse(field.value || '{}');
+                                              field.onChange(JSON.stringify({ ...cfg, ctaText: e.target.value }));
+                                            } catch {
+                                              field.onChange(JSON.stringify({ template: 'cta', ctaText: e.target.value }));
+                                            }
+                                          }}
+                                          data-testid="input-cta-text"
+                                          placeholder="Book Now"
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="promoBannerMessage"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Button Link</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          value={(() => {
+                                            try {
+                                              const cfg = JSON.parse(field.value || '{}');
+                                              return cfg.ctaLink || '';
+                                            } catch {
+                                              return '';
+                                            }
+                                          })()}
+                                          onChange={(e) => {
+                                            try {
+                                              const cfg = JSON.parse(field.value || '{}');
+                                              field.onChange(JSON.stringify({ ...cfg, ctaLink: e.target.value }));
+                                            } catch {
+                                              field.onChange(JSON.stringify({ template: 'cta', ctaLink: e.target.value }));
+                                            }
+                                          }}
+                                          data-testid="input-cta-link"
+                                          placeholder="/book"
+                                        />
+                                      </FormControl>
+                                      <FormDescription>
+                                        Where the button should link (e.g., /book, /services)
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            );
+                          }
+                        } catch {
+                          return null;
+                        }
+                        return null;
+                      })()}
 
                       <FormField
                         control={form.control}
