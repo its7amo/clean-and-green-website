@@ -1,0 +1,215 @@
+Found 0 overdue invoices to check
+     ==> Your service is live 🎉
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://clean-and-green-website.onrender.com
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+4:32:39 AM [express] GET /api/setup/required 200 in 9ms :: {"required":false}
+4:32:39 AM [express] GET /api/public/stats 200 in 13ms :: {"homesClean":0,"averageRating":5,"ecoFrie…
+4:32:39 AM [express] GET /api/public/banner-settings 200 in 157ms :: {"enabled":true,"customMessage"…
+4:32:39 AM [express] GET /api/reviews/approved 200 in 269ms :: []
+4:32:39 AM [express] GET /api/public/active-promo 200 in 356ms :: {"id":"fc9eed8a-50de-4643-9e3d-c91…
+4:32:39 AM [express] GET /api/public/featured-photos 200 in 359ms :: []
+4:32:39 AM [express] GET /api/services 200 in 554ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c"…
+4:32:39 AM [express] GET /api/public/stats-settings 200 in 409ms :: {"enabled":false}
+4:32:40 AM [express] GET /api/settings 200 in 561ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7",…
+4:32:43 AM [express] GET /api/setup/required 200 in 6ms :: {"required":false}
+4:32:43 AM [express] GET /api/settings 200 in 7ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","b…
+4:32:43 AM [express] GET /api/public/banner-settings 200 in 6ms :: {"enabled":true,"customMessage":"…
+4:32:43 AM [express] GET /api/public/active-promo 200 in 5ms :: {"id":"fc9eed8a-50de-4643-9e3d-c9149…
+4:32:44 AM [express] GET /api/services 200 in 12ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c",…
+4:32:44 AM [express] GET /api/public/featured-photos 200 in 13ms :: []
+4:32:44 AM [express] GET /api/public/stats 200 in 98ms :: {"homesClean":0,"averageRating":5,"ecoFrie…
+4:32:44 AM [express] GET /api/reviews/approved 200 in 99ms :: []
+4:32:44 AM [express] GET /api/public/stats-settings 200 in 100ms :: {"enabled":false}
+4:32:44 AM [express] GET /api/setup/required 200 in 7ms :: {"required":false}
+4:32:44 AM [express] GET /api/settings 200 in 13ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","…
+4:32:44 AM [express] GET /api/services 200 in 17ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c",…
+4:32:44 AM [express] GET /api/public/referral-settings 200 in 18ms :: {"enabled":false}
+4:32:44 AM [express] GET /api/public/banner-settings 200 in 16ms :: {"enabled":true,"customMessage":…
+4:32:44 AM [express] GET /api/public/active-promo 200 in 17ms :: {"id":"fc9eed8a-50de-4643-9e3d-c914…
+4:32:44 AM [express] GET /api/service-areas 200 in 13ms :: []
+4:32:44 AM [express] GET /api/public/recent-bookings 200 in 9ms :: []
+4:32:45 AM [express] GET /api/public/active-promo 200 in 9ms :: {"id":"fc9eed8a-50de-4643-9e3d-c9149…
+4:32:45 AM [express] GET /api/setup/required 200 in 9ms :: {"required":false}
+4:32:45 AM [express] GET /api/public/featured-photos 200 in 35ms :: []
+4:32:45 AM [express] GET /api/services 200 in 34ms :: [{"id":"db00e87c-37fc-4bec-a930-c44b37ed5e5c",…
+4:32:45 AM [express] GET /api/reviews/approved 200 in 132ms :: []
+4:32:45 AM [express] GET /api/public/banner-settings 200 in 134ms :: {"enabled":true,"customMessage"…
+4:32:45 AM [express] GET /api/public/stats 200 in 107ms :: {"homesClean":0,"averageRating":5,"ecoFri…
+4:32:45 AM [express] GET /api/public/stats-settings 200 in 105ms :: {"enabled":false}
+4:32:45 AM [express] GET /api/settings 200 in 9ms :: {"id":"e394c889-238b-4f07-b472-b15b7bda6af7","b…
+4:32:49 AM [express] GET /api/setup/required 200 in 7ms :: {"required":false}
+4:32:49 AM [express] GET /api/auth/user 200 in 5ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+Error fetching quick actions: error: relation "anomaly_alerts" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getQuickActionsCounts (file:///opt/render/project/src/dist/index.js:1551:24)
+    at async file:///opt/render/project/src/dist/index.js:7664:22 {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '595',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+4:32:49 AM [express] GET /api/quick-actions 500 in 12ms :: {"error":"Failed to fetch quick actions"}
+4:32:49 AM [express] GET /api/quotes 200 in 13ms :: []
+4:32:49 AM [express] GET /api/auth/user 200 in 11ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288",…
+Error fetching intelligence overview: error: relation "anomaly_alerts" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getIntelligenceOverview (file:///opt/render/project/src/dist/index.js:1577:24)
+    at async file:///opt/render/project/src/dist/index.js:7674:24 {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '440',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+4:32:49 AM [express] GET /api/bookings 200 in 18ms :: []
+4:32:49 AM [express] GET /api/intelligence-overview 500 in 73ms :: {"error":"Failed to fetch intelli…
+4:32:49 AM [express] GET /api/employees 200 in 85ms :: []
+4:32:56 AM [express] GET /api/auth/user 200 in 87ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288",…
+4:32:56 AM [express] GET /api/employees 200 in 82ms :: []
+4:32:56 AM [express] GET /api/bookings 200 in 205ms :: []
+4:32:57 AM [express] GET /api/bookings 200 in 7ms :: []
+4:32:57 AM [express] GET /api/auth/user 200 in 8ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:32:58 AM [express] GET /api/employees 200 in 5ms :: []
+4:32:58 AM [express] GET /api/bookings 200 in 5ms :: []
+4:32:58 AM [express] GET /api/auth/user 200 in 5ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288","…
+4:32:59 AM [express] GET /api/customers 200 in 9ms :: []
+4:33:14 AM [express] POST /api/bookings/manual 201 in 164ms :: {"id":"e33b8253-051a-4c0a-8057-8f5e2a…
+4:33:14 AM [express] GET /api/bookings 200 in 6ms :: [{"id":"e33b8253-051a-4c0a-8057-8f5e2a4fe06f","…
+Error fetching quick actions: error: relation "anomaly_alerts" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getQuickActionsCounts (file:///opt/render/project/src/dist/index.js:1551:24)
+    at async file:///opt/render/project/src/dist/index.js:7664:22 {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '595',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+4:33:17 AM [express] GET /api/quick-actions 500 in 194ms :: {"error":"Failed to fetch quick actions"}
+4:33:17 AM [express] GET /api/employees 200 in 286ms :: []
+4:33:17 AM [express] GET /api/quotes 200 in 382ms :: []
+Error fetching intelligence overview: error: relation "anomaly_alerts" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getIntelligenceOverview (file:///opt/render/project/src/dist/index.js:1577:24)
+    at async file:///opt/render/project/src/dist/index.js:7674:24 {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '440',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+4:33:18 AM [express] GET /api/intelligence-overview 500 in 468ms :: {"error":"Failed to fetch intell…
+4:33:18 AM [express] GET /api/bookings 200 in 582ms :: [{"id":"e33b8253-051a-4c0a-8057-8f5e2a4fe06f"…
+4:33:18 AM [express] GET /api/auth/user 200 in 583ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288"…
+4:33:19 AM [express] GET /api/setup/required 200 in 6ms :: {"required":false}
+4:33:20 AM [express] GET /api/setup/required 200 in 6ms :: {"required":false}
+4:33:20 AM [express] GET /api/auth/user 200 in 203ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288"…
+4:33:21 AM [express] GET /api/bookings 200 in 7ms :: [{"id":"e33b8253-051a-4c0a-8057-8f5e2a4fe06f","…
+4:33:21 AM [express] GET /api/quotes 200 in 6ms :: []
+4:33:21 AM [express] GET /api/employees 200 in 6ms :: []
+Error fetching intelligence overview: error: relation "anomaly_alerts" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getIntelligenceOverview (file:///opt/render/project/src/dist/index.js:1577:24)
+    at async file:///opt/render/project/src/dist/index.js:7674:24 {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '440',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+4:33:21 AM [express] GET /api/intelligence-overview 500 in 8ms :: {"error":"Failed to fetch intellig…
+Error fetching quick actions: error: relation "anomaly_alerts" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DbStorage.getQuickActionsCounts (file:///opt/render/project/src/dist/index.js:1551:24)
+    at async file:///opt/render/project/src/dist/index.js:7664:22 {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '595',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+4:33:21 AM [express] GET /api/quick-actions 500 in 17ms :: {"error":"Failed to fetch quick actions"}
+4:33:21 AM [express] GET /api/auth/user 200 in 161ms :: {"id":"d8c3555d-ccb3-4a12-9e9c-720249604288"…
