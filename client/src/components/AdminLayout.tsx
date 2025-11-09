@@ -8,6 +8,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -15,6 +16,11 @@ import {
   SidebarTrigger,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   LayoutDashboard,
   Calendar,
@@ -41,34 +47,83 @@ import {
   MapPin,
   BarChart3,
   Gift,
+  ChevronDown,
+  Zap,
+  Briefcase,
+  UsersIcon,
+  MessagesSquare,
+  TrendingUp,
+  Cog,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-const menuItems = [
-  { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
-  { href: "/admin/alerts", icon: AlertCircle, label: "Anomaly Alerts" },
-  { href: "/admin/bookings", icon: Calendar, label: "Bookings" },
-  { href: "/admin/calendar", icon: CalendarDays, label: "Calendar" },
-  { href: "/admin/recurring-bookings", icon: Repeat, label: "Recurring Bookings" },
-  { href: "/admin/cancellations", icon: AlertTriangle, label: "Cancellations" },
-  { href: "/admin/quotes", icon: FileText, label: "Quotes" },
-  { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
-  { href: "/admin/promo-codes", icon: Tag, label: "Promo Codes" },
-  { href: "/admin/service-areas", icon: MapPin, label: "Service Areas" },
-  { href: "/admin/referrals", icon: Gift, label: "Referral Program" },
-  { href: "/admin/customers", icon: Users, label: "Customers" },
-  { href: "/admin/employees", icon: UserCircle, label: "Employees" },
-  { href: "/admin/reviews", icon: Star, label: "Reviews" },
-  { href: "/admin/newsletter", icon: Mail, label: "Newsletter" },
-  { href: "/admin/automated-emails", icon: Mail, label: "Automated Emails" },
-  { href: "/admin/team", icon: UsersRound, label: "Team" },
-  { href: "/admin/messages", icon: MessageSquare, label: "Messages" },
-  { href: "/admin/activity-logs", icon: ClipboardList, label: "Activity Logs" },
-  { href: "/admin/services", icon: Wrench, label: "Services" },
-  { href: "/admin/gallery", icon: Image, label: "Gallery" },
-  { href: "/admin/faq", icon: HelpCircle, label: "FAQ" },
-  { href: "/admin/settings", icon: Settings, label: "Settings" },
+const menuGroups = [
+  {
+    title: "Overview",
+    icon: Zap,
+    defaultOpen: true,
+    items: [
+      { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+      { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
+    ],
+  },
+  {
+    title: "Operations",
+    icon: Briefcase,
+    defaultOpen: true,
+    items: [
+      { href: "/admin/bookings", icon: Calendar, label: "Bookings" },
+      { href: "/admin/calendar", icon: CalendarDays, label: "Calendar" },
+      { href: "/admin/recurring-bookings", icon: Repeat, label: "Recurring" },
+      { href: "/admin/cancellations", icon: AlertTriangle, label: "Cancellations" },
+      { href: "/admin/quotes", icon: FileText, label: "Quotes" },
+      { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
+    ],
+  },
+  {
+    title: "People",
+    icon: UsersIcon,
+    defaultOpen: false,
+    items: [
+      { href: "/admin/customers", icon: Users, label: "Customers" },
+      { href: "/admin/employees", icon: UserCircle, label: "Employees" },
+      { href: "/admin/team", icon: UsersRound, label: "Team Management" },
+    ],
+  },
+  {
+    title: "Communication",
+    icon: MessagesSquare,
+    defaultOpen: false,
+    items: [
+      { href: "/admin/messages", icon: MessageSquare, label: "Messages" },
+      { href: "/admin/reviews", icon: Star, label: "Reviews" },
+      { href: "/admin/newsletter", icon: Mail, label: "Newsletter" },
+      { href: "/admin/automated-emails", icon: Mail, label: "Email Automation" },
+    ],
+  },
+  {
+    title: "Marketing",
+    icon: TrendingUp,
+    defaultOpen: false,
+    items: [
+      { href: "/admin/referrals", icon: Gift, label: "Referral Program" },
+      { href: "/admin/promo-codes", icon: Tag, label: "Promo Codes" },
+      { href: "/admin/alerts", icon: AlertCircle, label: "Anomaly Alerts" },
+      { href: "/admin/activity-logs", icon: ClipboardList, label: "Activity Logs" },
+    ],
+  },
+  {
+    title: "Configuration",
+    icon: Cog,
+    defaultOpen: false,
+    items: [
+      { href: "/admin/services", icon: Wrench, label: "Services" },
+      { href: "/admin/service-areas", icon: MapPin, label: "Service Areas" },
+      { href: "/admin/gallery", icon: Image, label: "Gallery" },
+      { href: "/admin/faq", icon: HelpCircle, label: "FAQ" },
+      { href: "/admin/settings", icon: Settings, label: "Settings" },
+    ],
+  },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -124,25 +179,42 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {menuItems.map((item) => {
-                    const isActive = location === item.href;
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton asChild isActive={isActive}>
-                          <Link href={item.href} data-testid={`link-admin-${item.label.toLowerCase()}`}>
-                            <item.icon className="h-5 w-5" />
-                            <span>{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <div className="flex-1 overflow-y-auto py-2">
+              {menuGroups.map((group) => (
+                <Collapsible key={group.title} defaultOpen={group.defaultOpen}>
+                  <SidebarGroup>
+                    <CollapsibleTrigger asChild>
+                      <SidebarGroupLabel className="flex items-center justify-between cursor-pointer hover-elevate px-4 py-2 rounded-md mx-2">
+                        <div className="flex items-center gap-2">
+                          <group.icon className="h-4 w-4" />
+                          <span className="font-semibold">{group.title}</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                      </SidebarGroupLabel>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {group.items.map((item) => {
+                            const isActive = location === item.href;
+                            return (
+                              <SidebarMenuItem key={item.href}>
+                                <SidebarMenuButton asChild isActive={isActive}>
+                                  <Link href={item.href} data-testid={`link-admin-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                                    <item.icon className="h-4 w-4" />
+                                    <span>{item.label}</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </CollapsibleContent>
+                  </SidebarGroup>
+                </Collapsible>
+              ))}
+            </div>
 
             <SidebarFooter>
               <SidebarMenu>
