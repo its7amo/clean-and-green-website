@@ -87,6 +87,20 @@ export default function AdminSettings() {
       promoBannerEnabled: true,
       promoBannerMessage: "",
       statsCounterEnabled: true,
+      // Intelligence Features
+      winBackDiscountPercent: 10,
+      winBackEmailSubject: "",
+      winBackEmailBody: "",
+      churnRiskHighDays: 90,
+      churnRiskMediumDays: 60,
+      anomalyPromoCreationThreshold: 5,
+      anomalyInvoiceChangeThreshold: 1000,
+      anomalyCancellationThreshold: 3,
+      anomalyDeletionThreshold: 5,
+      anomalyPromoCreationWindow: 60,
+      anomalyInvoiceChangeWindow: 1440,
+      anomalyCancellationWindow: 60,
+      quickReplies: "",
     },
   });
 
@@ -116,6 +130,20 @@ export default function AdminSettings() {
         promoBannerEnabled: settings.promoBannerEnabled ?? true,
         promoBannerMessage: settings.promoBannerMessage || "",
         statsCounterEnabled: settings.statsCounterEnabled ?? true,
+        // Intelligence Features
+        winBackDiscountPercent: settings.winBackDiscountPercent ?? 10,
+        winBackEmailSubject: settings.winBackEmailSubject || "",
+        winBackEmailBody: settings.winBackEmailBody || "",
+        churnRiskHighDays: settings.churnRiskHighDays ?? 90,
+        churnRiskMediumDays: settings.churnRiskMediumDays ?? 60,
+        anomalyPromoCreationThreshold: settings.anomalyPromoCreationThreshold ?? 5,
+        anomalyInvoiceChangeThreshold: settings.anomalyInvoiceChangeThreshold ?? 1000,
+        anomalyCancellationThreshold: settings.anomalyCancellationThreshold ?? 3,
+        anomalyDeletionThreshold: settings.anomalyDeletionThreshold ?? 5,
+        anomalyPromoCreationWindow: settings.anomalyPromoCreationWindow ?? 60,
+        anomalyInvoiceChangeWindow: settings.anomalyInvoiceChangeWindow ?? 1440,
+        anomalyCancellationWindow: settings.anomalyCancellationWindow ?? 60,
+        quickReplies: settings.quickReplies?.join("\n") || "",
       });
     }
   }, [settings, form]);
@@ -126,9 +154,14 @@ export default function AdminSettings() {
         ? data.serviceAreas.split("\n").map(s => s.trim()).filter(Boolean)
         : [];
       
+      const quickRepliesArray = data.quickReplies
+        ? data.quickReplies.split("\n").map(s => s.trim()).filter(Boolean)
+        : [];
+      
       const payload = {
         ...data,
         serviceAreas: serviceAreasArray,
+        quickReplies: quickRepliesArray,
         socialLinks: {
           facebook: data.facebook || undefined,
           instagram: data.instagram || undefined,
@@ -681,6 +714,332 @@ export default function AdminSettings() {
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-medium">Intelligence Features</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Configure automated win-back campaigns, churn risk detection, anomaly alerts, and quick reply templates
+                      </p>
+
+                      {/* Win-Back Campaign Settings */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-medium">Win-Back Campaign Settings</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="winBackDiscountPercent"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Discount Percentage</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-winback-discount"
+                                    placeholder="10"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Discount percentage for win-back offers (default: 10%)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="winBackEmailSubject"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email Subject Line</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    data-testid="input-winback-subject"
+                                    placeholder="We miss you! Here's a special offer"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Subject line for win-back campaign emails
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name="winBackEmailBody"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email Template</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  {...field}
+                                  data-testid="textarea-winback-body"
+                                  placeholder="Hi {{customerName}}, we miss you! Use code {{promoCode}} for {{discount}}% off your next booking."
+                                  rows={4}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Template for win-back emails. Use variables: {'{{customerName}}, {{promoCode}}, {{discount}}'}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Churn Risk Thresholds */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-medium">Churn Risk Thresholds</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="churnRiskHighDays"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>High Risk - Days of Inactivity</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-churn-high-days"
+                                    placeholder="90"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Days since last booking to mark customer as high churn risk (default: 90)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="churnRiskMediumDays"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Medium Risk - Days of Inactivity</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-churn-medium-days"
+                                    placeholder="60"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Days since last booking to mark customer as medium churn risk (default: 60)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Anomaly Detection Thresholds */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-medium">Anomaly Detection Thresholds</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="anomalyPromoCreationThreshold"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Promo Creation Limit</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-anomaly-promo-threshold"
+                                    placeholder="5"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Max promos created in time window before alert (default: 5)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="anomalyPromoCreationWindow"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Promo Creation Window (min)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-anomaly-promo-window"
+                                    placeholder="60"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Time window in minutes for promo creation monitoring (default: 60)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="anomalyInvoiceChangeThreshold"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Invoice Change Amount ($)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-anomaly-invoice-threshold"
+                                    placeholder="1000"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Invoice change amount in dollars before alert (default: $1000)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="anomalyInvoiceChangeWindow"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Invoice Change Window (min)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-anomaly-invoice-window"
+                                    placeholder="1440"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Time window in minutes for invoice change monitoring (default: 1440 = 24h)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="anomalyCancellationThreshold"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Cancellation Limit</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-anomaly-cancellation-threshold"
+                                    placeholder="3"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Max cancellations in time window before alert (default: 3)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="anomalyCancellationWindow"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Cancellation Window (min)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-anomaly-cancellation-window"
+                                    placeholder="60"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Time window in minutes for cancellation monitoring (default: 60)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="anomalyDeletionThreshold"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Deletion Limit</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    min="1"
+                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                    data-testid="input-anomaly-deletion-threshold"
+                                    placeholder="5"
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Max deletions before alert (default: 5)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Quick Reply Templates */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-medium">Quick Reply Templates</h4>
+                        <FormField
+                          control={form.control}
+                          name="quickReplies"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Template Messages</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  {...field}
+                                  data-testid="textarea-quick-replies"
+                                  placeholder="Thank you for contacting us! We'll get back to you soon.&#10;We appreciate your inquiry. Our team will review and respond within 24 hours.&#10;Your message has been received. We'll follow up shortly."
+                                  rows={6}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Predefined reply templates for messages. Enter one per line.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-4">
