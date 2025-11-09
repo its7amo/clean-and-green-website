@@ -15,29 +15,42 @@ export async function runMigrations() {
   console.log('Checking database schema...');
   
   try {
-    // Read the migration SQL file
-    const migrationPath = path.join(process.cwd(), 'migrations', '0000_good_juggernaut.sql');
-    let migrationSQL = await fs.readFile(migrationPath, 'utf-8');
+    // Run all migration files in order
+    const migrationFiles = ['0000_good_juggernaut.sql', '0001_wild_nuke.sql'];
     
-    // Replace all "CREATE TABLE" with "CREATE TABLE IF NOT EXISTS" to make it idempotent
-    migrationSQL = migrationSQL.replace(/CREATE TABLE "/g, 'CREATE TABLE IF NOT EXISTS "');
-    migrationSQL = migrationSQL.replace(/CREATE INDEX "/g, 'CREATE INDEX IF NOT EXISTS "');
-    
-    // Split by statement breakpoint and execute each statement
-    const statements = migrationSQL.split('--> statement-breakpoint').filter(s => s.trim());
-    
-    for (const statement of statements) {
-      const trimmed = statement.trim();
-      if (trimmed) {
-        try {
-          await pool.query(trimmed);
-        } catch (error: any) {
-          // Ignore "already exists" errors (tables, indexes, constraints)
-          if (error.code === '42P07' || error.code === '42710') {
-            // 42P07 = duplicate_table, 42710 = duplicate_object
-            console.log(`Skipping: ${error.message}`);
-            continue;
+    for (const filename of migrationFiles) {
+      const migrationPath = path.join(process.cwd(), 'migrations', filename);
+      
+      try {
+        let migrationSQL = await fs.readFile(migrationPath, 'utf-8');
+        
+        // Replace all "CREATE TABLE" with "CREATE TABLE IF NOT EXISTS" to make it idempotent
+        migrationSQL = migrationSQL.replace(/CREATE TABLE "/g, 'CREATE TABLE IF NOT EXISTS "');
+        migrationSQL = migrationSQL.replace(/CREATE INDEX "/g, 'CREATE INDEX IF NOT EXISTS "');
+        
+        // Split by statement breakpoint and execute each statement
+        const statements = migrationSQL.split('--> statement-breakpoint').filter(s => s.trim());
+        
+        for (const statement of statements) {
+          const trimmed = statement.trim();
+          if (trimmed) {
+            try {
+              await pool.query(trimmed);
+            } catch (error: any) {
+              // Ignore "already exists" errors (tables, indexes, constraints)
+              if (error.code === '42P07' || error.code === '42710' || error.code === '42P16' || error.code === '42701') {
+                // 42P07 = duplicate_table, 42710 = duplicate_object, 42P16 = duplicate_constraint, 42701 = duplicate_column
+                console.log(`Skipping: ${error.message}`);
+                continue;
+              }
+              throw error;
+            }
           }
+        }
+      } catch (error: any) {
+        if (error.code === 'ENOENT') {
+          console.log(`Migration file ${filename} not found, skipping`);
+        } else {
           throw error;
         }
       }
