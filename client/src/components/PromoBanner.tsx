@@ -35,7 +35,8 @@ export function PromoBanner() {
     queryKey: ["/api/public/banner-settings"],
   });
 
-  if (!isVisible || !activePromo || settings?.enabled === false) {
+  // Don't show if disabled or not visible
+  if (!isVisible || settings?.enabled === false) {
     return null;
   }
 
@@ -52,11 +53,21 @@ export function PromoBanner() {
     // Use default simple template if parsing fails
   }
 
+  // If no custom message and no active promo, don't show
+  if (!config.customMessage && !activePromo) {
+    return null;
+  }
+
   // Use custom message if provided, otherwise use promo description
-  const message = config.customMessage || activePromo.description;
-  const discount = activePromo.discountType === "percentage" 
-    ? `${activePromo.discountValue}% OFF` 
-    : `$${(activePromo.discountValue / 100).toFixed(2)} OFF`;
+  const message = config.customMessage || (activePromo?.description || "");
+  
+  // Show promo details only if there's an active promo
+  const showPromoDetails = !!activePromo;
+  const discount = activePromo 
+    ? (activePromo.discountType === "percentage" 
+      ? `${activePromo.discountValue}% OFF` 
+      : `$${(activePromo.discountValue / 100).toFixed(2)} OFF`)
+    : "";
 
   const handleDismiss = () => {
     setIsVisible(false);
@@ -69,11 +80,15 @@ export function PromoBanner() {
         <div className="container mx-auto flex items-center justify-center gap-2 text-sm md:text-base">
           <Sparkles className="h-4 w-4 flex-shrink-0" />
           <span className="font-medium">{message}</span>
-          <span className="font-bold">{discount}</span>
-          <span className="hidden sm:inline">• Use code:</span>
-          <code className="bg-primary-foreground/20 px-2 py-0.5 rounded font-mono text-xs md:text-sm">
-            {activePromo.code}
-          </code>
+          {showPromoDetails && (
+            <>
+              <span className="font-bold">{discount}</span>
+              <span className="hidden sm:inline">• Use code:</span>
+              <code className="bg-primary-foreground/20 px-2 py-0.5 rounded font-mono text-xs md:text-sm">
+                {activePromo!.code}
+              </code>
+            </>
+          )}
         </div>
         <button
           onClick={handleDismiss}
@@ -98,11 +113,15 @@ export function PromoBanner() {
         <div className="container mx-auto flex items-center justify-center gap-3 text-sm md:text-base relative z-10">
           <Gift className="h-5 w-5 flex-shrink-0 animate-pulse" />
           <span className="font-semibold">{message}</span>
-          <span className="font-bold text-lg bg-white/20 px-3 py-1 rounded-full">{discount}</span>
-          <span className="hidden sm:inline">with code</span>
-          <code className="bg-white/30 px-3 py-1 rounded font-mono text-sm md:text-base font-bold backdrop-blur-sm">
-            {activePromo.code}
-          </code>
+          {showPromoDetails && (
+            <>
+              <span className="font-bold text-lg bg-white/20 px-3 py-1 rounded-full">{discount}</span>
+              <span className="hidden sm:inline">with code</span>
+              <code className="bg-white/30 px-3 py-1 rounded font-mono text-sm md:text-base font-bold backdrop-blur-sm">
+                {activePromo!.code}
+              </code>
+            </>
+          )}
         </div>
         <button
           onClick={handleDismiss}
@@ -125,12 +144,14 @@ export function PromoBanner() {
             <TrendingUp className="h-5 w-5 flex-shrink-0" />
             <span className="font-semibold text-sm md:text-base">{message}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="font-bold text-lg">{discount}</span>
-            <code className="bg-primary-foreground/20 px-2 py-1 rounded font-mono text-xs md:text-sm">
-              {activePromo.code}
-            </code>
-          </div>
+          {showPromoDetails && (
+            <div className="flex items-center gap-3">
+              <span className="font-bold text-lg">{discount}</span>
+              <code className="bg-primary-foreground/20 px-2 py-1 rounded font-mono text-xs md:text-sm">
+                {activePromo!.code}
+              </code>
+            </div>
+          )}
           {config.ctaLink && (
             <Link href={config.ctaLink}>
               <Button 
@@ -168,18 +189,26 @@ export function PromoBanner() {
         </div>
         
         <div className="container mx-auto flex items-center justify-center gap-3 text-sm md:text-base relative z-10">
-          <div className="flex items-center gap-2 animate-bounce">
-            <Sparkles className="h-5 w-5" />
-            <span className="font-bold">{discount}</span>
-          </div>
+          {showPromoDetails && (
+            <>
+              <div className="flex items-center gap-2 animate-bounce">
+                <Sparkles className="h-5 w-5" />
+                <span className="font-bold">{discount}</span>
+              </div>
+            </>
+          )}
           <span className="font-medium">{message}</span>
-          <span className="hidden sm:inline">•</span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs md:text-sm">Code:</span>
-            <code className="bg-white text-green-600 px-3 py-1 rounded-md font-mono text-sm md:text-base font-bold shadow-lg">
-              {activePromo.code}
-            </code>
-          </div>
+          {showPromoDetails && (
+            <>
+              <span className="hidden sm:inline">•</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs md:text-sm">Code:</span>
+                <code className="bg-white text-green-600 px-3 py-1 rounded-md font-mono text-sm md:text-base font-bold shadow-lg">
+                  {activePromo!.code}
+                </code>
+              </div>
+            </>
+          )}
         </div>
         <button
           onClick={handleDismiss}
