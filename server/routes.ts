@@ -1267,8 +1267,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Send email notifications (async, don't wait)
         (async () => {
           try {
-            // TODO: Send reschedule request notification emails
-            console.log('Reschedule request created:', rescheduleRequest.id);
+            const { sendRescheduleRequestSubmittedEmail } = await import("./email");
+            await sendRescheduleRequestSubmittedEmail({
+              customerEmail: existing.email,
+              customerName: existing.name,
+              serviceType: existing.service,
+              originalDate: existing.date,
+              originalTimeSlot: existing.timeSlot,
+              requestedDate: validatedData.date!,
+              requestedTimeSlot: validatedData.timeSlot!,
+              address: existing.address,
+            });
           } catch (emailError) {
             console.error("Failed to send reschedule notification:", emailError);
           }
@@ -4011,8 +4020,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send email notifications (async, don't block response)
       (async () => {
         try {
-          // TODO: Send reschedule approved email to customer
-          console.log('Reschedule request approved:', id);
+          const { sendRescheduleApprovedEmail } = await import("./email");
+          await sendRescheduleApprovedEmail({
+            customerEmail: booking.email,
+            customerName: booking.name,
+            serviceType: booking.service,
+            originalDate: request.originalDate,
+            originalTimeSlot: request.originalTimeSlot,
+            requestedDate: request.requestedDate,
+            requestedTimeSlot: request.requestedTimeSlot,
+            address: booking.address,
+          });
         } catch (emailError) {
           console.error("Failed to send reschedule approved notification:", emailError);
         }
@@ -4076,8 +4094,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send email notifications (async, don't block response)
       (async () => {
         try {
-          // TODO: Send reschedule denied email to customer
-          console.log('Reschedule request denied:', id);
+          const { sendRescheduleDeniedEmail } = await import("./email");
+          await sendRescheduleDeniedEmail({
+            customerEmail: booking.email,
+            customerName: booking.name,
+            serviceType: booking.service,
+            originalDate: request.originalDate,
+            originalTimeSlot: request.originalTimeSlot,
+            requestedDate: request.requestedDate,
+            requestedTimeSlot: request.requestedTimeSlot,
+            address: booking.address,
+            denialReason: reason,
+          });
         } catch (emailError) {
           console.error("Failed to send reschedule denied notification:", emailError);
         }

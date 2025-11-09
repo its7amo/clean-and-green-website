@@ -1006,3 +1006,175 @@ export async function sendReferralCreditEarnedEmail(data: ReferralCreditEarnedEm
     console.error('Failed to send referral credit earned email:', error);
   }
 }
+
+// Reschedule request email notifications
+export interface RescheduleRequestEmailData {
+  customerEmail: string;
+  customerName: string;
+  serviceType: string;
+  originalDate: string;
+  originalTimeSlot: string;
+  requestedDate: string;
+  requestedTimeSlot: string;
+  address: string;
+}
+
+export async function sendRescheduleRequestSubmittedEmail(
+  data: RescheduleRequestEmailData
+): Promise<void> {
+  if (!resend) {
+    console.log('Email not configured - skipping reschedule request submitted email');
+    return;
+  }
+
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: data.customerEmail,
+      subject: 'Reschedule Request Received - Clean & Green',
+      html: `
+        <h2 style="color: #22c55e;">Reschedule Request Received</h2>
+        <p>Hi ${escapeHtml(data.customerName)},</p>
+        <p>We've received your request to reschedule your cleaning appointment. Our team will review your request and get back to you shortly.</p>
+        
+        <h3>Request Details:</h3>
+        <div style="background: #f9fafb; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0;">
+          <p><strong>Service:</strong> ${escapeHtml(data.serviceType)}</p>
+          <p><strong>Address:</strong> ${escapeHtml(data.address)}</p>
+          
+          <p style="margin-top: 20px;"><strong>Current Appointment:</strong></p>
+          <p style="color: #666;">📅 ${escapeHtml(data.originalDate)}</p>
+          <p style="color: #666;">⏰ ${escapeHtml(data.originalTimeSlot)}</p>
+          
+          <p style="margin-top: 20px;"><strong>Requested New Time:</strong></p>
+          <p style="color: #22c55e; font-weight: bold;">📅 ${escapeHtml(data.requestedDate)}</p>
+          <p style="color: #22c55e; font-weight: bold;">⏰ ${escapeHtml(data.requestedTimeSlot)}</p>
+        </div>
+        
+        <p>You'll receive an email notification once we've reviewed your request. We typically respond within 24 hours.</p>
+        
+        <p>If you have any questions in the meantime, feel free to contact us.</p>
+        
+        <p>Thank you for choosing Clean & Green!</p>
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Reschedule request submitted email sent to ${data.customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send reschedule request submitted email:', error);
+  }
+}
+
+export async function sendRescheduleApprovedEmail(
+  data: RescheduleRequestEmailData
+): Promise<void> {
+  if (!resend) {
+    console.log('Email not configured - skipping reschedule approved email');
+    return;
+  }
+
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: data.customerEmail,
+      subject: 'Reschedule Request Approved! - Clean & Green',
+      html: `
+        <h2 style="color: #22c55e;">Your Reschedule Request Has Been Approved! ✓</h2>
+        <p>Hi ${escapeHtml(data.customerName)},</p>
+        <p>Great news! We've approved your reschedule request. Your appointment has been successfully moved to the new date and time.</p>
+        
+        <h3>Updated Appointment Details:</h3>
+        <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <p><strong>Service:</strong> ${escapeHtml(data.serviceType)}</p>
+          <p><strong>Address:</strong> ${escapeHtml(data.address)}</p>
+          <p style="margin-top: 15px;"><strong>New Appointment Time:</strong></p>
+          <p style="font-size: 18px; color: #22c55e; font-weight: bold; margin: 5px 0;">📅 ${escapeHtml(data.requestedDate)}</p>
+          <p style="font-size: 18px; color: #22c55e; font-weight: bold; margin: 5px 0;">⏰ ${escapeHtml(data.requestedTimeSlot)}</p>
+        </div>
+        
+        <p>We look forward to serving you on your new appointment date!</p>
+        
+        <p>If you need to make any further changes, please contact us as soon as possible.</p>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${getBaseUrl()}/portal" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+            View Customer Portal
+          </a>
+        </p>
+        
+        <p>Thank you for choosing Clean & Green!</p>
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Reschedule approved email sent to ${data.customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send reschedule approved email:', error);
+  }
+}
+
+export interface RescheduleDeniedEmailData extends RescheduleRequestEmailData {
+  denialReason: string;
+}
+
+export async function sendRescheduleDeniedEmail(
+  data: RescheduleDeniedEmailData
+): Promise<void> {
+  if (!resend) {
+    console.log('Email not configured - skipping reschedule denied email');
+    return;
+  }
+
+  try {
+    await resend.emails.send({
+      from: 'Clean & Green <noreply@voryn.store>',
+      to: data.customerEmail,
+      subject: 'Reschedule Request Update - Clean & Green',
+      html: `
+        <h2>Reschedule Request Update</h2>
+        <p>Hi ${escapeHtml(data.customerName)},</p>
+        <p>Thank you for your reschedule request. Unfortunately, we're unable to accommodate the requested time change at this time.</p>
+        
+        <h3>Request Details:</h3>
+        <div style="background: #f9fafb; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+          <p><strong>Service:</strong> ${escapeHtml(data.serviceType)}</p>
+          <p><strong>Address:</strong> ${escapeHtml(data.address)}</p>
+          
+          <p style="margin-top: 15px;"><strong>Your Current Appointment:</strong></p>
+          <p style="color: #22c55e; font-weight: bold;">📅 ${escapeHtml(data.originalDate)}</p>
+          <p style="color: #22c55e; font-weight: bold;">⏰ ${escapeHtml(data.originalTimeSlot)}</p>
+          
+          <p style="margin-top: 15px;"><strong>Requested Time:</strong></p>
+          <p style="color: #666;">📅 ${escapeHtml(data.requestedDate)}</p>
+          <p style="color: #666;">⏰ ${escapeHtml(data.requestedTimeSlot)}</p>
+        </div>
+        
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0;"><strong>Reason:</strong></p>
+          <p style="margin: 10px 0 0 0;">${escapeHtml(data.denialReason)}</p>
+        </div>
+        
+        <p><strong>Your original appointment is still confirmed for ${escapeHtml(data.originalDate)} at ${escapeHtml(data.originalTimeSlot)}.</strong></p>
+        
+        <p>We understand this may not be ideal. Here are your options:</p>
+        <ul>
+          <li>Keep your existing appointment time</li>
+          <li>Try requesting a different time slot</li>
+          <li>Contact us directly to discuss alternative options</li>
+        </ul>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${getBaseUrl()}/contact" style="background-color: #22c55e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+            Contact Us
+          </a>
+        </p>
+        
+        <p>We appreciate your understanding and look forward to serving you!</p>
+        
+        <p>Best regards,<br>Clean & Green Team</p>
+      `,
+    });
+    console.log(`Reschedule denied email sent to ${data.customerEmail}`);
+  } catch (error) {
+    console.error('Failed to send reschedule denied email:', error);
+  }
+}
