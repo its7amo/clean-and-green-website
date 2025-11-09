@@ -7,8 +7,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check, AlertTriangle, MapPin, Loader2 } from "lucide-react";
-import { format, addHours } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check, AlertTriangle, MapPin, Loader2, Clock, Home, Building2, Zap, Shield, Star } from "lucide-react";
+import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +21,13 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const timeSlots = ["8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
-const propertySizes = ["Small (< 1000 sq ft)", "Medium (1000-2000 sq ft)", "Large (2000-3000 sq ft)", "Extra Large (> 3000 sq ft)"];
+
+const propertySizes = [
+  { value: "Small (< 1000 sq ft)", label: "Small", icon: Home, description: "< 1,000 sq ft" },
+  { value: "Medium (1000-2000 sq ft)", label: "Medium", icon: Building2, description: "1,000-2,000 sq ft" },
+  { value: "Large (2000-3000 sq ft)", label: "Large", icon: Building2, description: "2,000-3,000 sq ft" },
+  { value: "Extra Large (> 3000 sq ft)", label: "Extra Large", icon: Building2, description: "> 3,000 sq ft" }
+];
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY 
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
@@ -74,6 +81,7 @@ function PaymentMethodForm({ onSuccess }: { onSuccess: (pmId: string) => void })
       <Button 
         type="submit" 
         disabled={!stripe || processing}
+        size="lg"
         className="w-full"
         data-testid="button-confirm-payment"
       >
@@ -228,30 +236,24 @@ export function BookingForm() {
       const res = await apiRequest("POST", "/api/promo-codes/validate", { code });
       return await res.json();
     },
-    onSuccess: (data: any) => {
-      if (data.valid) {
+    onSuccess: (data: { valid: boolean; promoCode?: any; discountAmount?: number }) => {
+      if (data.valid && data.promoCode) {
         updateFormData("promoCodeId", data.promoCode.id);
         updateFormData("promoCodeDiscount", data.discountAmount || 0);
         toast({
-          title: "Promo code applied!",
-          description: `You'll save ${data.promoCode.discountType === "percentage" ? `${data.promoCode.discountValue}%` : `$${(data.promoCode.discountValue / 100).toFixed(2)}`}`,
+          title: "Promo Code Applied",
+          description: `You'll receive $${((data.discountAmount || 0) / 100).toFixed(2)} off!`,
         });
       } else {
-        updateFormData("promoCodeId", null);
-        updateFormData("promoCodeDiscount", 0);
-        toast({
-          title: "Invalid promo code",
-          description: data.message || "This promo code is not valid",
-          variant: "destructive",
-        });
+        throw new Error("Invalid promo code");
       }
     },
     onError: () => {
       updateFormData("promoCodeId", null);
       updateFormData("promoCodeDiscount", 0);
       toast({
-        title: "Error",
-        description: "Failed to validate promo code",
+        title: "Invalid Promo Code",
+        description: "The code you entered is not valid or has expired.",
         variant: "destructive",
       });
     },
@@ -259,395 +261,481 @@ export function BookingForm() {
 
   const validateReferralCodeMutation = useMutation({
     mutationFn: async (code: string) => {
-      const res = await apiRequest("POST", "/api/referrals/validate", { 
-        code,
-        address: formData.address,
-        email: formData.email,
-        phone: formData.phone
-      });
+      const res = await fetch(`/api/public/referral-codes/validate/${code}`);
+      if (!res.ok) throw new Error("Invalid referral code");
       return await res.json();
     },
-    onSuccess: (data: any) => {
-      if (data.valid) {
-        updateFormData("referralCodeValid", true);
-        updateFormData("referralReferrerName", data.referrerName);
-        updateFormData("referralDiscountAmount", data.discountAmount);
-        toast({
-          title: "Referral code applied!",
-          description: `You'll save $${(data.discountAmount / 100).toFixed(2)} thanks to ${data.referrerName}!`,
-        });
-      } else {
-        updateFormData("referralCodeValid", false);
-        updateFormData("referralReferrerName", "");
-        updateFormData("referralDiscountAmount", 0);
-        toast({
-          title: "Invalid referral code",
-          description: data.message || "This referral code is not valid",
-          variant: "destructive",
-        });
-      }
+    onSuccess: (data: { valid: boolean; referrerName: string; discountAmount: number }) => {
+      updateFormData("referralCodeValid", data.valid);
+      updateFormData("referralReferrerName", data.referrerName);
+      updateFormData("referralDiscountAmount", data.discountAmount);
+      toast({
+        title: "Referral Code Applied",
+        description: `You'll receive $${(data.discountAmount / 100).toFixed(2)} off from ${data.referrerName}!`,
+      });
     },
     onError: () => {
       updateFormData("referralCodeValid", false);
       updateFormData("referralReferrerName", "");
       updateFormData("referralDiscountAmount", 0);
       toast({
-        title: "Error",
-        description: "Failed to validate referral code",
+        title: "Invalid Referral Code",
+        description: "The referral code you entered is not valid.",
         variant: "destructive",
       });
     },
   });
 
   const handleSubmit = () => {
+    if (!formData.paymentMethodId) {
+      return;
+    }
+
     const bookingData = {
       service: formData.service,
       propertySize: formData.propertySize,
-      date: formData.date ? format(formData.date, "yyyy-MM-dd") : "",
+      date: formData.date,
       timeSlot: formData.timeSlot,
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       address: formData.address,
-      status: "pending",
       paymentMethodId: formData.paymentMethodId,
       promoCodeId: formData.promoCodeId,
-      discountAmount: formData.promoCodeDiscount,
-      referralCode: formData.referralCodeValid ? formData.referralCode : undefined,
+      referralCode: formData.referralCodeValid ? formData.referralCode : null,
       isRecurring: formData.isRecurring,
-      recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined,
-      recurringEndDate: formData.isRecurring && formData.recurringEndDate ? format(formData.recurringEndDate, "yyyy-MM-dd") : undefined,
+      recurringFrequency: formData.isRecurring ? formData.recurringFrequency : null,
+      recurringEndDate: formData.isRecurring ? formData.recurringEndDate : null,
     };
+
     createBookingMutation.mutate(bookingData);
   };
 
   if (bookingSubmitted) {
     return (
-      <div className="max-w-3xl mx-auto">
-        <Card className="p-8 text-center">
-          <div className="space-y-6">
-            <div className="flex justify-center">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Check className="h-8 w-8 text-primary" />
-              </div>
+      <div className="min-h-[600px] flex items-center justify-center">
+        <Card className="p-12 max-w-md mx-auto text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4">Booking Confirmed!</h2>
+          <p className="text-muted-foreground mb-6">
+            Thank you for choosing Clean and Green. We've received your booking request and will contact you shortly to confirm the details.
+          </p>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-center gap-2 text-primary">
+              <Check className="h-4 w-4" />
+              <span>Confirmation email sent</span>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
-              <p className="text-muted-foreground">
-                Thank you for your booking. We've received your request and will contact you shortly to confirm.
-              </p>
+            <div className="flex items-center justify-center gap-2 text-primary">
+              <Check className="h-4 w-4" />
+              <span>Payment method saved</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Redirecting you to the homepage...
-            </p>
           </div>
         </Card>
       </div>
     );
   }
 
+  const steps = [
+    { number: 1, title: "Service", icon: Sparkles },
+    { number: 2, title: "Schedule", icon: CalendarIcon },
+    { number: 3, title: "Details", icon: Shield },
+    { number: 4, title: "Payment", icon: Check },
+  ];
+
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          {[1, 2, 3, 4].map((s) => (
-            <div key={s} className="flex items-center flex-1">
-              <div
-                className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center text-sm sm:text-base font-semibold ${
-                  step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}
-                data-testid={`step-indicator-${s}`}
-              >
-                {step > s ? <Check className="h-4 w-4 sm:h-5 sm:w-5" /> : s}
-              </div>
-              {s < 4 && (
-                <div
-                  className={`flex-1 h-0.5 sm:h-1 mx-1 sm:mx-2 ${step > s ? "bg-primary" : "bg-muted"}`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between text-xs sm:text-sm px-1">
-          <span className={step >= 1 ? "text-foreground font-medium" : "text-muted-foreground"}>Service</span>
-          <span className={step >= 2 ? "text-foreground font-medium" : "text-muted-foreground"}>Details</span>
-          <span className={step >= 3 ? "text-foreground font-medium" : "text-muted-foreground"}>Contact</span>
-          <span className={step >= 4 ? "text-foreground font-medium" : "text-muted-foreground"}>Payment</span>
+    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
+      {/* Trust Banner */}
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold mb-3">Book Your Cleaning Service</h1>
+        <p className="text-muted-foreground mb-4">Fast, eco-friendly, and trusted by 500+ Oklahoma families</p>
+        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+            <span className="text-muted-foreground">5.0 Rating</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Insured & Bonded</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">Eco-Friendly Products</span>
+          </div>
         </div>
       </div>
 
-      <Card className="p-4 sm:p-6 md:p-8">
+      {/* Progress Indicator */}
+      <div className="mb-12">
+        <div className="flex items-center justify-between relative">
+          {/* Progress Line */}
+          <div className="absolute top-5 left-0 right-0 h-0.5 bg-border -z-10">
+            <div 
+              className="h-full bg-primary transition-all duration-500"
+              style={{ width: `${((step - 1) / 3) * 100}%` }}
+            />
+          </div>
+          
+          {steps.map((s, index) => {
+            const Icon = s.icon;
+            const isActive = step === s.number;
+            const isCompleted = step > s.number;
+            
+            return (
+              <div key={s.number} className="flex flex-col items-center gap-2 flex-1">
+                <div 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    isCompleted 
+                      ? "bg-primary text-primary-foreground" 
+                      : isActive 
+                      ? "bg-primary text-primary-foreground shadow-lg scale-110" 
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {isCompleted ? (
+                    <Check className="h-5 w-5" />
+                  ) : (
+                    <Icon className="h-5 w-5" />
+                  )}
+                </div>
+                <span className={`text-xs md:text-sm font-medium hidden md:block ${
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                }`}>
+                  {s.title}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <Card className="p-6 md:p-8 lg:p-12">
         {step === 1 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Select Service</h2>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Choose Your Service</h2>
+              <p className="text-muted-foreground">Select the cleaning service that fits your needs</p>
+            </div>
+            
             {servicesLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-6 rounded-lg border-2">
-                    <Skeleton className="h-10 w-10 mx-auto mb-3 rounded-full" />
-                    <Skeleton className="h-6 w-24 mx-auto mb-1" />
-                    <Skeleton className="h-4 w-16 mx-auto" />
-                  </div>
+                  <Card key={i} className="p-6">
+                    <Skeleton className="h-12 w-12 mx-auto mb-4 rounded-lg" />
+                    <Skeleton className="h-6 w-32 mx-auto mb-2" />
+                    <Skeleton className="h-4 w-24 mx-auto" />
+                  </Card>
                 ))}
               </div>
             ) : services.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-12 text-muted-foreground">
                 No services available. Please check back later.
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {services.map((service) => (
-                  <button
-                    key={service.id}
-                    onClick={() => updateFormData("service", service.name)}
-                    className={`p-6 rounded-lg border-2 transition-all hover-elevate ${
-                      formData.service === service.name
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
-                    }`}
-                    data-testid={`button-service-${service.name}`}
-                  >
-                    <Sparkles className="h-10 w-10 text-primary mx-auto mb-3" />
-                    <h3 className="font-semibold mb-1">{service.name}</h3>
-                    <p className="text-sm text-muted-foreground">From ${(service.basePrice / 100).toFixed(2)}</p>
-                  </button>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {services.map((service) => {
+                  const isSelected = formData.service === service.name;
+                  return (
+                    <button
+                      key={service.id}
+                      onClick={() => updateFormData("service", service.name)}
+                      className={`relative p-6 rounded-xl border-2 transition-all text-left hover-elevate ${
+                        isSelected
+                          ? "border-primary bg-primary/5 shadow-md"
+                          : "border-border"
+                      }`}
+                      data-testid={`button-service-${service.name}`}
+                    >
+                      {isSelected && (
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                          <Check className="h-4 w-4 text-primary-foreground" />
+                        </div>
+                      )}
+                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                        <Sparkles className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-1">{service.name}</h3>
+                      <p className="text-sm text-primary font-semibold">From ${(service.basePrice / 100).toFixed(2)}</p>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Schedule & Details</h2>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Schedule & Details</h2>
+              <p className="text-muted-foreground">Pick your preferred date, time, and property size</p>
+            </div>
             
-            <div className="space-y-2">
-              <Label>Property Size</Label>
-              <RadioGroup value={formData.propertySize} onValueChange={(value) => updateFormData("propertySize", value)}>
-                {propertySizes.map((size) => (
-                  <div key={size} className="flex items-center space-x-2">
-                    <RadioGroupItem value={size} id={size} data-testid={`radio-size-${size}`} />
-                    <Label htmlFor={size} className="cursor-pointer">{size}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Preferred Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                    data-testid="button-date-picker"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.date ? format(formData.date, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.date}
-                    onSelect={(date) => updateFormData("date", date)}
-                    disabled={(date) => date <= getYesterdayMidnight()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <p className="text-sm text-muted-foreground" data-testid="text-min-lead-info">
-                Must be at least {settings?.minLeadHours || 12} hours from now
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Preferred Time</Label>
-              {loadingSlots && formData.date && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Checking availability...</span>
-                </div>
-              )}
-              <div className="grid grid-cols-3 gap-2">
-                {timeSlots.map((time, index) => {
-                  const slotAvailability = availability?.slots?.find(
-                    (slot) => slot.timeSlot === time
-                  );
-                  const isFullyBooked = slotAvailability ? slotAvailability.available === 0 : false;
-                  const showAvailability = formData.date && slotAvailability;
-
-                  return (
-                    <div key={time} className="space-y-1">
-                      <Button
-                        variant={formData.timeSlot === time ? "default" : "outline"}
-                        onClick={() => !isFullyBooked && updateFormData("timeSlot", time)}
-                        disabled={isFullyBooked}
-                        className="w-full"
-                        data-testid={`button-time-${time}`}
+            <div className="space-y-6">
+              <div>
+                <Label className="text-base font-semibold mb-4 block">Property Size</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {propertySizes.map((size) => {
+                    const Icon = size.icon;
+                    const isSelected = formData.propertySize === size.value;
+                    return (
+                      <button
+                        key={size.value}
+                        onClick={() => updateFormData("propertySize", size.value)}
+                        className={`p-4 rounded-xl border-2 transition-all hover-elevate ${
+                          isSelected
+                            ? "border-primary bg-primary/5"
+                            : "border-border"
+                        }`}
+                        data-testid={`button-size-${size.label}`}
                       >
-                        {time}
+                        <Icon className={`h-6 w-6 mx-auto mb-2 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                        <div className="text-sm font-semibold mb-0.5">{size.label}</div>
+                        <div className="text-xs text-muted-foreground">{size.description}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">Preferred Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full justify-start text-left font-normal"
+                        data-testid="button-date-picker"
+                      >
+                        <CalendarIcon className="mr-3 h-5 w-5" />
+                        {formData.date ? format(formData.date, "PPP") : "Select a date"}
                       </Button>
-                      {showAvailability && (
-                        <p
-                          className={`text-xs text-center ${
-                            isFullyBooked
-                              ? "text-destructive font-medium"
-                              : slotAvailability.available <= 1
-                              ? "text-orange-600 font-medium"
-                              : "text-muted-foreground"
-                          }`}
-                          data-testid={`text-availability-${index}`}
-                        >
-                          {isFullyBooked
-                            ? "Fully booked"
-                            : `${slotAvailability.available}/${slotAvailability.capacity} available`}
-                        </p>
-                      )}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.date}
+                        onSelect={(date) => updateFormData("date", date)}
+                        disabled={(date) => date <= getYesterdayMidnight()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5" data-testid="text-min-lead-info">
+                    <Clock className="h-3 w-3" />
+                    Book at least {settings?.minLeadHours || 12} hours in advance
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">Preferred Time</Label>
+                  {loadingSlots && formData.date && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2 mb-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Checking availability...</span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    {timeSlots.map((time, index) => {
+                      const slotAvailability = availability?.slots?.find(
+                        (slot) => slot.timeSlot === time
+                      );
+                      const isFullyBooked = slotAvailability ? slotAvailability.available === 0 : false;
+                      const showAvailability = formData.date && slotAvailability;
+                      const isSelected = formData.timeSlot === time;
 
-            <div className="border-t pt-6 mt-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <Checkbox
-                  id="recurring"
-                  checked={formData.isRecurring}
-                  onCheckedChange={(checked) => updateFormData("isRecurring", checked)}
-                  data-testid="checkbox-recurring"
-                />
-                <Label htmlFor="recurring" className="cursor-pointer font-medium">
-                  Make this a recurring booking
-                </Label>
-              </div>
-
-              {formData.isRecurring && (
-                <div className="space-y-4 pl-6 border-l-2 border-primary/20">
-                  <div className="space-y-2">
-                    <Label>Frequency</Label>
-                    <RadioGroup 
-                      value={formData.recurringFrequency} 
-                      onValueChange={(value) => updateFormData("recurringFrequency", value as "weekly" | "biweekly" | "monthly")}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="weekly" id="weekly" data-testid="radio-frequency-weekly" />
-                        <Label htmlFor="weekly" className="cursor-pointer">Weekly</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="biweekly" id="biweekly" data-testid="radio-frequency-biweekly" />
-                        <Label htmlFor="biweekly" className="cursor-pointer">Bi-weekly (Every 2 weeks)</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="monthly" id="monthly" data-testid="radio-frequency-monthly" />
-                        <Label htmlFor="monthly" className="cursor-pointer">Monthly</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>End Date (Optional)</Label>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Leave blank for ongoing service, or select when to stop recurring bookings
-                    </p>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                          data-testid="button-recurring-end-date"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.recurringEndDate ? format(formData.recurringEndDate, "PPP") : "No end date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={formData.recurringEndDate}
-                          onSelect={(date) => updateFormData("recurringEndDate", date)}
-                          disabled={(date) => date < (formData.date || new Date())}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div className="bg-primary/5 rounded-lg p-4 text-sm">
-                    <p className="font-medium text-foreground mb-1">
-                      Your recurring schedule:
-                    </p>
-                    <p className="text-muted-foreground">
-                      Service will be scheduled {formData.recurringFrequency === "weekly" ? "every week" : formData.recurringFrequency === "biweekly" ? "every 2 weeks" : "every month"} 
-                      {formData.date ? ` starting ${format(formData.date, "PPP")}` : ""}
-                      {formData.recurringEndDate ? ` until ${format(formData.recurringEndDate, "PPP")}` : " with no end date"}
-                    </p>
+                      return (
+                        <div key={time} className="relative">
+                          <button
+                            onClick={() => !isFullyBooked && updateFormData("timeSlot", time)}
+                            disabled={isFullyBooked}
+                            className={`w-full p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                              isFullyBooked
+                                ? "border-border bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
+                                : isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border hover-elevate"
+                            }`}
+                            data-testid={`button-time-${time}`}
+                          >
+                            {time}
+                          </button>
+                          {showAvailability && (
+                            <p
+                              className={`text-xs text-center mt-1 ${
+                                isFullyBooked
+                                  ? "text-destructive font-medium"
+                                  : slotAvailability.available <= 1
+                                  ? "text-orange-600 font-medium"
+                                  : "text-muted-foreground"
+                              }`}
+                              data-testid={`text-availability-${index}`}
+                            >
+                              {isFullyBooked
+                                ? "Fully booked"
+                                : `${slotAvailability.available}/${slotAvailability.capacity} spots left`}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+              </div>
+
+              <div className="border-t pt-6">
+                <div className="flex items-start space-x-3 mb-4">
+                  <Checkbox
+                    id="recurring"
+                    checked={formData.isRecurring}
+                    onCheckedChange={(checked) => updateFormData("isRecurring", checked)}
+                    data-testid="checkbox-recurring"
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <Label htmlFor="recurring" className="cursor-pointer font-semibold text-base">
+                      Make this a recurring service
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-0.5">Save time with automatic rebooking</p>
+                  </div>
+                </div>
+
+                {formData.isRecurring && (
+                  <div className="space-y-6 pl-8 border-l-2 border-primary/30 ml-2">
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Frequency</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { value: "weekly", label: "Weekly" },
+                          { value: "biweekly", label: "Bi-weekly" },
+                          { value: "monthly", label: "Monthly" }
+                        ].map((freq) => (
+                          <button
+                            key={freq.value}
+                            onClick={() => updateFormData("recurringFrequency", freq.value)}
+                            className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                              formData.recurringFrequency === freq.value
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover-elevate"
+                            }`}
+                            data-testid={`button-frequency-${freq.value}`}
+                          >
+                            {freq.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-semibold mb-2 block">End Date (Optional)</Label>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Leave blank for ongoing service
+                      </p>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                            data-testid="button-recurring-end-date"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.recurringEndDate ? format(formData.recurringEndDate, "PPP") : "No end date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={formData.recurringEndDate}
+                            onSelect={(date) => updateFormData("recurringEndDate", date)}
+                            disabled={(date) => date < (formData.date || new Date())}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <div className="bg-primary/5 rounded-lg p-4">
+                      <p className="text-sm font-semibold mb-2">Your schedule:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formData.recurringFrequency === "weekly" ? "Every week" : formData.recurringFrequency === "biweekly" ? "Every 2 weeks" : "Every month"}
+                        {formData.date ? ` starting ${format(formData.date, "PPP")}` : ""}
+                        {formData.recurringEndDate ? ` until ${format(formData.recurringEndDate, "PPP")}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Contact Information</h2>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Your Information</h2>
+              <p className="text-muted-foreground">Let us know where to reach you</p>
+            </div>
             
             {serviceAreas.length > 0 && (
-              <div className="bg-primary/5 rounded-lg p-4">
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-medium text-sm mb-1">We serve these areas:</p>
-                    <p className="text-sm text-muted-foreground">
-                      {serviceAreas.filter(area => area.isActive).map(area => area.name).join(", ")}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <Alert className="border-primary/20 bg-primary/5">
+                <MapPin className="h-4 w-4 text-primary" />
+                <AlertDescription>
+                  <span className="font-semibold">Service Areas: </span>
+                  {serviceAreas.filter(area => area.isActive).map(area => area.name).join(", ")}
+                </AlertDescription>
+              </Alert>
             )}
             
-            <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name" className="text-sm font-semibold">Full Name</Label>
                 <Input
                   id="name"
+                  size-variant="lg"
                   value={formData.name}
                   onChange={(e) => updateFormData("name", e.target.value)}
+                  placeholder="John Doe"
                   data-testid="input-name"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
                 <Input
                   id="email"
                   type="email"
+                  size-variant="lg"
                   value={formData.email}
                   onChange={(e) => updateFormData("email", e.target.value)}
+                  placeholder="john@example.com"
                   data-testid="input-email"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-sm font-semibold">Phone Number</Label>
                 <Input
                   id="phone"
                   type="tel"
+                  size-variant="lg"
                   value={formData.phone}
                   onChange={(e) => updateFormData("phone", e.target.value)}
+                  placeholder="(405) 555-0123"
                   data-testid="input-phone"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Service Address</Label>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="address" className="text-sm font-semibold">Service Address</Label>
                 <Input
                   id="address"
+                  size-variant="lg"
                   value={formData.address}
                   onChange={(e) => updateFormData("address", e.target.value)}
-                  placeholder="123 Main St, City, State 73102"
+                  placeholder="123 Main St, Oklahoma City, OK 73102"
                   className={zipCodeValid === false ? "border-destructive" : ""}
                   data-testid="input-address"
                 />
@@ -655,26 +743,28 @@ export function BookingForm() {
                   <Alert variant="destructive" data-testid="alert-zip-not-served">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      Zip code {extractedZipCode} is not in our service area. We may not be able to fulfill your booking request.
+                      Zip code {extractedZipCode} is not in our service area. We may not be able to fulfill your request.
                     </AlertDescription>
                   </Alert>
                 )}
                 {extractedZipCode && zipCodeValid === true && (
-                  <p className="text-sm text-primary flex items-center gap-1" data-testid="text-zip-valid">
-                    <Check className="h-3 w-3" />
-                    We serve your area!
+                  <p className="text-sm text-primary flex items-center gap-1.5" data-testid="text-zip-valid">
+                    <Check className="h-4 w-4" />
+                    Great! We serve your area
                   </p>
                 )}
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="promo-code">Promo Code (Optional)</Label>
+            <div className="border-t pt-6 space-y-6">
+              <div>
+                <Label htmlFor="promo-code" className="text-sm font-semibold mb-3 block">Promo Code (Optional)</Label>
                 <div className="flex gap-2">
                   <Input
                     id="promo-code"
                     value={formData.promoCode}
                     onChange={(e) => updateFormData("promoCode", e.target.value.toUpperCase())}
-                    placeholder="Enter promo code"
+                    placeholder="SAVE10"
                     data-testid="input-promo-code"
                   />
                   <Button
@@ -688,21 +778,24 @@ export function BookingForm() {
                   </Button>
                 </div>
                 {formData.promoCodeId && (
-                  <p className="text-sm text-primary font-medium" data-testid="text-promo-applied">
-                    ✓ Promo code applied
-                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant="default" className="gap-1">
+                      <Check className="h-3 w-3" />
+                      Promo applied
+                    </Badge>
+                  </div>
                 )}
               </div>
 
               {referralSettings?.enabled && (
-                <div className="space-y-2">
-                  <Label htmlFor="referral-code">Referral Code (Optional)</Label>
+                <div>
+                  <Label htmlFor="referral-code" className="text-sm font-semibold mb-3 block">Referral Code (Optional)</Label>
                   <div className="flex gap-2">
                     <Input
                       id="referral-code"
                       value={formData.referralCode}
                       onChange={(e) => updateFormData("referralCode", e.target.value.toUpperCase())}
-                      placeholder="Enter referral code"
+                      placeholder="FRIEND123"
                       data-testid="input-referral-code"
                     />
                     <Button
@@ -716,16 +809,18 @@ export function BookingForm() {
                     </Button>
                   </div>
                   {formData.referralCodeValid && formData.referralReferrerName && (
-                    <div className="bg-primary/5 rounded-lg p-3 space-y-1" data-testid="alert-referral-applied">
-                      <p className="text-sm text-primary font-medium flex items-center gap-1">
-                        <Check className="h-3 w-3" />
-                        Referral code applied!
-                      </p>
+                    <div className="bg-primary/5 rounded-lg p-4 mt-3 space-y-1" data-testid="alert-referral-applied">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default" className="gap-1">
+                          <Check className="h-3 w-3" />
+                          Referral applied
+                        </Badge>
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        Referred by: <span className="font-medium text-foreground">{formData.referralReferrerName}</span>
+                        Referred by <span className="font-semibold text-foreground">{formData.referralReferrerName}</span>
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        Discount: <span className="font-medium text-primary">${(formData.referralDiscountAmount / 100).toFixed(2)}</span>
+                      <p className="text-sm font-semibold text-primary">
+                        Save ${(formData.referralDiscountAmount / 100).toFixed(2)}
                       </p>
                     </div>
                   )}
@@ -736,57 +831,66 @@ export function BookingForm() {
         )}
 
         {step === 4 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Payment Method & Cancellation Policy</h2>
-            <p className="text-muted-foreground">
-              We require a payment method to hold your booking. You won't be charged now, but this card will be used if cancellation fees apply.
-            </p>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Payment & Policy</h2>
+              <p className="text-muted-foreground">Secure your booking with a payment method</p>
+            </div>
+            
+            <Alert>
+              <Shield className="h-4 w-4" />
+              <AlertDescription>
+                We require a payment method to hold your booking. You won't be charged now, but this card will be used if cancellation fees apply.
+              </AlertDescription>
+            </Alert>
             
             {settings?.cancellationPolicy && (
-              <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Cancellation Policy</h3>
-                <p className="text-sm">{settings.cancellationPolicy}</p>
+              <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  Cancellation Policy
+                </h3>
+                <p className="text-sm leading-relaxed">{settings.cancellationPolicy}</p>
               </div>
             )}
             
-            <div className="flex items-start space-x-2">
+            <div className="flex items-start space-x-3">
               <Checkbox 
                 id="agree-policy"
                 checked={formData.agreedToCancellationPolicy}
                 onCheckedChange={(checked) => updateFormData("agreedToCancellationPolicy", checked)}
                 data-testid="checkbox-policy"
+                className="mt-0.5"
               />
-              <Label htmlFor="agree-policy" className="cursor-pointer text-sm">
+              <Label htmlFor="agree-policy" className="cursor-pointer text-sm leading-relaxed">
                 I have read and agree to the cancellation policy
               </Label>
             </div>
             
-            {!formData.agreedToCancellationPolicy && (
-              <p className="text-sm text-muted-foreground">
-                Please agree to the cancellation policy to continue.
-              </p>
-            )}
-            
             {formData.agreedToCancellationPolicy && clientSecret && stripePromise && (
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <PaymentMethodForm onSuccess={(pmId) => {
-                  updateFormData("paymentMethodId", pmId);
-                  handleSubmit();
-                }} />
-              </Elements>
+              <div className="border-t pt-6">
+                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                  <PaymentMethodForm onSuccess={(pmId) => {
+                    updateFormData("paymentMethodId", pmId);
+                    handleSubmit();
+                  }} />
+                </Elements>
+              </div>
             )}
 
             {formData.agreedToCancellationPolicy && !clientSecret && fetchSetupIntentMutation.isPending && (
-              <div className="text-center py-4">
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
                 <p className="text-muted-foreground">Loading payment form...</p>
               </div>
             )}
           </div>
         )}
 
-        <div className="flex justify-between mt-8 pt-6 border-t">
+        <div className="flex justify-between items-center mt-12 pt-8 border-t gap-4">
           <Button
             variant="outline"
+            size="lg"
             onClick={() => setStep(step - 1)}
             disabled={step === 1}
             data-testid="button-back"
@@ -797,6 +901,7 @@ export function BookingForm() {
           
           {step < 4 && (
             <Button
+              size="lg"
               onClick={() => {
                 if (step === 3) {
                   fetchSetupIntentMutation.mutate();
@@ -810,7 +915,7 @@ export function BookingForm() {
               }
               data-testid="button-next"
             >
-              Next
+              Continue
               <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           )}
