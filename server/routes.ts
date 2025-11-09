@@ -27,6 +27,7 @@ import {
   updateCustomerTagsSchema,
   suggestEmployeesSchema,
   updateContactMessageSchema,
+  insertRescheduleRequestSchema,
   type JobPhoto,
   type EmailTemplate,
   type User,
@@ -1181,52 +1182,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateSchema = z.object({
         date: z.string().optional(),
         timeSlot: z.string().optional(),
+        customerNotes: z.string().optional(),
         status: z.enum(["pending", "cancelled"]).optional(),
       });
       
       const validatedData = updateSchema.parse(req.body);
       
-      // If cancelling, check if within 24 hours and set fee status
-      let additionalData = {};
+      // Handle CANCELLATION
       if (validatedData.status === 'cancelled') {
         const appointmentDateTime = new Date(`${existing.date}T${convertTimeSlotTo24Hour(existing.timeSlot)}`);
         const now = new Date();
         const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
         
-        additionalData = {
+        const additionalData = {
           cancelledAt: new Date(),
           cancellationFeeStatus: hoursUntilAppointment < 24 ? 'pending' : 'not_applicable',
         };
+        
+        const booking = await storage.updateBooking(existing.id, { status: 'cancelled', ...additionalData });
+        
+        // Notify business owner of cancellation
+        (async () => {
+          try {
+            const settings = await storage.getBusinessSettings();
+            if (settings && booking) {
+              await sendBookingChangeNotification({
+                name: booking.name,
+                email: booking.email,
+                phone: booking.phone,
+                address: booking.address,
+                serviceType: booking.service,
+                propertySize: booking.propertySize,
+                date: booking.date,
+                timeSlot: booking.timeSlot,
+                action: 'cancelled',
+                originalDate: existing.date,
+                originalTimeSlot: existing.timeSlot,
+              }, settings.email);
+            }
+          } catch (emailError) {
+            console.error("Failed to send booking change notification:", emailError);
+          }
+        })();
+        
+        return res.json(booking);
       }
       
-      const booking = await storage.updateBooking(existing.id, { ...validatedData, ...additionalData });
-      
-      // Notify business owner of changes
-      (async () => {
-        try {
-          const settings = await storage.getBusinessSettings();
-          if (settings && booking) {
-            const action = validatedData.status === 'cancelled' ? 'cancelled' : 'rescheduled';
-            await sendBookingChangeNotification({
-              name: booking.name,
-              email: booking.email,
-              phone: booking.phone,
-              address: booking.address,
-              serviceType: booking.service,
-              propertySize: booking.propertySize,
-              date: booking.date,
-              timeSlot: booking.timeSlot,
-              action: action as 'rescheduled' | 'cancelled',
-              originalDate: existing.date,
-              originalTimeSlot: existing.timeSlot,
-            }, settings.email);
-          }
-        } catch (emailError) {
-          console.error("Failed to send booking change notification:", emailError);
+      // Handle RESCHEDULE REQUEST
+      if (validatedData.date && validatedData.timeSlot) {
+        const settings = await storage.getBusinessSettings();
+        const minLeadHours = settings?.minLeadHours || 12;
+        const maxBookingsPerSlot = settings?.maxBookingsPerSlot || 3;
+        
+        // Validate not in past
+        const pastCheck = validateNotPastDate(validatedData.date, validatedData.timeSlot);
+        if (!pastCheck.isValid) {
+          return res.status(400).json({ error: pastCheck.error });
         }
-      })();
+        
+        // Validate minimum lead time
+        const leadTimeCheck = validateMinimumLeadTime(validatedData.date, validatedData.timeSlot, minLeadHours);
+        if (!leadTimeCheck.isValid) {
+          return res.status(400).json({ error: leadTimeCheck.error });
+        }
+        
+        // Check slot capacity (exclude current booking)
+        const capacityCheck = await checkSlotCapacity(pool, validatedData.date, validatedData.timeSlot, maxBookingsPerSlot, existing.id);
+        if (!capacityCheck.isAvailable) {
+          return res.status(400).json({ error: capacityCheck.error });
+        }
+        
+        // Create reschedule request
+        const rescheduleRequest = await storage.createRescheduleRequest({
+          bookingId: existing.id,
+          requestedDate: validatedData.date,
+          requestedTimeSlot: validatedData.timeSlot,
+          customerNotes: validatedData.customerNotes || null,
+          status: 'pending',
+        });
+        
+        // Update booking status to pending_reschedule
+        await storage.updateBookingStatus(existing.id, 'pending_reschedule');
+        
+        // Send email notifications (async, don't wait)
+        (async () => {
+          try {
+            // TODO: Send reschedule request notification emails
+            console.log('Reschedule request created:', rescheduleRequest.id);
+          } catch (emailError) {
+            console.error("Failed to send reschedule notification:", emailError);
+          }
+        })();
+        
+        return res.json({ 
+          message: "Reschedule request submitted successfully. You'll receive an email once it's reviewed.",
+          rescheduleRequest 
+        });
+      }
       
-      res.json(booking);
+      // If neither cancellation nor reschedule, return error
+      return res.status(400).json({ error: "Invalid request. Provide either status=cancelled or date+timeSlot" });
+      
     } catch (error) {
       console.error("Error updating booking:", error);
       if (error instanceof z.ZodError) {
