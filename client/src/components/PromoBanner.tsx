@@ -21,6 +21,13 @@ export function PromoBanner() {
 
   useEffect(() => {
     const dismissedUntil = localStorage.getItem("promo-banner-dismissed");
+    console.log("🎯 BANNER DEBUG:", {
+      hasPromo: !!activePromo,
+      promoCode: activePromo?.code,
+      settingsEnabled: settings?.enabled,
+      dismissedUntil,
+      willShow: !(!activePromo || (dismissedUntil && new Date(dismissedUntil) > new Date()) || settings?.enabled === false)
+    });
     if (dismissedUntil) {
       const until = new Date(dismissedUntil);
       if (until > new Date()) {
@@ -29,7 +36,7 @@ export function PromoBanner() {
         localStorage.removeItem("promo-banner-dismissed");
       }
     }
-  }, []);
+  }, [activePromo, settings]);
 
   const handleDismiss = () => {
     const sevenDaysFromNow = new Date();
