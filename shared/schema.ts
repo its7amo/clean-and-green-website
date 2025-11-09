@@ -181,6 +181,8 @@ export const customers = pgTable("customers", {
   address: text("address"),
   notes: text("notes"),
   tags: text("tags").array(), // vip, at-risk, new, referral-champion
+  churnRisk: text("churn_risk").default("low"), // low, medium, high
+  churnRiskLastCalculated: timestamp("churn_risk_last_calculated"),
   referralCode: varchar("referral_code").unique(),
   totalBookings: integer("total_bookings").notNull().default(0),
   totalQuotes: integer("total_quotes").notNull().default(0),
@@ -264,6 +266,23 @@ export const businessSettings = pgTable("business_settings", {
   paymentReminder7DayBody: text("payment_reminder_7day_body"),
   paymentReminder14DaySubject: text("payment_reminder_14day_subject"),
   paymentReminder14DayBody: text("payment_reminder_14day_body"),
+  winBackDiscountPercent: integer("win_back_discount_percent").default(15),
+  winBackEmailSubject: text("win_back_email_subject"),
+  winBackEmailBody: text("win_back_email_body"),
+  churnRiskHighDays: integer("churn_risk_high_days").default(90),
+  churnRiskMediumDays: integer("churn_risk_medium_days").default(60),
+  anomalyPromoCreationThreshold: integer("anomaly_promo_creation_threshold").default(5),
+  anomalyPromoCreationMinutes: integer("anomaly_promo_creation_minutes").default(10),
+  anomalyInvoiceChangePercent: integer("anomaly_invoice_change_percent").default(80),
+  anomalyCancellationThreshold: integer("anomaly_cancellation_threshold").default(10),
+  anomalyCancellationHours: integer("anomaly_cancellation_hours").default(24),
+  anomalyDeletionThreshold: integer("anomaly_deletion_threshold").default(20),
+  anomalyDeletionMinutes: integer("anomaly_deletion_minutes").default(10),
+  quickReplies: jsonb("quick_replies").$type<Array<{
+    id: string;
+    label: string;
+    message: string;
+  }>>(),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
@@ -635,3 +654,28 @@ export const insertReferralSettingsSchema = createInsertSchema(referralSettings)
 
 export type InsertReferralSettings = z.infer<typeof insertReferralSettingsSchema>;
 export type ReferralSettings = typeof referralSettings.$inferSelect;
+
+// Anomaly Alerts for fraud/mistake detection
+export const anomalyAlerts = pgTable("anomaly_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(), // bulk_promo_creation, large_invoice_change, mass_cancellations, bulk_deletions
+  severity: text("severity").notNull().default("medium"), // low, medium, high
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  payload: jsonb("payload").$type<Record<string, any>>(), // Additional context data
+  triggeredBy: varchar("triggered_by").references(() => users.id),
+  status: text("status").notNull().default("open"), // open, acknowledged, resolved
+  acknowledgedBy: varchar("acknowledged_by").references(() => users.id),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  resolvedBy: varchar("resolved_by").references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertAnomalyAlertSchema = createInsertSchema(anomalyAlerts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAnomalyAlert = z.infer<typeof insertAnomalyAlertSchema>;
+export type AnomalyAlert = typeof anomalyAlerts.$inferSelect;
