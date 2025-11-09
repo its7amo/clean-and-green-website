@@ -1,0 +1,85 @@
+1. Quote → Booking Conversion ⭐ BIGGEST IMPACT
+Current: Quotes just have status (pending/approved/completed)
+Improvement: Add "Convert to Booking" button that auto-fills booking form
+Why: Save 5+ minutes per quote, reduce data entry errors, close deals faster
+
+2. Dashboard Charts & Metrics 📊
+Current: Basic stats only
+Improvement: Add visual charts showing:
+
+Revenue trends (last 30 days)
+Bookings by service type (pie chart)
+Customer acquisition over time
+Top referral sources
+Why: Make data-driven business decisions at a glance
+3. Message Status Tracking 💬
+Current: Messages just listed, no status
+Improvement: Add:
+
+Status: New/In Progress/Replied/Closed
+Assign to employee
+Quick reply templates
+Mark as spam
+Why: Never lose a lead, track response times
+4. Bulk Email to Customers 📧
+Current: Can only email via newsletter to subscribers
+Improvement: Add "Send Email" button on Customers page to:
+
+Select multiple customers
+Send promotions/updates
+Track opens/clicks
+Why: Better marketing, customer retention
+5. Smart Booking Filters 🔍
+Current: Basic search only
+Improvement: Add filters:
+
+Date range picker
+Service type dropdown
+Status multi-select
+Employee assigned
+Export to CSV
+Why: Find bookings instantly, analyze trends
+6. Employee Scheduling & Availability 📅
+Current: Employees can just be assigned to bookings
+Improvement: Add:
+
+Set weekly availability hours
+Block off vacation/sick days
+See employee workload
+Auto-suggest available employees
+Why: Better resource management, prevent double-booking
+7. Promo Code Analytics 📈
+Current: Just shows usage count
+Improvement: Add:
+
+Revenue generated per code
+Customer acquisition by code
+Most popular codes chart
+ROI tracking
+Why: Know which promotions actually work
+8. Automated Review Requests ⭐
+Current: Manual review emails only
+Improvement: Auto-send review request:
+
+2 hours after job completion
+Include direct review link
+Track response rate
+Why: Get 3x more reviews, build reputation
+9. Customer Segmentation 🎯
+Current: Just a list of customers
+Improvement: Add tags/segments:
+
+VIP customers (high CLV)
+At-risk (haven't booked in 90 days)
+New customers (< 30 days)
+Referral champions
+Why: Targeted marketing, customer retention
+10. Quick Actions Dashboard ⚡
+Current: Dashboard just shows stats
+Improvement: Add quick action cards:
+
+"3 quotes need response"
+"5 invoices overdue"
+"2 reviews pending approval"
+"Today's appointments (4)"
+Why: Know exactly what needs attention NOW

@@ -16,6 +16,7 @@ interface BannerConfig {
   template: "simple" | "gradient" | "cta" | "animated";
   ctaText?: string;
   ctaLink?: string;
+  customMessage?: string;
 }
 
 interface BannerSettings {
@@ -51,7 +52,8 @@ export function PromoBanner() {
     // Use default simple template if parsing fails
   }
 
-  const message = activePromo.description;
+  // Use custom message if provided, otherwise use promo description
+  const message = config.customMessage || activePromo.description;
   const discount = activePromo.discountType === "percentage" 
     ? `${activePromo.discountValue}% OFF` 
     : `$${(activePromo.discountValue / 100).toFixed(2)} OFF`;

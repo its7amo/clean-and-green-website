@@ -523,6 +523,42 @@ export default function AdminSettings() {
                         )}
                       />
 
+                      <FormField
+                        control={form.control}
+                        name="promoBannerMessage"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Custom Banner Message (Optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                value={(() => {
+                                  try {
+                                    const cfg = JSON.parse(field.value || '{}');
+                                    return cfg.customMessage || '';
+                                  } catch {
+                                    return '';
+                                  }
+                                })()}
+                                onChange={(e) => {
+                                  try {
+                                    const cfg = JSON.parse(field.value || '{}');
+                                    field.onChange(JSON.stringify({ ...cfg, customMessage: e.target.value }));
+                                  } catch {
+                                    field.onChange(JSON.stringify({ customMessage: e.target.value }));
+                                  }
+                                }}
+                                data-testid="input-banner-custom-message"
+                                placeholder="e.g., Limited Time Spring Offer!"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Override the default promo code message. Leave blank to use promo description.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       {(() => {
                         try {
                           const config = JSON.parse(form.watch("promoBannerMessage") || '{}');
