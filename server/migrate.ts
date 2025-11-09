@@ -191,6 +191,30 @@ export async function runMigrations() {
     await pool.query(rescheduleRequestsTable);
     console.log('✓ Reschedule requests table created/verified');
     
+    // Add message tracking columns to contact_messages
+    console.log('Adding message tracking columns to contact_messages...');
+    const contactMessageColumns = `
+      ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'new';
+      ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS assigned_to VARCHAR;
+      ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS reply_message TEXT;
+      ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS replied_at TIMESTAMP;
+    `;
+    
+    // Add the foreign key constraint separately (will skip if already exists)
+    const contactMessageConstraint = `
+      DO $$ BEGIN
+        ALTER TABLE contact_messages 
+        ADD CONSTRAINT contact_messages_assigned_to_fkey 
+        FOREIGN KEY (assigned_to) REFERENCES employees(id);
+      EXCEPTION
+        WHEN duplicate_object THEN NULL;
+      END $$;
+    `;
+    
+    await pool.query(contactMessageColumns);
+    await pool.query(contactMessageConstraint);
+    console.log('✓ Contact message tracking columns added/verified');
+    
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;
