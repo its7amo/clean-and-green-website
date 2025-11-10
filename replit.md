@@ -35,7 +35,12 @@ The frontend uses React 18, TypeScript, and Vite, built with shadcn/ui (Radix UI
 - Collapsible sidebar with 6 logical groups: Overview, Operations, People, Communication, Marketing, Configuration.
 - Global search (cmd+k) across bookings, customers, quotes with relevance ranking.
 - Intelligence Dashboard displaying churn risk, anomaly alerts, customer segments, message status, and business metrics.
-- Content Management System (CMS) for editing 6 sections: home_hero, home_welcome, about_page, services_intro, contact_page, footer.
+- Content Management System (CMS) for editing 9 sections: home_hero, home_welcome, how_it_works, services_intro, cta_section, testimonials, about_page, contact_page, footer.
+  - Image uploads with Base64 storage (<500KB limit, client-side validation)
+  - Section visibility toggles (Eye/EyeOff icons)
+  - Public unauthenticated endpoints for customer-facing pages
+  - Real-time cache invalidation across admin and public queries
+  - Color customization for CTA section
 
 **Referral Program**:
 - Tiered rewards ($10/$15/$20) with multi-signal fraud detection (duplicate address/phone/IP, velocity limits).
