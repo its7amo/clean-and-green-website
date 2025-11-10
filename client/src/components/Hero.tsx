@@ -11,13 +11,13 @@ export function Hero() {
     queryKey: ["/api/settings"],
   });
 
-  const { content: cmsContent } = useCmsContent("home_hero");
+  const { content: cmsContent, assets: cmsAssets } = useCmsContent("home_hero");
 
   return (
     <section className="relative min-h-[600px] md:min-h-[700px] flex items-center">
       <div className="absolute inset-0 z-0">
         <img
-          src={heroImage}
+          src={cmsAssets.background_image || heroImage}
           alt={`${settings?.businessName || "Clean and Green"} professional cleaning team`}
           className="w-full h-full object-cover"
         />
