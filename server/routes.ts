@@ -6767,29 +6767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public endpoint to get CMS content for a section
-  app.get("/api/public/cms/:section", async (req, res) => {
-    try {
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      
-      const content = await storage.getCmsContent(req.params.section);
-      
-      // Transform array of content items into an object for easier frontend use
-      const contentMap: Record<string, string> = {};
-      content.forEach(item => {
-        contentMap[item.key] = item.value;
-      });
-      
-      res.json(contentMap);
-    } catch (error) {
-      console.error("Error fetching public CMS content:", error);
-      res.status(500).json({ error: "Failed to fetch content" });
-    }
-  });
-
-  // Public endpoint to get all CMS sections (visibility data)
+  // Public endpoint to get all CMS sections (visibility data) - must come BEFORE dynamic route
   app.get("/api/public/cms/sections", async (_req, res) => {
     try {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -6804,7 +6782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public endpoint to get all CMS assets
+  // Public endpoint to get all CMS assets - must come BEFORE dynamic route
   app.get("/api/public/cms/assets", async (_req, res) => {
     try {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -6823,6 +6801,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching public CMS assets:", error);
       res.status(500).json({ error: "Failed to fetch assets" });
+    }
+  });
+
+  // Public endpoint to get CMS content for a section - must come AFTER specific routes
+  app.get("/api/public/cms/:section", async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      const content = await storage.getCmsContent(req.params.section);
+      
+      // Transform array of content items into an object for easier frontend use
+      const contentMap: Record<string, string> = {};
+      content.forEach(item => {
+        contentMap[item.key] = item.value;
+      });
+      
+      res.json(contentMap);
+    } catch (error) {
+      console.error("Error fetching public CMS content:", error);
+      res.status(500).json({ error: "Failed to fetch content" });
     }
   });
 
