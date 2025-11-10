@@ -18,7 +18,7 @@ export function Footer() {
     queryKey: ["/api/settings"],
   });
 
-  const { content: cmsContent } = useCmsContent("footer");
+  const { content: cmsContent, isVisible } = useCmsContent("footer");
 
   const subscribeMutation = useMutation({
     mutationFn: async (data: { email: string; name?: string }) => {
@@ -55,6 +55,8 @@ export function Footer() {
     e.preventDefault();
     subscribeMutation.mutate({ email, name });
   };
+
+  if (!isVisible) return null;
 
   return (
     <footer className="bg-muted/50 border-t">

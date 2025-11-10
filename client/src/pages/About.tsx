@@ -40,7 +40,7 @@ export default function About() {
     queryKey: ["/api/settings"],
   });
 
-  const { content: cmsContent } = useCmsContent("about_page");
+  const { content: cmsContent, isVisible } = useCmsContent("about_page");
 
   const { data: galleryImages = [] } = useQuery<GalleryImage[]>({
     queryKey: ["/api/gallery"],
@@ -60,6 +60,7 @@ export default function About() {
       <PromoBanner />
       <Header />
       <main className="flex-1">
+        {isVisible && (
         <section className="py-16 md:py-24">
           <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
@@ -161,6 +162,7 @@ export default function About() {
             </div>
           </div>
         </section>
+        )}
 
         <CallToAction />
       </main>

@@ -29,8 +29,10 @@ export function Services() {
     queryKey: ["/api/services"],
   });
 
-  const { content: cmsContent } = useCmsContent("services_intro");
+  const { content: cmsContent, isVisible } = useCmsContent("services_intro");
   const activeServices = services.filter(service => service.active);
+
+  if (!isVisible) return null;
 
   return (
     <section className="py-16 md:py-24 bg-muted/30">

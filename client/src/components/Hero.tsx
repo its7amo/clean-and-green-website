@@ -11,7 +11,9 @@ export function Hero() {
     queryKey: ["/api/settings"],
   });
 
-  const { content: cmsContent, assets: cmsAssets } = useCmsContent("home_hero");
+  const { content: cmsContent, assets: cmsAssets, isVisible } = useCmsContent("home_hero");
+
+  if (!isVisible) return null;
 
   return (
     <section className="relative min-h-[600px] md:min-h-[700px] flex items-center">

@@ -4,7 +4,9 @@ import { Leaf } from "lucide-react";
 import { useCmsContent } from "@/hooks/use-cms-content";
 
 export function CallToAction() {
-  const { content: cmsContent } = useCmsContent("cta_section");
+  const { content: cmsContent, isVisible } = useCmsContent("cta_section");
+  
+  if (!isVisible) return null;
   
   const backgroundColor = cmsContent.background_color || "hsl(var(--primary))";
   

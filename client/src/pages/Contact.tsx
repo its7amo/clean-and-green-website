@@ -27,7 +27,7 @@ export default function Contact() {
     queryKey: ["/api/settings"],
   });
 
-  const { content: cmsContent } = useCmsContent("contact_page");
+  const { content: cmsContent, isVisible } = useCmsContent("contact_page");
 
   const contactMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -63,6 +63,7 @@ export default function Contact() {
     <div className="min-h-screen flex flex-col">
       <PromoBanner />
       <Header />
+      {isVisible && (
       <main className="flex-1 py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12">
@@ -188,6 +189,7 @@ export default function Contact() {
           </div>
         </div>
       </main>
+      )}
       <Footer />
     </div>
   );
