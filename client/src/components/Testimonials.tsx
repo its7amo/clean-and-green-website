@@ -5,11 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Review } from "@shared/schema";
+import { useCmsContent } from "@/hooks/use-cms-content";
 
 export function Testimonials() {
   const { data: reviews = [], isLoading } = useQuery<Review[]>({
     queryKey: ["/api/reviews/approved"],
   });
+
+  const { content: cmsContent, isVisible } = useCmsContent("testimonials");
+
+  if (!isVisible) return null;
 
   return (
     <section className="py-16 md:py-24 bg-muted/30">

@@ -1,5 +1,6 @@
 import { Calendar, Sparkles, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useCmsContent } from "@/hooks/use-cms-content";
 
 const steps = [
   {
@@ -23,6 +24,10 @@ const steps = [
 ];
 
 export function HowItWorks() {
+  const { content: cmsContent, isVisible } = useCmsContent("how_it_works");
+
+  if (!isVisible) return null;
+
   return (
     <section className="py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
