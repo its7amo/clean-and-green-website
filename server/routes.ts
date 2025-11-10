@@ -6752,6 +6752,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== CMS Content Management Routes =====
 
+  // Public endpoint to get all CMS content
+  app.get("/api/public/cms/content", async (_req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      const content = await storage.getAllCmsContent();
+      res.json(content);
+    } catch (error) {
+      console.error("Error fetching all public CMS content:", error);
+      res.status(500).json({ error: "Failed to fetch content" });
+    }
+  });
+
   // Public endpoint to get CMS content for a section
   app.get("/api/public/cms/:section", async (req, res) => {
     try {

@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import residentialImage from "@assets/generated_images/Clean_residential_kitchen_showcase_46bf75b4.png";
 import commercialImage from "@assets/generated_images/Clean_commercial_office_space_fdef0e70.png";
 import deepCleanImage from "@assets/generated_images/Deep_cleaning_before_after_cf8f1b84.png";
+import { useCmsContent } from "@/hooks/use-cms-content";
 
 const getServiceIcon = (name: string) => {
   const nameLower = name.toLowerCase();
@@ -28,15 +29,16 @@ export function Services() {
     queryKey: ["/api/services"],
   });
 
+  const { content: cmsContent } = useCmsContent("services_intro");
   const activeServices = services.filter(service => service.active);
 
   return (
     <section className="py-16 md:py-24 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Services</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{cmsContent.title || "Our Services"}</h2>
           <p className="text-lg text-muted-foreground">
-            Professional cleaning solutions tailored to your needs, all using eco-friendly products
+            {cmsContent.description || "Professional cleaning solutions tailored to your needs, all using eco-friendly products"}
           </p>
         </div>
 

@@ -12,6 +12,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import type { BusinessSettings } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useCmsContent } from "@/hooks/use-cms-content";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -25,6 +26,8 @@ export default function Contact() {
   const { data: settings } = useQuery<BusinessSettings>({
     queryKey: ["/api/settings"],
   });
+
+  const { content: cmsContent } = useCmsContent("contact_page");
 
   const contactMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -63,9 +66,9 @@ export default function Contact() {
       <main className="flex-1 py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">{cmsContent.title || "Contact Us"}</h1>
             <p className="text-lg text-muted-foreground">
-              Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+              {cmsContent.description || "Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible."}
             </p>
           </div>
 

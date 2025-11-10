@@ -2,7 +2,7 @@
 
 ## Overview
 
-Clean and Green is a production-ready professional cleaning service booking platform specializing in eco-friendly cleaning solutions in Oklahoma. It facilitates online booking for residential, commercial, and deep cleaning services, as well as custom quote requests with photo upload capability (up to 5 property photos per quote). The platform features a comprehensive admin dashboard for management of bookings, quotes, business analytics, customer interactions, team operations, and a fully functional tiered referral program ($10/$15/$20 rewards) with comprehensive fraud protection. **Critical referral bug fixed (Nov 9, 2025)**: Referral codes now properly apply discounts to bookings, create referral records immediately, and work identically across both public and admin manual booking endpoints. **Booking Management System (Nov 9, 2025)**: Comprehensive booking approval workflow (all bookings default to "pending" status), booking validation (past date prevention, configurable minimum lead time default 12 hours, slot capacity limits default 3 per slot), customer deduplication system (SQL-normalized matching on email/phone/address with confidence scoring and merge alerts), enhanced quote-to-booking conversion (proper customer linking, full validation chain), and live availability checking API. Recently expanded with 6 admin intelligence features fully implemented (November 2025): Customer Churn Risk Scoring with win-back campaigns, Smart Anomaly Alerts for fraud/mistake detection, Message Status Tracking (new/in_progress/replied/closed/spam), Customer Segmentation (VIP/At-risk/New/Referral champions auto-tags), Quick Actions Dashboard (7 actionable metrics), and Business Settings Intelligence Controls (19 configurable fields including scheduling controls). The referral program includes multi-signal fraud detection preventing abuse through duplicate address/phone/IP detection and velocity limits (max 3/day, 10/week configurable - fully exposed in admin UI), automatically creating anomaly alerts for suspicious patterns. The admin interface features a reorganized collapsible sidebar with 6 logical groups (Overview, Operations, People, Communication, Marketing, Configuration), a unified Intelligence Dashboard showing critical business metrics, and a global search component (cmd+k shortcut) that searches across bookings, customers, and quotes with relevance ranking. The system includes PWA functionality, automated email/SMS notifications, and is fully deployed to Render.com with proper production environment configuration.
+Clean and Green is a professional, production-ready cleaning service booking platform focused on eco-friendly solutions in Oklahoma. It enables online booking for residential, commercial, and deep cleaning services, as well as custom quote requests with photo upload capabilities. The platform features a comprehensive admin dashboard for managing bookings, quotes, business analytics, customer interactions, team operations, a tiered referral program with fraud protection, and a Content Management System (CMS) for non-technical users to edit customer-facing content. Key features include a robust booking management system with approval workflows, validation, customer deduplication, and live availability checking. It also incorporates 6 admin intelligence features: Customer Churn Risk Scoring, Smart Anomaly Alerts, Message Status Tracking, Customer Segmentation, Quick Actions Dashboard, and Business Settings Intelligence Controls. The system includes PWA functionality, automated email/SMS notifications, and is deployed to Render.com.
 
 ## User Preferences
 
@@ -10,117 +10,60 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend
+### UI/UX Decisions
 
-The frontend is built with React 18, TypeScript, and Vite, utilizing a component-based architecture with functional components and hooks. Wouter handles client-side routing. State management relies on TanStack Query for server state and React hooks for local UI state. The user interface, built with shadcn/ui (Radix UI and Tailwind CSS), features a "New York" style, theme support (light/dark mode), and mobile responsiveness, emphasizing a trust-first, clean, and eco-friendly design.
+The frontend uses React 18, TypeScript, and Vite, built with shadcn/ui (Radix UI and Tailwind CSS) in a "New York" style. It features theme support (light/dark mode) and mobile responsiveness, emphasizing a trust-first, clean, and eco-friendly design.
 
-### Backend
+### Technical Implementations
 
-The backend is developed with Express.js and TypeScript (ESM modules), providing a RESTful API under the `/api` namespace. It handles CRUD operations and status updates, adhering to standard HTTP status codes. The request/response flow integrates a client-side `apiRequest` utility, Express middleware for logging, Zod for input validation, and Drizzle ORM for database interactions. Error handling includes comprehensive try-catch blocks, specific status codes for various errors, and client-side error callbacks.
+**Frontend**: React 18, TypeScript, Vite, Wouter for routing, TanStack Query for server state, and React hooks for local UI state.
+**Backend**: Express.js and TypeScript (ESM modules) providing a RESTful API. It uses Zod for input validation and Drizzle ORM for database interactions.
+**Data Storage**: PostgreSQL (Neon for serverless) managed with Drizzle ORM.
+**Authentication**: Passport.js with Local Strategy and Express sessions, bcrypt for password hashing.
+**Build & Deployment**: Vite for frontend, esbuild for backend, deployed on Render.com with automated GitHub integration. Schedulers run via Render Cron Jobs for production.
 
-### Data Storage & Schema
+### Feature Specifications
 
-PostgreSQL (Neon for serverless deployment) is the database, managed with Drizzle ORM for type-safe queries and migrations. Key tables include:
-- **Users**: Authentication and admin management.
-- **Bookings**: Service bookings with status workflow and referral tracking.
-- **Quotes**: Custom quote requests with optional photo uploads.
-- **Quote Photos**: Property photos linked to quotes (max 5 per quote, base64 storage, JPEG/PNG/WEBP/HEIC support, 5MB per photo limit).
-- **Contact Messages**: Submissions from the contact form.
-- **Promo Codes**: Discount code management.
-- **Recurring Bookings**: Automated recurring services.
-- **Job Photos**: Before/after photos for services.
-- **Email Templates**: Reusable templates for bulk communications.
-- **Service Areas**: Geographic coverage with zip code validation.
-- **Invoices**: Includes payment reminder tracking and referral program integration.
-- **Customers**: Comprehensive records with CLV tracking, personal referral codes, churn risk scoring, and custom tags.
-- **Referrals**: Tracks referral relationships and tier levels.
-- **Referral Credits**: Manages customer credit balances.
-- **Referral Settings**: Global referral program configuration.
-- **Anomaly Alerts**: Fraud and mistake detection system tracking bulk operations and suspicious activities.
-- **Business Settings**: Customizable templates and intelligence feature configuration (win-back campaigns, churn risk thresholds, anomaly detection settings, quick reply templates, scheduling controls: minLeadHours, maxBookingsPerSlot, requireBookingApproval, customerDedupEnabled, customerMergeAlertEnabled).
-Zod schemas are generated from Drizzle tables for validation and type inference. All new admin intelligence endpoints include strict Zod validation with enum constraints for security.
+**Booking Management**:
+- All bookings default to "pending" status (configurable).
+- Validation includes past date prevention, configurable minimum lead time (default 12 hours), and slot capacity limits (default 3 per slot).
+- Live availability checking API (`/api/available-slots`).
+- Customer deduplication system (SQL-normalized matching on email/phone/address with confidence scoring and merge alerts).
+- Enhanced quote-to-booking conversion with customer linking and full validation.
 
-### Booking & Quote Management
+**Admin Dashboard**:
+- Collapsible sidebar with 6 logical groups: Overview, Operations, People, Communication, Marketing, Configuration.
+- Global search (cmd+k) across bookings, customers, quotes with relevance ranking.
+- Intelligence Dashboard displaying churn risk, anomaly alerts, customer segments, message status, and business metrics.
+- Content Management System (CMS) for editing 6 sections: home_hero, home_welcome, about_page, services_intro, contact_page, footer.
 
-**Booking Approval Workflow**: All bookings default to "pending" status requiring admin approval (configurable via `requireBookingApproval` in Business Settings). Admin can approve/reject bookings from the Bookings page.
+**Referral Program**:
+- Tiered rewards ($10/$15/$20) with multi-signal fraud detection (duplicate address/phone/IP, velocity limits).
+- Automated anomaly alerts for suspicious patterns.
 
-**Booking Validation System** (`server/bookingValidation.ts`):
-- **Past Date Prevention**: Blocks bookings for dates/times in the past
-- **Minimum Lead Time**: Configurable advance booking requirement (default 12 hours, set via `minLeadHours` in Business Settings)
-- **Slot Capacity Control**: Limits concurrent bookings per time slot (default 3, set via `maxBookingsPerSlot` in Business Settings)
-- **Available Slots API**: GET `/api/available-slots` returns real-time slot availability with capacity indicators
+**Customer Management**:
+- CLV tracking, personal referral codes, churn risk scoring, custom tags.
+- Message status tracking (new/in_progress/replied/closed/spam).
 
-**Customer Deduplication System** (`server/customerDedup.ts`):
-- SQL-normalized matching on email, phone, and address (case-insensitive, whitespace-trimmed)
-- Confidence scoring: high (email match), medium (phone+address match), low (address-only match)
-- Automatic merge alert creation for medium/high confidence matches (24-hour deduplication window)
-- Optional toggle via `customerDedupEnabled` and `customerMergeAlertEnabled` in Business Settings
-- Integrated into booking creation, quote creation, and quote-to-booking conversion
+**Scheduler Architecture**:
+- 6 Cron Job Endpoints (`/api/cron/*`) for review emails, appointment reminders, recurring bookings, follow-up emails, payment reminders, and referral credit processing.
+- Secured with `X-Cron-Secret` header in production.
 
-**Quote-to-Booking Conversion**: Enhanced to properly link existing customers, apply deduplication if enabled, run full validation chain (past date, lead time, capacity), and create bookings with correct status based on approval settings.
+### System Design Choices
 
-### Authentication & Authorization
-
-Passport.js with a Local Strategy and Express sessions (stored in PostgreSQL via `connect-pg-simple`) handles authentication. Passwords are secured with Bcrypt. The system includes endpoints for setup, login, logout, and current user retrieval. Admin routes are protected, requiring authentication and redirecting unauthenticated users to `/login`. An initial setup flow ensures secure admin account creation.
-
-### Page Structure & Routing
-
-**Public Pages**: Home (with promo banner, recent bookings, stats, featured gallery), Services, About, Contact, Booking, Quote, Customer Portal, Invoice Payment, Reviews, Privacy Policy, Terms of Service.
-
-**Admin Pages**: Dashboard (with Intelligence Dashboard showing critical metrics), Analytics, Anomaly Alerts, Bookings, Calendar View, Recurring Bookings, Quotes, Invoices, Promo Codes, Service Areas, Employees (with tabbed form interface: Basic Info, Schedule & Availability, Vacation Days), Customer Profiles (with CLV, churn risk, tags, notes, history), Messages (with status tracking: new/in_progress/replied/closed/spam, employee assignment, quick reply), Reviews, Newsletter, Team Management, Business Settings (with intelligence feature controls).
-
-**Admin Features**: 
-- **Navigation**: Collapsible sidebar with 6 logical groups (Overview, Operations, People, Communication, Marketing, Configuration)
-- **Global Search**: Cmd+K/Ctrl+K keyboard shortcut searching across bookings, customers, and quotes with relevance ranking
-- **Intelligence Dashboard**: Consolidated view of Churn Risk alerts, Anomaly alerts, Customer Segments, Message Status, and Business Intelligence metrics with 30-second auto-refresh
-
-**Employee Pages**: Employee Login, Employee Dashboard.
-
-### Build & Deployment
-
-**Development**: Uses Vite for frontend HMR and an Express development server. Schedulers run directly via `setInterval()` in the main web process.
-
-**Production**: Deployed on Render.com with automated GitHub integration. The build process involves `npm install && npm run build`, followed by `npm start`. Vite builds the React frontend, esbuild bundles the Express backend, and static files are served from `dist/public`. 
-
-**Production Environment Variables**: `APP_URL`, `DATABASE_URL`, `SESSION_SECRET`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`, `CRON_SECRET`.
-
-### Scheduler Architecture
-
-**Critical Production Configuration**: Schedulers are **disabled** in production web processes to prevent duplicate executions when scaling. Instead, they run via **Render Cron Jobs** calling secured HTTP endpoints.
-
-**6 Cron Job Endpoints** (`/api/cron/*`):
-1. **`/api/cron/review-emails`** (hourly) - Sends review requests 24h after service completion
-2. **`/api/cron/appointment-reminders`** (hourly) - Sends SMS/email reminders 24h before appointments
-3. **`/api/cron/recurring-bookings`** (hourly) - Creates bookings from recurring schedules
-4. **`/api/cron/follow-up-emails`** (daily) - Sends win-back emails 30 days post-service
-5. **`/api/cron/payment-reminders`** (hourly) - Sends overdue invoice reminders (3/7/14 days)
-6. **`/api/cron/referral-credits`** (every 5 min) - Processes referral rewards
-
-**Security**: All endpoints require `X-Cron-Secret` header matching `CRON_SECRET` environment variable in production. Development mode bypasses authentication for local testing.
-
-**Implementation Files**:
-- `server/index.ts` - Conditionally starts schedulers only in development
-- `server/routes.ts` - Cron endpoints with authentication (lines 112-204)
-- `server/reviewEmailScheduler.ts` - Exports `checkAndSendReviewEmails()`
-- `server/reminderScheduler.ts` - Exports `checkAndSendRemindersNow()`
-- `server/recurringBookingScheduler.ts` - Exports `processRecurringBookingsNow()`
-- `server/followUpScheduler.ts` - Exports `checkAndSendFollowUps()`
-- `server/referralScheduler.ts` - Exports `processReferralCredits()`
-- `server/schedulers/overdueInvoiceReminder.ts` - Exports `checkAndSendOverdueReminders()`
-
-**Setup Documentation**: See `RENDER_CRON_SETUP.md` for complete Render Cron Jobs configuration guide including schedules, curl commands, and troubleshooting.
+- **Type Safety**: Full TypeScript coverage and Zod schemas for validation.
+- **Error Handling**: Comprehensive try-catch blocks and specific HTTP status codes.
+- **Performance & Caching**: Anti-caching strategy with `Cache-Control` headers, TanStack Query with aggressive staleness settings, background polling (30-second auto-refresh), and robust cache invalidation via `refetchQueries`/`invalidateQueries` on mutations.
 
 ## External Dependencies
 
 ### Third-Party Services
-
 - **Database**: Neon (Serverless PostgreSQL)
 - **Email Notifications**: Resend API
 - **SMS Notifications**: Twilio API
 - **Payment Processing**: Stripe
 
 ### UI Libraries & Frameworks
-
 - **Component Libraries**: Radix UI, shadcn/ui
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
@@ -129,33 +72,7 @@ Passport.js with a Local Strategy and Express sessions (stored in PostgreSQL via
 - **Carousel**: embla-carousel-react
 
 ### Development Tools
-
 - **Build Tools**: Vite, esbuild, TypeScript
 
 ### API Communication
-
 - **Data Fetching**: TanStack Query (React Query)
-
-## Performance & Caching
-
-The application uses a comprehensive anti-caching strategy with intelligent background refresh to ensure real-time data updates:
-
-**Backend**: All 8 public API endpoints (`/api/public/*`) include Cache-Control headers (`no-store, no-cache, must-revalidate, proxy-revalidate`).
-
-**Frontend**: 
-- React Query configured with `gcTime: 0`, `staleTime: 0`, `refetchOnMount: "always"`, `refetchOnWindowFocus: true`
-- **Background polling**: 30-second auto-refresh on active tabs (disabled on inactive tabs to save resources)
-- **Form protection**: AdminSettings and other long-edit forms use `isDirty` guards to prevent background refetches from wiping in-progress edits
-- All fetch requests include `cache: "no-store"`
-- Admin mutations use a mix of `refetchQueries` (69 instances) and `invalidateQueries` (45 instances) for cache management
-
-This configuration eliminates caching issues that can occur in production builds while maintaining a responsive user experience with automatic updates.
-
-## Code Quality
-
-- **Type Safety**: Full TypeScript coverage across 172 TypeScript files
-- **Testing**: Comprehensive data-testid attributes on all interactive elements for e2e testing
-- **Components**: 88 reusable components following shadcn/ui patterns
-- **Error Handling**: Proper try-catch blocks on all 181 backend routes
-- **Security**: Passwords hashed with Bcrypt, no password logging, proper validation with Zod
-- **Performance**: Optimized React Query configuration, memoization where needed (9 instances)

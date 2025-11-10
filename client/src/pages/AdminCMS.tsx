@@ -39,7 +39,9 @@ export default function AdminCMS() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate both admin and public CMS caches for immediate updates
       queryClient.invalidateQueries({ queryKey: ["/api/cms/content"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/cms/content"] });
       toast({
         title: "Content Updated",
         description: "Your changes have been saved successfully.",

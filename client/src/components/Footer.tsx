@@ -7,6 +7,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import type { BusinessSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useCmsContent } from "@/hooks/use-cms-content";
 
 export function Footer() {
   const [email, setEmail] = useState("");
@@ -16,6 +17,8 @@ export function Footer() {
   const { data: settings } = useQuery<BusinessSettings>({
     queryKey: ["/api/settings"],
   });
+
+  const { content: cmsContent } = useCmsContent("footer");
 
   const subscribeMutation = useMutation({
     mutationFn: async (data: { email: string; name?: string }) => {
@@ -63,7 +66,7 @@ export function Footer() {
               <span className="font-bold text-xl" data-testid="text-footer-business-name">{settings?.businessName || "Clean & Green"}</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              {settings?.aboutText || "Professional eco-friendly cleaning services across Oklahoma. Making homes and businesses sparkle while protecting our planet."}
+              {cmsContent.tagline || settings?.aboutText || "Professional eco-friendly cleaning services across Oklahoma. Making homes and businesses sparkle while protecting our planet."}
             </p>
             <div className="flex gap-2">
               {settings?.socialLinks?.facebook && (
@@ -204,7 +207,7 @@ export function Footer() {
         </div>
 
         <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>&copy; 2025 Clean & Green. All rights reserved.</p>
+          <p>{cmsContent.copyright || `© ${new Date().getFullYear()} ${settings?.businessName || "Clean & Green"}. All rights reserved.`}</p>
           <div className="flex gap-6">
             <Link href="/privacy">
               <span className="hover:text-primary transition-colors cursor-pointer" data-testid="link-privacy">

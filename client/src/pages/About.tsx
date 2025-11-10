@@ -10,6 +10,7 @@ import type { BusinessSettings, GalleryImage, TeamMember } from "@shared/schema"
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useCmsContent } from "@/hooks/use-cms-content";
 
 const values = [
   {
@@ -39,6 +40,8 @@ export default function About() {
     queryKey: ["/api/settings"],
   });
 
+  const { content: cmsContent } = useCmsContent("about_page");
+
   const { data: galleryImages = [] } = useQuery<GalleryImage[]>({
     queryKey: ["/api/gallery"],
   });
@@ -60,15 +63,17 @@ export default function About() {
         <section className="py-16 md:py-24">
           <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold mb-6" data-testid="text-about-title">About {settings?.businessName || "Clean & Green"}</h1>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6" data-testid="text-about-title">
+                {cmsContent.title || `About ${settings?.businessName || "Clean & Green"}`}
+              </h1>
               <p className="text-lg text-muted-foreground">
-                We're more than just a cleaning company - we're your partners in creating healthier, cleaner spaces while protecting our environment.
+                {cmsContent.subtitle || "We're more than just a cleaning company - we're your partners in creating healthier, cleaner spaces while protecting our environment."}
               </p>
             </div>
 
             <div className="mb-16">
               <img
-                src={teamPhoto}
+                src={cmsContent.team_photo || teamPhoto}
                 alt={`${settings?.businessName || "Clean and Green"} team`}
                 className="w-full rounded-lg max-w-4xl mx-auto"
               />
@@ -77,8 +82,8 @@ export default function About() {
             <div className="max-w-3xl mx-auto mb-16">
               <h2 className="text-3xl font-bold mb-6">Our Story</h2>
               <div className="space-y-4 text-muted-foreground" data-testid="text-about-story">
-                {settings?.aboutText ? (
-                  <p>{settings.aboutText}</p>
+                {cmsContent.story || settings?.aboutText ? (
+                  <p>{cmsContent.story || settings.aboutText}</p>
                 ) : (
                   <>
                     <p>
