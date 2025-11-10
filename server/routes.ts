@@ -6789,6 +6789,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint to get all CMS sections (visibility data)
+  app.get("/api/public/cms/sections", async (_req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      const sections = await storage.getAllCmsSections();
+      res.json(sections);
+    } catch (error) {
+      console.error("Error fetching public CMS sections:", error);
+      res.status(500).json({ error: "Failed to fetch sections" });
+    }
+  });
+
+  // Public endpoint to get all CMS assets
+  app.get("/api/public/cms/assets", async (_req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      // Fetch all assets for all sections
+      const sections = ["home_hero", "home_welcome", "how_it_works", "services_intro", "cta_section", "testimonials", "about_page", "contact_page", "footer"];
+      const allAssets = [];
+      for (const section of sections) {
+        const sectionAssets = await storage.getCmsAssetsBySection(section);
+        allAssets.push(...sectionAssets);
+      }
+      
+      res.json(allAssets);
+    } catch (error) {
+      console.error("Error fetching public CMS assets:", error);
+      res.status(500).json({ error: "Failed to fetch assets" });
+    }
+  });
+
   // Admin: Get all CMS content
   app.get("/api/cms/content", isAuthenticated, async (_req, res) => {
     try {
