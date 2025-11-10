@@ -83,7 +83,7 @@ export default function About() {
               <h2 className="text-3xl font-bold mb-6">Our Story</h2>
               <div className="space-y-4 text-muted-foreground" data-testid="text-about-story">
                 {cmsContent.story || settings?.aboutText ? (
-                  <p>{cmsContent.story || settings.aboutText}</p>
+                  <p>{cmsContent.story || settings?.aboutText}</p>
                 ) : (
                   <>
                     <p>

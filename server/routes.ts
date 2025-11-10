@@ -6832,7 +6832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await logActivity({
         context: getUserContext(req),
-        action: 'update',
+        action: 'updated',
         entityType: 'cms_content',
         entityId: content.id,
         entityName: `${validatedData.section}.${validatedData.key}`,
@@ -6871,7 +6871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await logActivity({
         context: getUserContext(req),
-        action: 'update',
+        action: 'updated',
         entityType: 'cms_content',
         entityId: section,
         entityName: section,
@@ -6897,7 +6897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await logActivity({
         context: getUserContext(req),
-        action: 'delete',
+        action: 'deleted',
         entityType: 'cms_content',
         entityId: `${section}.${key}`,
         entityName: `${section}.${key}`,
