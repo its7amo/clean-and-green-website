@@ -245,6 +245,23 @@ export async function runMigrations() {
       );
     `;
     await pool.query(cmsSectionsTable);
+    
+    // Seed default sections if they don't exist
+    const seedSections = `
+      INSERT INTO cms_sections (section, visible, display_order)
+      VALUES 
+        ('home_hero', true, 1),
+        ('home_welcome', true, 2),
+        ('how_it_works', true, 3),
+        ('services_intro', true, 4),
+        ('cta_section', true, 5),
+        ('testimonials', true, 6),
+        ('about_page', true, 7),
+        ('contact_page', true, 8),
+        ('footer', true, 9)
+      ON CONFLICT (section) DO NOTHING;
+    `;
+    await pool.query(seedSections);
     console.log('✓ CMS sections table created/verified');
     
     // Create CMS content table for text content
