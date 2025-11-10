@@ -17,7 +17,7 @@ export function Hero() {
     <section className="relative min-h-[600px] md:min-h-[700px] flex items-center">
       <div className="absolute inset-0 z-0">
         <img
-          src={cmsAssets.background_image || heroImage}
+          src={cmsAssets.hero_image || heroImage}
           alt={`${settings?.businessName || "Clean and Green"} professional cleaning team`}
           className="w-full h-full object-cover"
         />
