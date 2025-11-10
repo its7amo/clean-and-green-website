@@ -59,6 +59,10 @@ import {
   type InsertRescheduleRequest,
   type CmsContent,
   type InsertCmsContent,
+  type CmsSection,
+  type InsertCmsSection,
+  type CmsAsset,
+  type InsertCmsAsset,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -91,6 +95,8 @@ import {
   quotePhotos,
   rescheduleRequests,
   cmsContent,
+  cmsSections,
+  cmsAssets,
 } from "@shared/schema";
 import { eq, desc, sql, or } from "drizzle-orm";
 
@@ -377,6 +383,18 @@ export interface IStorage {
   getAllCmsContent(): Promise<CmsContent[]>;
   upsertCmsContent(content: InsertCmsContent): Promise<CmsContent>;
   deleteCmsContent(section: string, key: string): Promise<void>;
+  
+  // CMS Section operations (visibility toggling)
+  getAllCmsSections(): Promise<CmsSection[]>;
+  getCmsSection(section: string): Promise<CmsSection | undefined>;
+  upsertCmsSection(sectionData: InsertCmsSection): Promise<CmsSection>;
+  updateSectionVisibility(section: string, visible: boolean): Promise<CmsSection | undefined>;
+  
+  // CMS Asset operations (image uploads)
+  getCmsAsset(section: string, key: string): Promise<CmsAsset | undefined>;
+  getCmsAssetsBySection(section: string): Promise<CmsAsset[]>;
+  upsertCmsAsset(asset: InsertCmsAsset): Promise<CmsAsset>;
+  deleteCmsAsset(section: string, key: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -2054,6 +2072,77 @@ export class DbStorage implements IStorage {
     await db
       .delete(cmsContent)
       .where(sql`${cmsContent.section} = ${section} AND ${cmsContent.key} = ${key}`);
+  }
+
+  // CMS Section operations
+  async getAllCmsSections(): Promise<CmsSection[]> {
+    return await db.select().from(cmsSections).orderBy(cmsSections.displayOrder);
+  }
+
+  async getCmsSection(section: string): Promise<CmsSection | undefined> {
+    const result = await db.select().from(cmsSections).where(eq(cmsSections.section, section));
+    return result[0];
+  }
+
+  async upsertCmsSection(sectionData: InsertCmsSection): Promise<CmsSection> {
+    const result = await db
+      .insert(cmsSections)
+      .values(sectionData)
+      .onConflictDoUpdate({
+        target: [cmsSections.section],
+        set: {
+          visible: sectionData.visible,
+          displayOrder: sectionData.displayOrder,
+          updatedAt: sql`now()`,
+        },
+      })
+      .returning();
+    return result[0];
+  }
+
+  async updateSectionVisibility(section: string, visible: boolean): Promise<CmsSection | undefined> {
+    const result = await db
+      .update(cmsSections)
+      .set({ visible, updatedAt: sql`now()` })
+      .where(eq(cmsSections.section, section))
+      .returning();
+    return result[0];
+  }
+
+  // CMS Asset operations
+  async getCmsAsset(section: string, key: string): Promise<CmsAsset | undefined> {
+    const result = await db
+      .select()
+      .from(cmsAssets)
+      .where(sql`${cmsAssets.section} = ${section} AND ${cmsAssets.key} = ${key}`);
+    return result[0];
+  }
+
+  async getCmsAssetsBySection(section: string): Promise<CmsAsset[]> {
+    return await db.select().from(cmsAssets).where(eq(cmsAssets.section, section));
+  }
+
+  async upsertCmsAsset(asset: InsertCmsAsset): Promise<CmsAsset> {
+    const result = await db
+      .insert(cmsAssets)
+      .values(asset)
+      .onConflictDoUpdate({
+        target: [cmsAssets.section, cmsAssets.key],
+        set: {
+          imageData: asset.imageData,
+          mimeType: asset.mimeType,
+          originalName: asset.originalName,
+          updatedAt: sql`now()`,
+        },
+      })
+      .returning();
+    return result[0];
+  }
+
+  async deleteCmsAsset(section: string, key: string): Promise<void> {
+    await db
+      .delete(cmsAssets)
+      .where(sql`${cmsAssets.section} = ${section} AND ${cmsAssets.key} = ${key}`);
   }
 }
 

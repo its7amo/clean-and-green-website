@@ -6911,6 +6911,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CMS Sections API (visibility toggling)
+  
+  // Admin: Get all CMS sections
+  app.get("/api/cms/sections", isAuthenticated, async (_req, res) => {
+    try {
+      const sections = await storage.getAllCmsSections();
+      res.json(sections);
+    } catch (error) {
+      console.error("Error fetching CMS sections:", error);
+      res.status(500).json({ error: "Failed to fetch sections" });
+    }
+  });
+
+  // Admin: Get a specific CMS section
+  app.get("/api/cms/sections/:section", isAuthenticated, async (req, res) => {
+    try {
+      const section = await storage.getCmsSection(req.params.section);
+      if (!section) {
+        return res.status(404).json({ error: "Section not found" });
+      }
+      res.json(section);
+    } catch (error) {
+      console.error("Error fetching CMS section:", error);
+      res.status(500).json({ error: "Failed to fetch section" });
+    }
+  });
+
+  // Admin: Update section visibility
+  app.put("/api/cms/sections/:section/visibility", isAuthenticated, async (req, res) => {
+    try {
+      const visibilitySchema = z.object({
+        visible: z.boolean(),
+      });
+
+      const { visible } = visibilitySchema.parse(req.body);
+      const section = await storage.updateSectionVisibility(req.params.section, visible);
+
+      if (!section) {
+        return res.status(404).json({ error: "Section not found" });
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'cms_section',
+        entityId: section.id,
+        entityName: section.section,
+        details: `Updated section visibility: ${section.section} to ${visible}`,
+      });
+
+      res.json(section);
+    } catch (error) {
+      console.error("Error updating section visibility:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid visibility data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update visibility" });
+    }
+  });
+
+  // CMS Assets API (image uploads)
+
+  // Admin: Get a specific asset
+  app.get("/api/cms/assets/:section/:key", isAuthenticated, async (req, res) => {
+    try {
+      const { section, key } = req.params;
+      const asset = await storage.getCmsAsset(section, key);
+      
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+      
+      res.json(asset);
+    } catch (error) {
+      console.error("Error fetching CMS asset:", error);
+      res.status(500).json({ error: "Failed to fetch asset" });
+    }
+  });
+
+  // Admin: Get all assets for a section
+  app.get("/api/cms/assets/:section", isAuthenticated, async (req, res) => {
+    try {
+      const assets = await storage.getCmsAssetsBySection(req.params.section);
+      res.json(assets);
+    } catch (error) {
+      console.error("Error fetching CMS assets:", error);
+      res.status(500).json({ error: "Failed to fetch assets" });
+    }
+  });
+
+  // Admin: Upload/update an asset (Base64 image)
+  app.post("/api/cms/assets", isAuthenticated, async (req, res) => {
+    try {
+      const assetSchema = z.object({
+        section: z.string().min(1),
+        key: z.string().min(1),
+        imageData: z.string().min(1), // Base64 encoded image
+        mimeType: z.string().min(1), // e.g., "image/jpeg", "image/png"
+        originalName: z.string().optional(),
+      });
+
+      const validatedData = assetSchema.parse(req.body);
+
+      // Validate Base64 format
+      if (!validatedData.imageData.startsWith('data:image/')) {
+        return res.status(400).json({ error: "Invalid image data format. Must be Base64 data URL" });
+      }
+
+      // Check actual binary image size (limit to 500KB)
+      // Extract base64 data after the data URL prefix (e.g., "data:image/png;base64,")
+      const base64Data = validatedData.imageData.split(',')[1];
+      const buffer = Buffer.from(base64Data, 'base64');
+      const sizeInBytes = buffer.length;
+      const maxSizeBytes = 500 * 1024; // 500KB
+      
+      if (sizeInBytes > maxSizeBytes) {
+        return res.status(400).json({ 
+          error: "Image too large", 
+          details: `Image must be under 500KB. Current size: ${Math.round(sizeInBytes / 1024)}KB` 
+        });
+      }
+
+      const asset = await storage.upsertCmsAsset({
+        section: validatedData.section,
+        key: validatedData.key,
+        imageData: validatedData.imageData,
+        mimeType: validatedData.mimeType,
+        originalName: validatedData.originalName,
+      });
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'updated',
+        entityType: 'cms_asset',
+        entityId: asset.id,
+        entityName: `${validatedData.section}.${validatedData.key}`,
+        details: `Uploaded CMS asset: ${validatedData.section}.${validatedData.key}`,
+      });
+
+      res.json(asset);
+    } catch (error) {
+      console.error("Error uploading CMS asset:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid asset data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to upload asset" });
+    }
+  });
+
+  // Admin: Delete an asset
+  app.delete("/api/cms/assets/:section/:key", isAuthenticated, async (req, res) => {
+    try {
+      const { section, key } = req.params;
+      
+      await storage.deleteCmsAsset(section, key);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'deleted',
+        entityType: 'cms_asset',
+        entityId: `${section}.${key}`,
+        entityName: `${section}.${key}`,
+        details: `Deleted CMS asset: ${section}.${key}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting CMS asset:", error);
+      res.status(500).json({ error: "Failed to delete asset" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
