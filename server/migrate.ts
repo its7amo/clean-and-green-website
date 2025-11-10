@@ -232,23 +232,62 @@ export async function runMigrations() {
     await pool.query(contactMessageConstraint);
     console.log('✓ Contact message tracking columns added/verified');
     
-    // Create CMS content table if it doesn't exist
+    // Create CMS sections table for section-level metadata
+    console.log('Creating cms_sections table...');
+    const cmsSectionsTable = `
+      CREATE TABLE IF NOT EXISTS cms_sections (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        section VARCHAR NOT NULL UNIQUE,
+        visible BOOLEAN NOT NULL DEFAULT true,
+        display_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT now(),
+        updated_at TIMESTAMP NOT NULL DEFAULT now()
+      );
+    `;
+    await pool.query(cmsSectionsTable);
+    console.log('✓ CMS sections table created/verified');
+    
+    // Create CMS content table for text content
     console.log('Creating cms_content table...');
     const cmsContentTable = `
       CREATE TABLE IF NOT EXISTS cms_content (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        section TEXT NOT NULL,
-        key TEXT NOT NULL,
+        section VARCHAR NOT NULL,
+        key VARCHAR NOT NULL,
         value TEXT NOT NULL,
-        content_type TEXT NOT NULL DEFAULT 'text',
+        content_type VARCHAR NOT NULL DEFAULT 'text',
         created_at TIMESTAMP NOT NULL DEFAULT now(),
         updated_at TIMESTAMP NOT NULL DEFAULT now(),
         UNIQUE(section, key)
       );
     `;
-    
     await pool.query(cmsContentTable);
+    
+    // Add created_at column if it doesn't exist (for existing installations)
+    const addCreatedAtColumn = `
+      ALTER TABLE cms_content ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT now();
+    `;
+    await pool.query(addCreatedAtColumn);
+    
     console.log('✓ CMS content table created/verified');
+    
+    // Create CMS assets table for uploaded images
+    console.log('Creating cms_assets table...');
+    const cmsAssetsTable = `
+      CREATE TABLE IF NOT EXISTS cms_assets (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        section VARCHAR NOT NULL,
+        key VARCHAR NOT NULL,
+        image_data TEXT NOT NULL,
+        mime_type VARCHAR NOT NULL,
+        original_name VARCHAR,
+        created_at TIMESTAMP NOT NULL DEFAULT now(),
+        updated_at TIMESTAMP NOT NULL DEFAULT now(),
+        UNIQUE(section, key)
+      );
+    `;
+    await pool.query(cmsAssetsTable);
+    console.log('✓ CMS assets table created/verified');
     
   } catch (error) {
     console.error('Error initializing database:', error);

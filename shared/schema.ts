@@ -393,23 +393,65 @@ export const insertGalleryImageSchema = createInsertSchema(galleryImages).omit({
 export type InsertGalleryImage = z.infer<typeof insertGalleryImageSchema>;
 export type GalleryImage = typeof galleryImages.$inferSelect;
 
-// CMS Content - Editable website content sections
+// CMS Sections - Section-level metadata and configuration
+export const cmsSections = pgTable("cms_sections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  section: varchar("section").notNull().unique(), // "home_hero", "about_page", etc.
+  visible: boolean("visible").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertCmsSectionSchema = createInsertSchema(cmsSections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCmsSection = z.infer<typeof insertCmsSectionSchema>;
+export type CmsSection = typeof cmsSections.$inferSelect;
+
+// CMS Content - Editable website content fields
 export const cmsContent = pgTable("cms_content", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   section: varchar("section").notNull(), // "home_hero", "about_page", "services_intro", etc.
-  key: varchar("key").notNull(), // "title", "subtitle", "description", "image_url", etc.
-  value: text("value").notNull(), // The actual content
-  contentType: varchar("content_type").notNull().default("text"), // "text", "html", "image_url", "number"
+  key: varchar("key").notNull(), // "title", "subtitle", "description", etc.
+  value: text("value").notNull(), // The actual text content
+  contentType: varchar("content_type").notNull().default("text"), // "text", "html", "number"
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
 export const insertCmsContentSchema = createInsertSchema(cmsContent).omit({
   id: true,
+  createdAt: true,
   updatedAt: true,
 });
 
 export type InsertCmsContent = z.infer<typeof insertCmsContentSchema>;
 export type CmsContent = typeof cmsContent.$inferSelect;
+
+// CMS Assets - Uploaded images for sections
+export const cmsAssets = pgTable("cms_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  section: varchar("section").notNull(), // Which section this asset belongs to
+  key: varchar("key").notNull(), // "hero_image", "team_photo", etc.
+  imageData: text("image_data").notNull(), // Base64 encoded image
+  mimeType: varchar("mime_type").notNull(), // "image/jpeg", "image/png", etc.
+  originalName: varchar("original_name"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertCmsAssetSchema = createInsertSchema(cmsAssets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCmsAsset = z.infer<typeof insertCmsAssetSchema>;
+export type CmsAsset = typeof cmsAssets.$inferSelect;
 
 // Invoices for billing
 export const invoices = pgTable("invoices", {
