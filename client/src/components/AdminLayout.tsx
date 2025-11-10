@@ -118,6 +118,7 @@ const menuGroups = [
     icon: Cog,
     defaultOpen: false,
     items: [
+      { href: "/admin/cms", icon: FileText, label: "Content Editor" },
       { href: "/admin/services", icon: Wrench, label: "Services" },
       { href: "/admin/service-areas", icon: MapPin, label: "Service Areas" },
       { href: "/admin/gallery", icon: Image, label: "Gallery" },

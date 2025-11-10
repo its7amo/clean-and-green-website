@@ -57,6 +57,8 @@ import {
   type InsertQuotePhoto,
   type RescheduleRequest,
   type InsertRescheduleRequest,
+  type CmsContent,
+  type InsertCmsContent,
 } from "@shared/schema";
 import { db } from "./db";
 import {
@@ -88,6 +90,7 @@ import {
   anomalyAlerts,
   quotePhotos,
   rescheduleRequests,
+  cmsContent,
 } from "@shared/schema";
 import { eq, desc, sql, or } from "drizzle-orm";
 
@@ -367,6 +370,13 @@ export interface IStorage {
   // Employee availability operations
   getSuggestedEmployees(date: string, timeSlot: string): Promise<Employee[]>;
   getEmployeeWorkload(employeeId: string, startDate: string, endDate: string): Promise<{ totalBookings: number; bookings: Booking[] }>;
+
+  // CMS Content operations
+  getCmsContent(section: string): Promise<CmsContent[]>;
+  getCmsContentByKey(section: string, key: string): Promise<CmsContent | undefined>;
+  getAllCmsContent(): Promise<CmsContent[]>;
+  upsertCmsContent(content: InsertCmsContent): Promise<CmsContent>;
+  deleteCmsContent(section: string, key: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -2005,6 +2015,45 @@ export class DbStorage implements IStorage {
       totalBookings: workloadBookings.length,
       bookings: workloadBookings,
     };
+  }
+
+  // CMS Content operations
+  async getCmsContent(section: string): Promise<CmsContent[]> {
+    return await db.select().from(cmsContent).where(eq(cmsContent.section, section));
+  }
+
+  async getCmsContentByKey(section: string, key: string): Promise<CmsContent | undefined> {
+    const result = await db
+      .select()
+      .from(cmsContent)
+      .where(sql`${cmsContent.section} = ${section} AND ${cmsContent.key} = ${key}`);
+    return result[0];
+  }
+
+  async getAllCmsContent(): Promise<CmsContent[]> {
+    return await db.select().from(cmsContent).orderBy(cmsContent.section, cmsContent.key);
+  }
+
+  async upsertCmsContent(content: InsertCmsContent): Promise<CmsContent> {
+    const result = await db
+      .insert(cmsContent)
+      .values(content)
+      .onConflictDoUpdate({
+        target: [cmsContent.section, cmsContent.key],
+        set: {
+          value: content.value,
+          contentType: content.contentType,
+          updatedAt: sql`now()`,
+        },
+      })
+      .returning();
+    return result[0];
+  }
+
+  async deleteCmsContent(section: string, key: string): Promise<void> {
+    await db
+      .delete(cmsContent)
+      .where(sql`${cmsContent.section} = ${section} AND ${cmsContent.key} = ${key}`);
   }
 }
 

@@ -6750,6 +6750,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== CMS Content Management Routes =====
+
+  // Public endpoint to get CMS content for a section
+  app.get("/api/public/cms/:section", async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      const content = await storage.getCmsContent(req.params.section);
+      
+      // Transform array of content items into an object for easier frontend use
+      const contentMap: Record<string, string> = {};
+      content.forEach(item => {
+        contentMap[item.key] = item.value;
+      });
+      
+      res.json(contentMap);
+    } catch (error) {
+      console.error("Error fetching public CMS content:", error);
+      res.status(500).json({ error: "Failed to fetch content" });
+    }
+  });
+
+  // Admin: Get all CMS content
+  app.get("/api/cms/content", isAuthenticated, async (_req, res) => {
+    try {
+      const content = await storage.getAllCmsContent();
+      res.json(content);
+    } catch (error) {
+      console.error("Error fetching CMS content:", error);
+      res.status(500).json({ error: "Failed to fetch CMS content" });
+    }
+  });
+
+  // Admin: Get CMS content for a specific section
+  app.get("/api/cms/content/:section", isAuthenticated, async (req, res) => {
+    try {
+      const content = await storage.getCmsContent(req.params.section);
+      res.json(content);
+    } catch (error) {
+      console.error("Error fetching CMS content for section:", error);
+      res.status(500).json({ error: "Failed to fetch section content" });
+    }
+  });
+
+  // Admin: Upsert CMS content (create or update)
+  app.post("/api/cms/content", isAuthenticated, async (req, res) => {
+    try {
+      const cmsContentSchema = z.object({
+        section: z.string().min(1),
+        key: z.string().min(1),
+        value: z.string(),
+        contentType: z.enum(["text", "html", "image_url", "number"]).optional(),
+      });
+
+      const validatedData = cmsContentSchema.parse(req.body);
+
+      const content = await storage.upsertCmsContent({
+        section: validatedData.section,
+        key: validatedData.key,
+        value: validatedData.value,
+        contentType: validatedData.contentType || 'text',
+      });
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'update',
+        entityType: 'cms_content',
+        entityId: content.id,
+        entityName: `${validatedData.section}.${validatedData.key}`,
+        details: `Updated CMS content: ${validatedData.section}.${validatedData.key}`,
+      });
+
+      res.json(content);
+    } catch (error) {
+      console.error("Error upserting CMS content:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid CMS content data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to save content" });
+    }
+  });
+
+  // Admin: Batch update CMS content for a section
+  app.post("/api/cms/content/:section/batch", isAuthenticated, async (req, res) => {
+    try {
+      const sectionSchema = z.string().min(1);
+      const section = sectionSchema.parse(req.params.section);
+      
+      const batchUpdatesSchema = z.record(z.string(), z.string());
+      const updates = batchUpdatesSchema.parse(req.body);
+
+      const results = [];
+      for (const [key, value] of Object.entries(updates)) {
+        const content = await storage.upsertCmsContent({
+          section,
+          key,
+          value,
+          contentType: 'text',
+        });
+        results.push(content);
+      }
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'update',
+        entityType: 'cms_content',
+        entityId: section,
+        entityName: section,
+        details: `Batch updated ${results.length} content items in section: ${section}`,
+      });
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error batch updating CMS content:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid batch update data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to batch update content" });
+    }
+  });
+
+  // Admin: Delete CMS content
+  app.delete("/api/cms/content/:section/:key", isAuthenticated, async (req, res) => {
+    try {
+      const { section, key } = req.params;
+      
+      await storage.deleteCmsContent(section, key);
+
+      await logActivity({
+        context: getUserContext(req),
+        action: 'delete',
+        entityType: 'cms_content',
+        entityId: `${section}.${key}`,
+        entityName: `${section}.${key}`,
+        details: `Deleted CMS content: ${section}.${key}`,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting CMS content:", error);
+      res.status(500).json({ error: "Failed to delete content" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

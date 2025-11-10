@@ -393,6 +393,24 @@ export const insertGalleryImageSchema = createInsertSchema(galleryImages).omit({
 export type InsertGalleryImage = z.infer<typeof insertGalleryImageSchema>;
 export type GalleryImage = typeof galleryImages.$inferSelect;
 
+// CMS Content - Editable website content sections
+export const cmsContent = pgTable("cms_content", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  section: varchar("section").notNull(), // "home_hero", "about_page", "services_intro", etc.
+  key: varchar("key").notNull(), // "title", "subtitle", "description", "image_url", etc.
+  value: text("value").notNull(), // The actual content
+  contentType: varchar("content_type").notNull().default("text"), // "text", "html", "image_url", "number"
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertCmsContentSchema = createInsertSchema(cmsContent).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertCmsContent = z.infer<typeof insertCmsContentSchema>;
+export type CmsContent = typeof cmsContent.$inferSelect;
+
 // Invoices for billing
 export const invoices = pgTable("invoices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

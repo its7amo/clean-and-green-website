@@ -33,6 +33,7 @@ import AdminReferrals from "@/pages/AdminReferrals";
 import AdminServices from "@/pages/AdminServices";
 import AdminGallery from "@/pages/AdminGallery";
 import AdminFaq from "@/pages/AdminFaq";
+import AdminCMS from "@/pages/AdminCMS";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminEmployees from "@/pages/AdminEmployees";
 import AdminReviews from "@/pages/AdminReviews";
@@ -216,6 +217,9 @@ function Router() {
       </Route>
       <Route path="/admin/messages">
         <ProtectedRoute component={AdminContactMessages} />
+      </Route>
+      <Route path="/admin/cms">
+        <ProtectedRoute component={AdminCMS} />
       </Route>
       <Route path="/admin/settings">
         <ProtectedRoute component={AdminSettings} />
