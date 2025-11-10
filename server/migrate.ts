@@ -77,6 +77,7 @@ export async function runMigrations() {
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_churn_risk_scoring BOOLEAN DEFAULT true;
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_win_back_campaigns BOOLEAN DEFAULT true;
       ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS enable_anomaly_detection BOOLEAN DEFAULT true;
+      ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS promo_banner_show_promo_details BOOLEAN NOT NULL DEFAULT true;
     `;
     
     await pool.query(intelligenceColumns);
@@ -230,6 +231,24 @@ export async function runMigrations() {
     await pool.query(contactMessageColumns);
     await pool.query(contactMessageConstraint);
     console.log('✓ Contact message tracking columns added/verified');
+    
+    // Create CMS content table if it doesn't exist
+    console.log('Creating cms_content table...');
+    const cmsContentTable = `
+      CREATE TABLE IF NOT EXISTS cms_content (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        section TEXT NOT NULL,
+        key TEXT NOT NULL,
+        value TEXT NOT NULL,
+        content_type TEXT NOT NULL DEFAULT 'text',
+        created_at TIMESTAMP NOT NULL DEFAULT now(),
+        updated_at TIMESTAMP NOT NULL DEFAULT now(),
+        UNIQUE(section, key)
+      );
+    `;
+    
+    await pool.query(cmsContentTable);
+    console.log('✓ CMS content table created/verified');
     
   } catch (error) {
     console.error('Error initializing database:', error);
