@@ -34,9 +34,9 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
-            <Link href="/book">
+            <Link href={cmsContent.cta_link || "/book"}>
               <Button size="lg" className="text-lg px-8 py-6" data-testid="button-hero-book">
-                {cmsContent.cta_primary || "Book Cleaning"}
+                {cmsContent.cta_text || "Book Cleaning"}
               </Button>
             </Link>
             <Link href="/quote">
@@ -46,7 +46,7 @@ export function Hero() {
                 className="text-lg px-8 py-6 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20"
                 data-testid="button-hero-quote"
               >
-                {cmsContent.cta_secondary || "Get Quote"}
+                Get Quote
               </Button>
             </Link>
           </div>

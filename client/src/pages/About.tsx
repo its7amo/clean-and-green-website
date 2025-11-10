@@ -67,23 +67,23 @@ export default function About() {
                 {cmsContent.title || `About ${settings?.businessName || "Clean & Green"}`}
               </h1>
               <p className="text-lg text-muted-foreground">
-                {cmsContent.subtitle || "We're more than just a cleaning company - we're your partners in creating healthier, cleaner spaces while protecting our environment."}
+                {cmsContent.description || "We're more than just a cleaning company - we're your partners in creating healthier, cleaner spaces while protecting our environment."}
               </p>
             </div>
 
             <div className="mb-16">
               <img
-                src={cmsContent.team_photo || teamPhoto}
+                src={cmsContent.team_image || teamPhoto}
                 alt={`${settings?.businessName || "Clean and Green"} team`}
                 className="w-full rounded-lg max-w-4xl mx-auto"
               />
             </div>
 
             <div className="max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl font-bold mb-6">Our Story</h2>
+              <h2 className="text-3xl font-bold mb-6">{cmsContent.mission_title || "Our Story"}</h2>
               <div className="space-y-4 text-muted-foreground" data-testid="text-about-story">
-                {cmsContent.story || settings?.aboutText ? (
-                  <p>{cmsContent.story || settings?.aboutText}</p>
+                {cmsContent.mission_text || settings?.aboutText ? (
+                  <p>{cmsContent.mission_text || settings?.aboutText}</p>
                 ) : (
                   <>
                     <p>
