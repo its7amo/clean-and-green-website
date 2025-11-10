@@ -9,13 +9,13 @@ export function useCmsContent(section?: string) {
   const { data: allSections = [], isLoading: sectionsLoading } = useQuery<CmsSection[]>({
     queryKey: ["/api/public/cms/sections"],
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   const { data: allAssets = [], isLoading: assetsLoading } = useQuery<CmsAsset[]>({
     queryKey: ["/api/public/cms/assets"],
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   const isLoading = contentLoading || sectionsLoading || assetsLoading;

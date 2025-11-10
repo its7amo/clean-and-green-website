@@ -92,6 +92,7 @@ export default function AdminCMS() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cms/sections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/cms/sections"] });
       toast({
         title: "Visibility Updated",
         description: "Section visibility has been updated.",
